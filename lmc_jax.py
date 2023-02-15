@@ -5,6 +5,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from scipy.linalg import sqrtm
 
+import ProxNest
 import ProxNest.utils as utils
 import ProxNest.sampling as sampling
 import ProxNest.optimisations as optimisations
