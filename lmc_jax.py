@@ -23,13 +23,13 @@ import fire
 
 
 class Langevin:
-    def __init__(self, gamma) -> None:
-        self.gamma = gamma
+  def __init__(self, gamma) -> None:
+    self.gamma = gamma
 
 
 class HMC:
   def __init__(self, gamma) -> None:
-     self.gamma = gamma
+    self.gamma = gamma
 
 
 
