@@ -17,6 +17,7 @@
 # Usage: python langevin_gaussian_mixture.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
+import os
 
 import numpy as np
 from numpy.random import default_rng
@@ -33,7 +34,7 @@ import seaborn as sns
 
 import fire 
 
-# plt.style.use(['science', 'grid'])
+plt.style.use(['science', 'grid'])
 
 
 def multivariate_gaussian(pos, mu, Sigma):
@@ -97,10 +98,12 @@ def grad_density_multivariate_gaussian(pos, mu, Sigma):
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
     return -.5 * np.exp(-fac / 2) / N * Sigma_inv @ (pos - mu)
 
+
 def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     K = len(mus)
     grad_den = [lambdas[k] * grad_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(grad_den)
+
 
 def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
@@ -139,13 +142,11 @@ def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-
     for _ in range(n):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
         theta.append(theta_new)    
         theta0 = theta_new
-
     return np.array(theta)
 
 
@@ -153,16 +154,17 @@ def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
 def q_prob(theta1, theta2, gamma, mus, Sigmas, lambdas):
     return np.exp(-1/(4*gamma) * np.linalg.norm(theta1 - gd_update(theta2, mus, Sigmas, lambdas, gamma))**2)
 
+
 def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
     density_ratio = density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas)
     q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas)
     return density_ratio * q_ratio
 
+
 def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-
     for _ in range(n):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
@@ -171,7 +173,6 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
         if np.random.uniform() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
-
     return np.array(theta), len(theta)
 
 
@@ -191,13 +192,11 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-
     for _ in range(n):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
         theta0 = theta_new
-
     return np.array(theta)
 
 
@@ -205,8 +204,7 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
-    theta = []
-    
+    theta = []    
     for _ in range(n):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         hess = hess_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas)
@@ -217,7 +215,6 @@ def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d
         theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
         theta0 = theta_new
-
     return np.array(theta)
 
 
@@ -232,14 +229,12 @@ def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0)
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-
     for _ in range(n):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
         theta.append(theta_new)    
         theta0 = theta_new
-
     return np.array(theta)
 
 
@@ -257,7 +252,6 @@ def plot_hist2d(z, title):
     z1 = z[:,1]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-
     hist, xedges, yedges = np.histogram2d(z0, z1, bins=50, range=[[-5, 5], [-5, 5]], density=True)
 
     # Construct arrays for the anchor positions of the 16 bars.
@@ -364,7 +358,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # plt.suptitle("True 2D Gaussian Mixture") 
     # plt.show()
-    fig.savefig(f'../notes/fig/fig_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
 
 
     Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
@@ -465,10 +459,12 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     axes[1,2].set_title("MLA")
 
     plt.show()
-    fig2.savefig(f'../notes/fig/fig_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
 
 
 
 
 if __name__ == '__main__':
-  fire.Fire(langevin_gaussian_mixture)
+    if not os.path.exists('fig'):
+        os.makedirs('fig')
+    fire.Fire(langevin_gaussian_mixture)
