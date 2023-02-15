@@ -367,7 +367,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # plot_contour_hist2d(Z2, "Unadjusted Langevin Algorithm (ULA)")
 
     sns.set(rc={'figure.figsize':(3.25, 3.5)})
-    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, shade=True, thresh=0, clip=(-5, 5)).set(title="Unadjusted Langevin Algorithm (ULA)")
+    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Unadjusted Langevin Algorithm (ULA)")
     # plt.show()
 
     # sns.jointplot(x=Z2[:,0], y=Z2[:,1], kind='kde')
@@ -382,7 +382,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # plot_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
     # plot_contour_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
 
-    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, shade=True, thresh=0, clip=(-5, 5)).set(title="Metropolis-Adjusted Langevin Algorithm (MALA)")
+    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Metropolis-Adjusted Langevin Algorithm (MALA)")
     # plt.show()
 
     # sns.jointplot(x=Z3[:,0], y=Z3[:,1], kind='kde')
@@ -397,7 +397,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # plot_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
     # plot_contour_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
 
-    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, shade=True, thresh=0, clip=(-5, 5)).set(title="Preconditioned Unadjusted Langevin Algorithm (PULA)")
+    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Preconditioned Unadjusted Langevin Algorithm (PULA)")
     # plt.show()
 
     # sns.jointplot(x=Z4[:,0], y=Z4[:,1], kind='kde')
@@ -411,7 +411,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # plot_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
     # plot_contour_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
 
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, shade=True, thresh=0, clip=(-5, 5)).set(title="Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
+    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
     # plt.show()
 
     # sns.jointplot(x=Z5[:,0], y=Z5[:,1], kind='kde')
@@ -427,7 +427,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # plot_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
     # plot_contour_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
 
-    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, shade=True, thresh=0, clip=(-5, 5)).set(title="Mirror-Langevin Algorithm (MLA)")
+    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Mirror-Langevin Algorithm (MLA)")
     # plt.show()
 
     # sns.jointplot(x=Z6[:,0], y=Z6[:,1], kind='kde')
@@ -443,19 +443,19 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density")
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, shade=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("ULA")
 
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, shade=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
     axes[0,2].set_title("MALA")
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, shade=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
     axes[1,0].set_title("PULA")
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, shade=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
     axes[1,1].set_title("IHPULA")
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, shade=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("MLA")
 
     plt.show()
