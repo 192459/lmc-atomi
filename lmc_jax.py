@@ -28,6 +28,13 @@ class Langevin:
     self.gamma = gamma
 
 
+  def unadjustedLangevin(self):
+    gamma = self.gamma
+
+    return 
+
+
+
 class HMC:
   def __init__(self, gamma) -> None:
     self.gamma = gamma
