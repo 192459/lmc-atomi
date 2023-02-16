@@ -22,12 +22,12 @@ from jax import grad, jit
 import jax.numpy as jnp
 import jax.scipy as jsp
 
-import aesara
-import aemcmc
-import aehmc
+# import aesara
+# import aemcmc
+# import aehmc
 
 
-class generateGaussianMixture:
+class GaussianMixtureSampling:
   def __init__(self, lamda, positions, sigma) -> None:
     self.lamda = lamda 
     self.positions = positions
@@ -41,6 +41,25 @@ class generateGaussianMixture:
     choose_key, sample_key = jax.random.split(rng_key)
     samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma)
     return jax.random.choice(choose_key, samples)
+
+  def sampling(self, seed, xmin, ymin, xmax, ymax, nbins):
+    rng_key = jax.random.PRNGKey(seed)
+    samples = jax.vmap(self.sample_fn)(jax.random.split(rng_key, 10_000))
+
+    x, y = samples[:, 0], samples[:, 1]
+    xx, yy = np.mgrid[xmin:xmax:nbins, ymin:ymax:nbins]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+
+    fig, ax = plt.subplots()
+    cfset = ax.contourf(xx, yy, f, cmap='Blues')
+    ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
+    cset = ax.contour(xx, yy, f, colors='k')
+
+    plt.rcParams['axes.titlepad'] = 15.
+    plt.title("Samples from a mixture of 25 normal distributions")
     
 
 class Langevin:
@@ -66,7 +85,12 @@ class HMC:
 
 
 if __name__ == '__main__':
-  lmbda = 1/25
+  lamda = 1/25
   positions = [-4, -2, 0, 2, 4]
+  sigma = 0.03
+  xmin, ymin = -5, -5
+  xmax, ymax = 5, 5
+  nbins = 300j
+  GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
   fire.Fire(Langevin())
