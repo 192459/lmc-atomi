@@ -151,7 +151,7 @@ if __name__ == '__main__':
   nbins = 300j
   GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
-  SGLD().sampling(3, 50000)
+  SGLD(lamda, positions, sigma).sampling(3, 50000)
 
   # cyclicalSGLD().sampling()
 
