@@ -20,6 +20,8 @@ import aesara
 import aemcmc
 import aehmc
 
+from fastprogress import progress_bar
+
 import fire
 
 
@@ -33,6 +35,10 @@ class Langevin:
 
     return 
 
+
+class cyclicalSGLD:
+    def __init__(self, gamma) -> None:
+      self.gamma = gamma
 
 
 class HMC:
