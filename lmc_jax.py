@@ -27,9 +27,6 @@ import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
 
-# import aesara
-# import aemcmc
-# import aehmc
 
 
 class GaussianMixtureSampling:
