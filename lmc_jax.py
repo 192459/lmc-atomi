@@ -86,7 +86,7 @@ class SGLD:
     schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
 
     grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
-    sgld = blackjax.sgld(grad_fn)
+    sgld = blackjax.sgld(grad_fn, schedule[0])
 
     rng_key = jax.random.PRNGKey(seed)
     init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
