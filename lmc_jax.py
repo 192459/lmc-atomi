@@ -60,6 +60,7 @@ class GaussianMixtureSampling:
 
     plt.rcParams['axes.titlepad'] = 15.
     plt.title("Samples from a mixture of 25 normal distributions")
+    plt.show()
     
 
 class Langevin:
@@ -93,4 +94,4 @@ if __name__ == '__main__':
   nbins = 300j
   GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
-  fire.Fire(Langevin())
+  # fire.Fire(Langevin())
