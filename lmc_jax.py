@@ -60,7 +60,10 @@ class GaussianMixtureSampling:
 
     plt.rcParams['axes.titlepad'] = 15.
     plt.title("Samples from a mixture of 25 normal distributions")
-    plt.show()
+
+    plt.show(block=False)
+    plt.pause(3)
+    plt.close()
     
 
 class Langevin:
