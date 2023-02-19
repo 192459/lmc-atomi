@@ -145,8 +145,17 @@ class Langevin:
         return 
 
 
+class Prox:
+    def __init__(self, gamma) -> None:
+        self.gamma = gamma
 
-class HMC:
+
+    def sampling(self):
+        
+        return 
+
+
+class MYULA:
     def __init__(self, gamma) -> None:
         self.gamma = gamma
 
