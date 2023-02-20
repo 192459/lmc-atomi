@@ -38,6 +38,7 @@ import jax
 from jax import grad, jit
 import jax.numpy as jnp
 import jax.scipy as jsp
+import jax.scipy.stats as stats
 
 import blackjax
 import optax
@@ -53,7 +54,7 @@ class GaussianMixtureSampling:
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
-        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+        return self.lamda * jsp.special.logsumexp(stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
     def sample_fn(self, rng_key):
         choose_key, sample_key = jax.random.split(rng_key)
