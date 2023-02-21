@@ -42,16 +42,7 @@ plt.style.use(['science', 'grid'])
 
 def multivariate_gaussian(pos, mu, Sigma):
     """Return the multivariate Gaussian distribution on array pos."""
-
-    n = mu.shape[0]
-    Sigma_det = jnp.linalg.det(Sigma)
-    Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
-    # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
-    # way across all the input variables.
-    fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-
-    return jnp.exp(-fac / 2) / N
+    return stats.multivariate_normal.pdf(pos, mu, Sigma)
 
 
 def density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas): 
