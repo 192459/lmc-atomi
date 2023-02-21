@@ -34,6 +34,7 @@ import seaborn as sns
 
 import fire 
 
+import scienceplots
 plt.style.use(['science', 'grid'])
 
 
