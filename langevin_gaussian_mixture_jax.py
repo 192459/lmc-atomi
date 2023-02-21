@@ -29,19 +29,18 @@ import numpy as np
 from numpy.random import default_rng
 rng = default_rng()
 
-import matplotlib.pyplot as plt
 from scipy.linalg import sqrtm
+from scipy.stats import kde
 
+import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
-from scipy.stats import kde
 import seaborn as sns
-
-import fire 
-
 import scienceplots
 plt.style.use(['science', 'grid'])
+
+import fire 
 
 
 def multivariate_gaussian(pos, mu, Sigma):
