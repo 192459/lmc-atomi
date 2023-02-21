@@ -23,6 +23,8 @@ from fastprogress import progress_bar
 from typing import NamedTuple
 import fire
 
+import random
+
 import jax
 from jax import grad, jit
 import jax.numpy as jnp
@@ -139,7 +141,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
         alpha = min(1, p)
-        if jax.random.uniform() <= alpha:
+        if random.random() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
     return jnp.array(theta), len(theta)
