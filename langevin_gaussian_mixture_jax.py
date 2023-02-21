@@ -118,7 +118,7 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
 ## Unadjusted Langevin Algorithm (ULA)
 def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     key = jax.random.PRNGKey(seed)
-    theta0 = jax.random.normal(key, (d))
+    theta0 = jax.random.normal(key, (d, 1))
     theta = []
     for _ in range(n):
         xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
@@ -141,7 +141,7 @@ def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
 
 def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     key = jax.random.PRNGKey(seed)
-    theta0 = jax.random.normal(key, (d))
+    theta0 = jax.random.normal(key, (d, 1))
     theta = []
     for _ in range(n):
         xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
@@ -168,7 +168,7 @@ def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M):
 
 def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
     key = jax.random.PRNGKey(seed)
-    theta0 = jax.random.normal(key, (d))
+    theta0 = jax.random.normal(key, (d, 1))
     theta = []
     for _ in range(n):
         xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
@@ -181,7 +181,7 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 # Preconditioning with inverse Hessian
 def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     key = jax.random.PRNGKey(seed)
-    theta0 = jax.random.normal(key, (d))
+    theta0 = jax.random.normal(key, (d, 1))
     theta = []    
     for _ in range(n):
         xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
@@ -205,7 +205,7 @@ def grad_conjugate_mirror_hyp(theta, beta):
 
 def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
     key = jax.random.PRNGKey(seed)
-    theta0 = jax.random.normal(key, (d))
+    theta0 = jax.random.normal(key, (d, 1))
     theta = []
     for _ in range(n):
         xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
