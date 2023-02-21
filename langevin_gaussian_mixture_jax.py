@@ -30,7 +30,7 @@ from jax import grad, jit
 import jax.numpy as jnp
 import jax.scipy as jsp
 import jax.scipy.stats as stats
-from jax.scipy.linalg import sqrtm
+
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -41,6 +41,12 @@ import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 
+if jax.lib.xla_bridge.get_backend().platform == "cpu":
+    from jax.scipy.linalg import sqrtm
+else:
+    def sqrtm(x):
+        u, s, vh = jnp.linalg.svd(x)
+        return (u * s**.5) @ vh
 
 def multivariate_gaussian(pos, mu, Sigma):
     """Return the multivariate Gaussian distribution on array pos."""
