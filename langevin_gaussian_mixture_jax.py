@@ -139,7 +139,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
         alpha = min(1, p)
-        if jnp.random.uniform() <= alpha:
+        if jax.random.uniform() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
     return jnp.array(theta), len(theta)
