@@ -29,15 +29,15 @@ import numpy as np
 from numpy.random import default_rng
 rng = default_rng()
 
-from scipy.linalg import sqrtm
-from scipy.stats import kde
+from jax.scipy.linalg import sqrtm
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
-# import scienceplots
+
+import scienceplots
 plt.style.use(['science', 'grid'])
 
 import fire 
