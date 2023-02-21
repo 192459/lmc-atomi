@@ -28,11 +28,6 @@ from jax import grad, jit
 import jax.numpy as jnp
 import jax.scipy as jsp
 import jax.scipy.stats as stats
-
-import numpy as np
-from numpy.random import default_rng
-rng = default_rng()
-
 from jax.scipy.linalg import sqrtm
 
 import matplotlib.pyplot as plt
@@ -102,7 +97,7 @@ def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = jnp.linalg.det(Sigma)
     Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*np.pi)**n * np.abs(Sigma_det))
+    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
     fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
     return -.5 * jnp.exp(-fac / 2) / N * Sigma_inv @ (pos - mu)
 
@@ -122,9 +117,9 @@ def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = jnp.linalg.det(Sigma)
     Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*jnp.pi)**n * np.abs(Sigma_det))
+    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
     fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-    return -.5 * jnp.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv)
+    return -.5 * jnp.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ jnp.outer(pos - mu, pos - mu) @ Sigma_inv)
 
 
 def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -147,12 +142,12 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
 
 ## Unadjusted Langevin Algorithm (ULA)
 def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-    jnp.random.seed(seed)
-    theta0 = jnp.random.normal(0, 1, d)
+    key = jax.random.PRNGKey(seed)
+    theta0 = jnp.random.normal(key, d)
     theta = []
     for _ in range(n):
-        xi = rng.multivariate_normal(jnp.zeros(d), jnp.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
+        xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
+        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
         theta.append(theta_new)    
         theta0 = theta_new
     return jnp.array(theta)
@@ -170,12 +165,12 @@ def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
 
 
 def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-    jnp.random.seed(seed)
-    theta0 = jnp.random.normal(0, 1, d)
+    key = jax.random.PRNGKey(seed)
+    theta0 = jnp.random.normal(key, d)
     theta = []
     for _ in range(n):
-        xi = rng.multivariate_normal(jnp.zeros(d), jnp.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
+        xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
+        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
         alpha = min(1, p)
         if jnp.random.uniform() <= alpha:
@@ -197,12 +192,12 @@ def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M):
 
 
 def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
-    jnp.random.seed(seed)
-    theta0 = jnp.random.normal(0, 1, d)
+    key = jax.random.PRNGKey(seed)
+    theta0 = jnp.random.normal(key, d)
     theta = []
     for _ in range(n):
-        xi = rng.multivariate_normal(jnp.zeros(d), jnp.eye(d))
-        theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+        xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
+        theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + jnp.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
         theta0 = theta_new
     return jnp.array(theta)
@@ -210,11 +205,11 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 
 # Preconditioning with inverse Hessian
 def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-    jnp.random.seed(seed)
-    theta0 = jnp.random.normal(0, 1, d)
+    key = jax.random.PRNGKey(seed)
+    theta0 = jnp.random.normal(key, d)
     theta = []    
     for _ in range(n):
-        xi = rng.multivariate_normal(jnp.zeros(d), jnp.eye(d))
+        xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
         hess = hess_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas)
         # e, _ = np.linalg.eig(hess)
         # M = hess + np.abs(min(e)) * np.eye(hess.shape[0])
@@ -234,11 +229,11 @@ def grad_conjugate_mirror_hyp(theta, beta):
     return beta * jnp.sinh(theta)
 
 def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
-    jnp.random.seed(seed)
-    theta0 = jnp.random.normal(0, 1, d)
+    key = jax.random.PRNGKey(seed)
+    theta0 = jnp.random.normal(key, d)
     theta = []
     for _ in range(n):
-        xi = rng.multivariate_normal(jnp.zeros(d), jnp.eye(d))
+        xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
         theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas) + jnp.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
         theta.append(theta_new)    
