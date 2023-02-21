@@ -45,6 +45,8 @@ import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
 
+import scienceplots
+plt.style.use(['science', 'grid'])
 
 class GaussianMixtureSampling:
     def __init__(self, lamda, positions, sigma) -> None:
