@@ -24,15 +24,11 @@ from typing import NamedTuple
 import fire
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
-from scipy.linalg import sqrtm
 
-import ProxNest
-import ProxNest.utils as utils
-import ProxNest.sampling as sampling
-import ProxNest.optimisations as optimisations
-import ProxNest.operators as operators
+import matplotlib.pyplot as plt
+import scienceplots
+plt.style.use(['science', 'grid'])
 
 import jax
 from jax import grad, jit
@@ -45,8 +41,11 @@ import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
 
-import scienceplots
-plt.style.use(['science', 'grid'])
+import ProxNest
+import ProxNest.utils as utils
+import ProxNest.sampling as sampling
+import ProxNest.optimisations as optimisations
+import ProxNest.operators as operators
 
 
 class GaussianMixtureSampling:
