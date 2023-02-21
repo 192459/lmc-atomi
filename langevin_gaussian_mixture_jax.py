@@ -37,7 +37,7 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
-import scienceplots
+# import scienceplots
 plt.style.use(['science', 'grid'])
 
 import fire 
