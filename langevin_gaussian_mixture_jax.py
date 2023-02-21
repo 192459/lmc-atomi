@@ -18,6 +18,10 @@
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
 import os
+import itertools
+from fastprogress import progress_bar
+from typing import NamedTuple
+import fire
 
 import jax
 from jax import grad, jit
@@ -39,8 +43,6 @@ import seaborn as sns
 
 import scienceplots
 plt.style.use(['science', 'grid'])
-
-import fire 
 
 
 def multivariate_gaussian(pos, mu, Sigma):
