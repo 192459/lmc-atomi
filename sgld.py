@@ -14,7 +14,7 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire ProxNest jax blackjax optax
 
-# Usage: python lmc_jax.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
+# Usage: python sgld.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
 import os

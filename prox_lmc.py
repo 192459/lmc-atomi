@@ -14,7 +14,7 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python langevin_gaussian_mixture.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
+# Usage: python prox_lmc.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
 import os
@@ -65,6 +65,11 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
+def prior(theta):
+
+    return 
+
+
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
@@ -110,8 +115,8 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
     return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-## Unadjusted Langevin Algorithm (ULA)
-def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+## Proximal Unadjusted Langevin Algorithm (PULA)
+def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
