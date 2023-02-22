@@ -24,6 +24,7 @@ from typing import NamedTuple
 import fire
 
 import random
+import numpy as np
 
 import jax
 from jax import grad, jit
@@ -299,9 +300,13 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
 
     # Pack X and Y into a single 3-dimensional array
-    pos = jnp.empty(X.shape + (2,))
-    pos = pos.at[:, :, 0].set(X)
-    pos = pos.at[:, :, 1].set(Y)
+    # pos = jnp.empty(X.shape + (2,))
+    # pos = pos.at[:, :, 0].set(X)
+    # pos = pos.at[:, :, 1].set(Y)
+    pos = np.empty(X.shape + (2,))
+    pos[:, :, 0] = X
+    pos[:, :, 1] = Y
+    pos = jnp.array(pos)
 
 
     # The distribution on the variables X, Y packed into pos.
