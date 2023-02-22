@@ -462,8 +462,8 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     axes[1,2].set_title("MLA")
 
     plt.show(block=False)
-    plt.pause(5)
-    plt.close()
+    # plt.pause(5)
+    # plt.close()
     fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
 
 
