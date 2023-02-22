@@ -353,7 +353,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
 
 
-    print("Sampling with ULA: ")
+    print("Sampling with ULA: \n")
     Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
     # Plot of samples from the Langevin algorithm
     # plot_hist2d(Z2, "Unadjusted Langevin Algorithm")
@@ -369,9 +369,9 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z2))
 
 
-    print("Sampling with MALA: ")
+    print("Sampling with MALA: \n")
     Z3, eff_K = mala_gaussian_mixture(gamma_mala, mus, Sigmas, lambdas, n=K)
-    print('MALA acceptance rate:', eff_K / K)
+    print(f'MALA acceptance rate: {eff_K / K} \n')
     # Plot of samples from the MALA algorithm
     # plot_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
     # plot_contour_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
@@ -385,7 +385,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z3))
 
 
-    print("Sampling with Preconditioned Langevin Algorithm: ")
+    print("Sampling with Preconditioned Langevin Algorithm: \n")
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, lambdas, M, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
@@ -416,7 +416,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z5))
 
 
-    print("Sampling with MLA: ")
+    print("Sampling with MLA: \n")
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     Z6 = mla_gaussian_mixture(gamma_mla, mus, Sigmas, lambdas, beta, n=K)
