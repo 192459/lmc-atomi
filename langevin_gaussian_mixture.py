@@ -317,6 +317,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
 
     # The distribution on the variables X, Y packed into pos.
+    print("Constructing the true 2D Gaussian mixture density. ")
     Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
 
@@ -352,6 +353,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
 
 
+    print("Sampling with ULA: ")
     Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
     # Plot of samples from the Langevin algorithm
     # plot_hist2d(Z2, "Unadjusted Langevin Algorithm")
@@ -367,6 +369,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z2))
 
 
+    print("Sampling with MALA: ")
     Z3, eff_K = mala_gaussian_mixture(gamma_mala, mus, Sigmas, lambdas, n=K)
     print('MALA acceptance rate:', eff_K / K)
     # Plot of samples from the MALA algorithm
@@ -382,6 +385,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z3))
 
 
+    print("Sampling with Preconditioned Langevin Algorithm: ")
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, lambdas, M, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
@@ -397,6 +401,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z4))
 
 
+    print("Sampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm: ")
     Z5 = hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula, mus, Sigmas, lambdas, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
     # plot_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
@@ -411,6 +416,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z5))
 
 
+    print("Sampling with MLA: ")
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     Z6 = mla_gaussian_mixture(gamma_mla, mus, Sigmas, lambdas, beta, n=K)
