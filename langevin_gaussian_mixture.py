@@ -18,21 +18,24 @@
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
 import os
+import itertools
+from fastprogress import progress_bar
+from typing import NamedTuple
+import fire
 
+import random
 import numpy as np
 from numpy.random import default_rng
 rng = default_rng()
 
 import matplotlib.pyplot as plt
-from scipy.linalg import sqrtm
-
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
-from scipy.stats import kde
 import seaborn as sns
 
-import fire 
+from scipy.linalg import sqrtm
+from scipy.stats import kde
 
 import scienceplots
 plt.style.use(['science', 'grid'])
@@ -58,38 +61,9 @@ def density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return sum(den)
 
 
-'''
-def multivariate_gaussian_jnp(pos, mu, Sigma):
-    """Return the multivariate Gaussian distribution on array pos."""
-
-    n = mu.shape[0]
-    Sigma_det = jnp.linalg.det(Sigma)
-    Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
-    # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
-    # way across all the input variables.
-    fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-
-    return jnp.exp(-fac / 2) / N
-
-
-def density_2d_gaussian_mixture_jnp(theta, mus, Sigmas, lambdas): 
-    K = len(mus)
-    den = [lambdas[k] * multivariate_gaussian_jnp(theta, mus[k], Sigmas[k]) for k in range(K)]
-    return sum(den)
-'''
-
-
 def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas): 
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
-
-'''
-def potential_2d_gaussian_mixture_jnp(theta, mus, Sigmas, lambdas): 
-    return -jnp.log(density_2d_gaussian_mixture_jnp(theta, mus, Sigmas, lambdas))
-'''
-
-# grad_potential_2d_gaussian_mixture = jax.grad(potential_2d_gaussian_mixture, 0)
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
@@ -110,7 +84,6 @@ def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-# hess_potential_2d_gaussian_mixture = jax.hessian(potential_2d_gaussian_mixture, 0)
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
@@ -143,7 +116,7 @@ def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-    for _ in range(n):
+    for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
         theta.append(theta_new)    
@@ -166,7 +139,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-    for _ in range(n):
+    for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
@@ -193,7 +166,7 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-    for _ in range(n):
+    for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
@@ -206,7 +179,7 @@ def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []    
-    for _ in range(n):
+    for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         hess = hess_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas)
         # e, _ = np.linalg.eig(hess)
@@ -230,7 +203,7 @@ def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0)
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
-    for _ in range(n):
+    for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
