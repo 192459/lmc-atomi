@@ -461,7 +461,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("MLA")
 
-    plt.show(block=False)
+    plt.show()
     # plt.pause(5)
     # plt.close()
     fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
