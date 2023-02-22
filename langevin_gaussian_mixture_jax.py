@@ -63,9 +63,9 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -jnp.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
-grad_potential_2d_gaussian_mixture = jax.grad(potential_2d_gaussian_mixture, 0)
+# grad_potential_2d_gaussian_mixture = jax.grad(potential_2d_gaussian_mixture, 0)
 
-'''
+# '''
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = jnp.linalg.det(Sigma)
@@ -83,11 +83,11 @@ def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 
 def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
-'''
+# '''
 
-hess_potential_2d_gaussian_mixture = jax.hessian(potential_2d_gaussian_mixture, 0)
+# hess_potential_2d_gaussian_mixture = jax.hessian(potential_2d_gaussian_mixture, 0)
 
-'''
+# '''
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = jnp.linalg.det(Sigma)
@@ -108,9 +108,9 @@ def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     grad_density = grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     return jnp.outer(grad_density, grad_density) / density**2 - hess_density / density
-'''
+# '''
 
-@jax.jit
+# @jax.jit
 def gd_update(theta, mus, Sigmas, lambdas, gamma): 
     return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
@@ -155,7 +155,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
 
 
 ## Preconditioned ULA 
-@jax.jit
+# @jax.jit
 def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M): 
     return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
