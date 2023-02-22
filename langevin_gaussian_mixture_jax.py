@@ -155,6 +155,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
 
 
 ## Preconditioned ULA 
+@jax.jit
 def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M): 
     return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
