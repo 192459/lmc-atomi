@@ -27,6 +27,7 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import scienceplots
 plt.style.use(['science', 'grid'])
 
@@ -75,8 +76,8 @@ class GaussianMixtureSampling:
         f = np.reshape(kernel(positions).T, xx.shape)
 
         fig, ax = plt.subplots()
-        cfset = ax.contourf(xx, yy, f, cmap='Blues')
-        ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
+        cfset = ax.contourf(xx, yy, f, cmap=cm.viridis)
+        ax.imshow(np.rot90(f), cmap=cm.viridis, extent=[xmin, xmax, ymin, ymax])
         cset = ax.contour(xx, yy, f, colors='k')
 
         plt.rcParams['axes.titlepad'] = 15.
