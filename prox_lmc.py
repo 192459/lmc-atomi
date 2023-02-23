@@ -38,7 +38,7 @@ plt.style.use(['science', 'grid'])
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde
-import scipy.integrate as quad, dblquad
+from scipy.integrate import quad, dblquad
 
 import ProxNest
 import ProxNest.utils as utils
@@ -70,8 +70,9 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
-def prior(theta, lamda):
-    return np.exp(-lamda * np.linalg.norm(theta, axis=-1)) / quad(lambda theta: np.exp(-lamda * np.linalg.norm(theta, axis=-1)), -np.inf, np.inf)[0]
+def prior(theta, lamda):    
+    n = theta.shape[0]
+    return (lamda/2)**n * np.exp(-lamda * np.linalg.norm(theta, axis=-1))
 
 
 def grad_density_multivariate_gaussian(theta, mu, Sigma):
@@ -121,6 +122,7 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
 
 ## Proximal Unadjusted Langevin Algorithm (PULA)
 def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+    print("\nSampling with PULA... ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
@@ -143,7 +145,8 @@ def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
     return density_ratio * q_ratio
 
 
-def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+def prox_mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+    print("\nSampling with Proximal MALA... ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
@@ -164,6 +167,7 @@ def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M):
 
 
 def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
+    print("\nSampling with Preconditioned Langevin Algorithm: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
@@ -177,6 +181,7 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 
 # Preconditioning with inverse Hessian
 def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+    print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []    
@@ -201,6 +206,7 @@ def grad_conjugate_mirror_hyp(theta, beta):
     return beta * np.sinh(theta)
 
 def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
+    print("\nSampling with Proximal MLA: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
@@ -219,6 +225,7 @@ def cyclical_gd_update(theta, mus, Sigmas, lambdas, gamma):
 
 
 def cyclical_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+    print("\nSampling with Cyclical ULA: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
@@ -277,7 +284,7 @@ def plot_contour_hist2d(z, title, bins=50):
 
 
 ## Main function
-def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
+def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, lamda=.01, n=2, K=5000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
     X = np.linspace(-8, 8, N)
@@ -317,7 +324,6 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # weight vector
     lambdas = np.ones(n) / n
-    lamda = 0.
 
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))
@@ -326,8 +332,8 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # The distribution on the variables X, Y packed into pos.
     
-    # Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) * prior(pos, lamda)
-    Z = prior(pos, lamda)
+    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) * prior(pos, lamda)
+    # Z = prior(pos, lamda)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
     # print(Z.shape)
 
