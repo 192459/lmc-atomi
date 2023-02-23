@@ -46,16 +46,15 @@ import ProxNest.optimisations as optimisations
 import ProxNest.operators as operators
 
 
-def multivariate_gaussian(pos, mu, Sigma):
-    """Return the multivariate Gaussian distribution on array pos."""
-
+def multivariate_gaussian(theta, mu, Sigma):
+    """Return the multivariate Gaussian distribution on array theta."""
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
+    # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
     # way across all the input variables.
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+    fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
 
     return np.exp(-fac / 2) / N
 
@@ -70,18 +69,17 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
-def prior(theta):
+def neg_log_prior(theta, lamda):
+    return -np.log(lamda * np.abs(theta).sum())
 
-    return 
 
-
-def grad_density_multivariate_gaussian(pos, mu, Sigma):
+def grad_density_multivariate_gaussian(theta, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
-    return -.5 * np.exp(-fac / 2) / N * Sigma_inv @ (pos - mu)
+    fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
+    return -.5 * np.exp(-fac / 2) / N * Sigma_inv @ (theta - mu)
 
 
 def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -94,13 +92,13 @@ def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-def hess_density_multivariate_gaussian(pos, mu, Sigma):
+def hess_density_multivariate_gaussian(theta, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-    return -.5 * np.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv)
+    fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
+    return -.5 * np.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv)
 
 
 def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -153,7 +151,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
         alpha = min(1, p)
-        if np.random.uniform() <= alpha:
+        if random.random() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
     return np.array(theta), len(theta)
@@ -318,16 +316,17 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # weight vector
     lambdas = np.ones(n) / n
-
+    lamda = 1.
 
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
 
-
+    print(pos.shape)
     # The distribution on the variables X, Y packed into pos.
-    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)
+    
+    Z = np.exp(-potential_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) - neg_log_prior(pos, lamda))
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
 
 
@@ -362,7 +361,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
 
 
-    Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
+    Z2 = prox_ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
     # Plot of samples from the Langevin algorithm
     # plot_hist2d(Z2, "Unadjusted Langevin Algorithm")
     # plot_contour_hist2d(Z2, "Unadjusted Langevin Algorithm (ULA)")
