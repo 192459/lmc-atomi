@@ -33,12 +33,17 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
+import scienceplots
+plt.style.use(['science', 'grid'])
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde
 
-import scienceplots
-plt.style.use(['science', 'grid'])
+import ProxNest
+import ProxNest.utils as utils
+import ProxNest.sampling as sampling
+import ProxNest.optimisations as optimisations
+import ProxNest.operators as operators
 
 
 def multivariate_gaussian(pos, mu, Sigma):
