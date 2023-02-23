@@ -383,7 +383,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z2))
 
 
-    Z3, eff_K = mala_gaussian_mixture(gamma_mala, mus, Sigmas, lambdas, n=K)
+    Z3, eff_K = prox_mala_gaussian_mixture(gamma_mala, mus, Sigmas, lambdas, n=K)
     print('MALA acceptance rate:', eff_K / K)
     # Plot of samples from the MALA algorithm
     # plot_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
