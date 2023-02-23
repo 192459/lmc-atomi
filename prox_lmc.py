@@ -38,6 +38,7 @@ plt.style.use(['science', 'grid'])
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde
+import scipy.integrate as quad, dblquad
 
 import ProxNest
 import ProxNest.utils as utils
@@ -69,8 +70,8 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
-def neg_log_prior(theta, lamda):
-    return -np.log(lamda * np.abs(theta).sum())
+def prior(theta, lamda):
+    return np.exp(-lamda * np.linalg.norm(theta, axis=-1)) / quad(lambda theta: np.exp(-lamda * np.linalg.norm(theta, axis=-1)), -np.inf, np.inf)[0]
 
 
 def grad_density_multivariate_gaussian(theta, mu, Sigma):
@@ -279,21 +280,21 @@ def plot_contour_hist2d(z, title, bins=50):
 def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
-    X = np.linspace(-5, 5, N)
-    Y = np.linspace(-5, 5, N)
+    X = np.linspace(-8, 8, N)
+    Y = np.linspace(-8, 8, N)
     X, Y = np.meshgrid(X, Y)
 
 
     # Mean vectors and covariance matrices
-    mu1 = np.array([0., 0.])
+    mu1 = np.array([3., 3.])
     Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
-    mu2 = np.array([-2., 3.])
+    mu2 = np.array([-4., 6.])
     Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
-    mu3 = np.array([2., -3.])
+    mu3 = np.array([4., -6.])
     Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
-    mu4 = np.array([3., 3.])
+    mu4 = np.array([5., 5.])
     Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
-    mu5 = np.array([-2., -2.])
+    mu5 = np.array([-4., -4.])
     Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
 
 
@@ -316,19 +317,19 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # weight vector
     lambdas = np.ones(n) / n
-    lamda = 1.
+    lamda = 0.
 
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
 
-    print(pos.shape)
     # The distribution on the variables X, Y packed into pos.
     
-    Z = np.exp(-potential_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) - neg_log_prior(pos, lamda))
+    # Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) * prior(pos, lamda)
+    Z = prior(pos, lamda)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
-
+    # print(Z.shape)
 
     ## Plot of the true Gaussian mixture
     fig = plt.figure(figsize=(10, 5))
@@ -356,9 +357,9 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # plt.suptitle("True 2D Gaussian Mixture") 
     plt.show(block=False)
-    plt.pause(5)
+    plt.pause(10)
     plt.close()
-    fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
 
 
     Z2 = prox_ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
@@ -461,7 +462,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
 
 
 
