@@ -123,6 +123,7 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
 ## Proximal Unadjusted Langevin Algorithm (PULA)
 def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with PULA... ")
+    proxH = lambda x, T : ProxNest.operators.proximal_operators.l1_projection(x, T, delta, Psi=psi)
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
     theta = []
