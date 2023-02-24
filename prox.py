@@ -106,7 +106,8 @@ def prox_gen_inv_gaussian(x, omega, kappa, rho):
 
 
 def prox_pearson_I(x, kappa1, kappa2, omega1, omega2):
-    f = lambda y: y**3 - (omega1 + omega2 + x) * y**2 + (omega1*omega2 - kappa1 - kappa2 + (omega1 + omega2)*x)*y - omega1*omega2*x + omega1*kappa2 + omega2*kappa1
+    f = lambda y: y**3 - (omega1 + omega2 + x) * y**2 + (omega1*omega2 - kappa1 - kappa2 + (omega1 + omega2)*x)*y \
+        - omega1*omega2*x + omega1*kappa2 + omega2*kappa1
     res = minimize_scalar(f, bounds=(omega1, omega2), method='bounded')
     return res.x
 
