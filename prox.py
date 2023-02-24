@@ -18,6 +18,7 @@ import random
 
 import numpy as np
 from scipy.linalg import sqrtm
+from scipy.optimize import minimize_scalar
 
 import ProxNest
 import ProxNest.utils as utils
@@ -93,5 +94,20 @@ def prox_triangular(x, omega1, omega2):
 
 
 def prox_weibull(x, omega, kappa, p):
+    f = lambda y: p * omega * y**p + y**2 - x * y - kappa
+    res = minimize_scalar(f, bounds=(0, np.inf), method='bounded')
+    return res.x
 
-    return 
+
+def prox_gen_inv_gaussian(x, omega, kappa, rho):
+    f = lambda y: y**3 + (omega - x) * y**2 - kappa * y - rho
+    res = minimize_scalar(f, bounds=(0, np.inf), method='bounded')
+    return res.x
+
+
+def prox_pearson_I(x, kappa1, kappa2, omega1, omega2):
+    f = lambda y: y**3 - (omega1 + omega2 + x) * y**2 + (omega1*omega2 - kappa1 - kappa2 + (omega1 + omega2)*x)*y 
+        - omega1*omega2*x + omega1*kappa2 + omega2*kappa1
+    res = minimize_scalar(f, bounds=(omega1, omega2), method='bounded')
+    return res.x
+
