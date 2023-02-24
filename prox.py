@@ -26,6 +26,8 @@ import ProxNest.sampling as sampling
 import ProxNest.optimisations as optimisations
 import ProxNest.operators as operators
 
+import prox_tv as ptv
+
 
 def prox_laplace(x, gamma): 
     return np.sign(x) * np.maximum(np.abs(x) - gamma, 0)
@@ -110,4 +112,9 @@ def prox_pearson_I(x, kappa1, kappa2, omega1, omega2):
         - omega1*omega2*x + omega1*kappa2 + omega2*kappa1
     res = minimize_scalar(f, bounds=(omega1, omega2), method='bounded')
     return res.x
+
+
+def prox_tv(x, gamma):
+
+    return 
 
