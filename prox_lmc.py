@@ -40,11 +40,7 @@ from scipy.linalg import sqrtm
 from scipy.stats import kde
 from scipy.integrate import quad, dblquad
 
-import ProxNest
-import ProxNest.utils as utils
-import ProxNest.sampling as sampling
-import ProxNest.optimisations as optimisations
-import ProxNest.operators as operators
+from prox import *
 
 
 def multivariate_gaussian(theta, mu, Sigma):
