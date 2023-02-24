@@ -72,7 +72,7 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 
 def prior(theta, lamda):    
     n = theta.shape[0]
-    return (lamda/2)**n * np.exp(-lamda * np.linalg.norm(theta, axis=-1))
+    return np.exp(-lamda * np.linalg.norm(theta, axis=-1))
 
 
 def grad_density_multivariate_gaussian(theta, mu, Sigma):
@@ -166,7 +166,7 @@ def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M):
     return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
+def prox_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
     print("\nSampling with Preconditioned Langevin Algorithm: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
@@ -180,7 +180,7 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 
 
 # Preconditioning with inverse Hessian
-def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+def prox_hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
@@ -205,7 +205,7 @@ def grad_mirror_hyp(theta, beta):
 def grad_conjugate_mirror_hyp(theta, beta):
     return beta * np.sinh(theta)
 
-def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
+def prox_mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
     print("\nSampling with Proximal MLA: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
@@ -224,7 +224,7 @@ def cyclical_gd_update(theta, mus, Sigmas, lambdas, gamma):
     return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-def cyclical_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
+def prox_cyclical_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with Cyclical ULA: ")
     np.random.seed(seed)
     theta0 = np.random.normal(0, 1, d)
@@ -362,10 +362,11 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # ax2.set_ylabel(r'$x_2$')
 
     # plt.suptitle("True 2D Gaussian Mixture") 
-    plt.show(block=False)
-    plt.pause(10)
-    plt.close()
-    fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
+    plt.show()
+    # plt.show(block=False)
+    # plt.pause(10)
+    # plt.close()
+    # fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
 
 
     Z2 = prox_ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
@@ -399,7 +400,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, lambdas, M, n=K)
+    Z4 = prox_preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, lambdas, M, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
     # plot_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
     # plot_contour_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
@@ -413,7 +414,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     # print(error(Z4))
 
 
-    Z5 = hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula, mus, Sigmas, lambdas, n=K)
+    Z5 = prox_hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula, mus, Sigmas, lambdas, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
     # plot_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
     # plot_contour_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
@@ -429,7 +430,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    Z6 = mla_gaussian_mixture(gamma_mla, mus, Sigmas, lambdas, beta, n=K)
+    Z6 = prox_mla_gaussian_mixture(gamma_mla, mus, Sigmas, lambdas, beta, n=K)
     # Plot of samples from the preconditioned Langevin algorithm
     # plot_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
     # plot_contour_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
@@ -468,7 +469,7 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
+    # fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
 
 
 
