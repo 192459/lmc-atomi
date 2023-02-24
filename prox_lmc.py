@@ -46,6 +46,7 @@ import ProxNest.sampling as sampling
 import ProxNest.optimisations as optimisations
 import ProxNest.operators as operators
 
+import proxop
 from prox import *
 
 
