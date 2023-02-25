@@ -78,13 +78,13 @@ def prior(theta, alpha):
     return (alpha/2)**n * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
 
 
-def grad_density_multivariate_gaussian(theta, mu, Sigma):
+def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
-    return -.5 * np.exp(-fac / 2) / N * Sigma_inv @ (theta - mu)
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
+    return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
 def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -97,13 +97,13 @@ def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-def hess_density_multivariate_gaussian(theta, mu, Sigma):
+def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
-    return -.5 * np.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv)
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+    return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
 def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):

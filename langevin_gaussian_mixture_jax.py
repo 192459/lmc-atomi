@@ -68,11 +68,11 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 # '''
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
-    Sigma_det = jnp.linalg.det(Sigma)
-    Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
-    fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
-    return -.5 * jnp.exp(-fac / 2) / N * Sigma_inv @ (pos - mu)
+    Sigma_det = np.linalg.det(Sigma)
+    Sigma_inv = np.linalg.inv(Sigma)
+    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
+    return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
 def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -90,11 +90,11 @@ def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 # '''
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
-    Sigma_det = jnp.linalg.det(Sigma)
-    Sigma_inv = jnp.linalg.inv(Sigma)
-    N = jnp.sqrt((2*jnp.pi)**n * jnp.abs(Sigma_det))
-    fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-    return -.5 * jnp.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ jnp.outer(pos - mu, pos - mu) @ Sigma_inv)
+    Sigma_det = np.linalg.det(Sigma)
+    Sigma_inv = np.linalg.inv(Sigma)
+    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+    return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
 def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -107,7 +107,7 @@ def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     density = density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     grad_density = grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
-    return jnp.outer(grad_density, grad_density) / density**2 - hess_density / density
+    return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 # '''
 
 # @jax.jit

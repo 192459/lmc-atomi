@@ -71,7 +71,7 @@ def grad_density_multivariate_gaussian(pos, mu, Sigma):
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
-    return -.5 * np.exp(-fac / 2) / N * Sigma_inv @ (pos - mu)
+    return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
 def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
@@ -90,7 +90,7 @@ def hess_density_multivariate_gaussian(pos, mu, Sigma):
     Sigma_inv = np.linalg.inv(Sigma)
     N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-    return -.5 * np.exp(-fac / 2) / N * (Sigma_inv + Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv)
+    return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
 def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
