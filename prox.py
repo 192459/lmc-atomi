@@ -26,7 +26,7 @@ import ProxNest.sampling as sampling
 import ProxNest.optimisations as optimisations
 import ProxNest.operators as operators
 
-import prox_tv as ptv
+# import prox_tv as ptv
 
 
 def prox_laplace(x, gamma): 
