@@ -144,7 +144,7 @@ class cyclicalSGLD:
         pass
 
 
-class Langevin:
+class SPGLD:
     def __init__(self, lamda, positions, sigma) -> None:
         self.lamda = lamda 
         self.positions = positions
