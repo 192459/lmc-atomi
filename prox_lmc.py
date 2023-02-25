@@ -73,9 +73,9 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
 
-def prior(theta, lamda):    
+def prior(theta, alpha):    
     n = theta.shape[0]
-    return np.exp(-lamda * np.linalg.norm(theta, axis=-1))
+    return (alpha/2)**n * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
 
 
 def grad_density_multivariate_gaussian(theta, mu, Sigma):
@@ -288,7 +288,7 @@ def plot_contour_hist2d(z, title, bins=50):
 
 
 ## Main function
-def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, lamda=.01, n=2, K=5000):
+def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, alpha=.1, n=2, K=5000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
     X = np.linspace(-8, 8, N)
@@ -336,8 +336,8 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 
     # The distribution on the variables X, Y packed into pos.
     
-    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) * prior(pos, lamda)
-    # Z = prior(pos, lamda)
+    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas) * prior(pos, alpha)
+    # Z = prior(pos, alpha)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
     # print(Z.shape)
 
