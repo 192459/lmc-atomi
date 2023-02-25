@@ -178,9 +178,12 @@ def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         hess = hess_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas)
-        e = np.linalg.eigvals(hess)
-        M = hess + (np.abs(min(e)) + .02) * np.eye(d)
-        M = np.linalg.inv(M)
+        if len(mus) > 1:
+            e = np.linalg.eigvals(hess)
+            M = hess + (np.abs(min(e)) + .02) * np.eye(d)
+            M = np.linalg.inv(M)
+        else:
+            M = np.linalg.inv(hess)
         theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
         theta0 = theta_new
