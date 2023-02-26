@@ -103,16 +103,17 @@ class SGLD:
         schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
 
         grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
-        sgld = blackjax.sgld(grad_fn, schedule[0])
+        sgld = blackjax.sgld(grad_fn, schedule[0])        
 
         rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
 
         position = init_position
+        position = sgld.init(position)
         sgld_samples = []
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
-            position, _ = jax.jit(sgld)(rng_key, position, 0, schedule[i])
+            position, _ = jax.jit(sgld.step)(rng_key, position, 0, schedule[i])
             sgld_samples.append(position)
 
         fig = plt.figure()
