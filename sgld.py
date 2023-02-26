@@ -85,9 +85,9 @@ class GaussianMixtureSampling:
         plt.rcParams['axes.titlepad'] = 15.
         plt.title("Samples from a mixture of 25 normal distributions")
 
-        plt.show()
-        # plt.pause(5)
-        # plt.close()
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
 
         fig = plt.figure(figsize=(10, 5))
         ax1 = fig.add_subplot(1, 2, 1, projection='3d')
@@ -113,7 +113,9 @@ class GaussianMixtureSampling:
         # ax2.set_ylabel(r'$x_2$')
 
         # plt.suptitle("True 2D Gaussian Mixture") 
-        plt.show()
+        plt.show(block=False)
+        plt.pause(10)
+        plt.close()
         return f
 
 
@@ -158,7 +160,7 @@ class SGLD:
         # plt.show(block=False)
         # plt.pause(5)
         # plt.close()
-        return sgld_samples
+        return np.array(sgld_samples)
 
 
 class cyclicalSGLD:
