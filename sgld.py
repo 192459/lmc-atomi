@@ -301,7 +301,7 @@ class contourSGLD:
         # rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
         state = csgld.init(init_position)
-        csgld_samples, csgld_energy_idx_list = [], []
+        csgld_samples, csgld_energy_idx_list = [], jnp.array([])
 
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
@@ -313,10 +313,11 @@ class contourSGLD:
             state = jax.jit(csgld.step)(rng_key, state, data_batch, lr, stepsize_SA)
             # state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
             csgld_samples.append(state.position)
-            csgld_energy_idx_list.append(state.energy_idx)
+            # csgld_samples = jnp.append(csgld_samples, state.position)
+            csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
+        
+        csgld_samples = jnp.array(csgld_samples)
 
-        print(csgld_samples)
-        print(csgld_energy_idx_list)
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
         scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
