@@ -321,14 +321,14 @@ class contourSGLD:
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
         scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
-        csgld_re_samples = jnp.array([])
+        csgld_re_samples = []
         for _ in range(5):
             rng_key, _ = jax.random.split(rng_key)
             for my_idx in important_idx:
                 if jax.random.bernoulli(rng_key, p=scaled_energy_pdf[my_idx], shape=None) == 1:
                     samples_in_my_idx = csgld_samples[csgld_energy_idx_list == my_idx]
-                    csgld_re_samples = jnp.concatenate((csgld_re_samples, samples_in_my_idx))
-        return csgld_re_samples
+                    csgld_re_samples.extend(samples_in_my_idx)
+        return np.array(csgld_re_samples)
 
 
 class SPGLD:
