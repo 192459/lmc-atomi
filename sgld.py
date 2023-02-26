@@ -38,6 +38,7 @@ import jax.scipy as jsp
 import jax.scipy.stats as stats
 
 import blackjax
+import blackjax.sgmcmc.gradients as gradients
 import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
@@ -108,11 +109,11 @@ class SGLD:
         rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
 
-        position = sgld.init(init_position)
+        position = init_position
         sgld_samples = []
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
-            position, _ = jax.jit(sgld.step)(rng_key, position, 0, schedule[i])
+            position, _ = jax.jit(sgld)(rng_key, position, 0, schedule[i])
             sgld_samples.append(position)
 
         fig = plt.figure()
