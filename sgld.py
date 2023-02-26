@@ -77,6 +77,7 @@ class GaussianMixtureSampling:
         kernel = gaussian_kde(values)
         f = np.reshape(kernel(positions).T, xx.shape)
 
+        '''
         fig, ax = plt.subplots()
         cfset = ax.contourf(xx, yy, f, cmap=cm.viridis)
         ax.imshow(np.rot90(f), cmap=cm.viridis, extent=[xmin, xmax, ymin, ymax])
@@ -88,6 +89,7 @@ class GaussianMixtureSampling:
         plt.show(block=False)
         plt.pause(5)
         plt.close()
+        '''
 
         print("Constructing the true 2D Gaussian mixture density... ")
         fig2 = plt.figure(figsize=(10, 5))
@@ -113,7 +115,7 @@ class GaussianMixtureSampling:
         # ax2.set_xlabel(r'$x_1$')
         # ax2.set_ylabel(r'$x_2$')
 
-        # plt.suptitle("True 2D Gaussian Mixture") 
+        plt.suptitle("True 2D Gaussian Mixture") 
         plt.show(block=False)
         plt.pause(10)
         plt.close()
@@ -149,6 +151,7 @@ class SGLD:
             position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
             sgld_samples.append(position)
 
+        '''
         fig = plt.figure()
         ax = fig.add_subplot(111)
         x = [sample[0] for sample in sgld_samples]
@@ -163,6 +166,7 @@ class SGLD:
         plt.show(block=False)
         plt.pause(5)
         plt.close()
+        '''
         return np.array(sgld_samples)
 
 
