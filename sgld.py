@@ -163,6 +163,76 @@ class SGLD:
         return np.array(sgld_samples)
 
 
+class ScheduleState(NamedTuple):
+    step_size: float
+    do_sample: bool
+
+def build_schedule(
+    num_training_steps,
+    num_cycles=4,
+    initial_step_size=1e-3,
+    exploration_ratio=0.25,
+):
+    cycle_length = num_training_steps // num_cycles
+
+    def schedule_fn(step_id):
+        do_sample = False
+        if ((step_id % cycle_length)/cycle_length) >= exploration_ratio:
+            do_sample = True
+
+        cos_out = jnp.cos(jnp.pi * (step_id % cycle_length) / cycle_length) + 1
+        step_size = 0.5 * cos_out * initial_step_size
+
+        return ScheduleState(step_size, do_sample)
+
+    return schedule_fn
+
+
+class CyclicalSGMCMCState(NamedTuple):
+    """State of the Cyclical SGMCMC sampler.
+    """
+    position: PyTree
+    opt_state: OptState
+
+
+def cyclical_sgld(grad_estimator_fn, loglikelihood_fn):
+    # Initialize the SgLD step function
+    sgld = blackjax.sgld(grad_estimator_fn)
+    sgd = optax.sgd(1.)
+
+    def init_fn(position):
+        opt_state = sgd.init(position)
+        return CyclicalSGMCMCState(position, opt_state)
+
+    def step_fn(rng_key, state, minibatch, schedule_state):
+        """Cyclical SGLD kernel."""
+
+        def step_with_sgld(current_state):
+            rng_key, state, minibatch, step_size = current_state
+            new_position = sgld(rng_key, state.position, minibatch, step_size)
+            return CyclicalSGMCMCState(new_position, state.opt_state)
+
+        def step_with_sgd(current_state):
+            _, state, minibatch, step_size = current_state
+            grads = grad_estimator_fn(state.position, 0)
+            rescaled_grads = - 1. * step_size * grads
+            updates, new_opt_state = sgd.update(rescaled_grads, state.opt_state, state.position)
+            new_position = optax.apply_updates(state.position, updates)
+            return CyclicalSGMCMCState(new_position, new_opt_state)
+
+        new_state = jax.lax.cond(
+            schedule_state.do_sample,
+            step_with_sgld,
+            step_with_sgd,
+            (rng_key, state, minibatch, schedule_state.step_size)
+        )
+
+        return new_state
+
+    return init_fn, step_fn
+
+
+
 class cyclicalSGLD:
     def __init__(self, lamda, positions, sigma) -> None:
         self.lamda = lamda 
@@ -173,8 +243,25 @@ class cyclicalSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sampling(self, seed, num_training_steps):
-        pass
+    def sampling(self, seed, num_training_steps):        
+        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+
+        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+        init_state = init(init_position)
+
+        state = init_state
+        cyclical_samples = []
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            state = jax.jit(step)(rng_key, state, 0, schedule[i])
+            if schedule[i].do_sample:
+                cyclical_samples.append(state.position)
+        return np.array(cyclical_samples)
 
 
 class SPGLD:
@@ -233,7 +320,7 @@ if __name__ == '__main__':
     num_training_steps = 50000
     Z1 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    # cyclicalSGLD().sampling()
+    Z2 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     # Langevin().sampling()
 
@@ -251,6 +338,10 @@ if __name__ == '__main__':
 
     sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("SGLD")
+
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    axes[0,1].set_title("Cyclical SGLD")
+    
     
     plt.show()
 
