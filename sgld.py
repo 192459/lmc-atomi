@@ -306,11 +306,11 @@ class contourSGLD:
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
             # rng_key, subkey = jax.random.split(rng_key)
+            _, rng_key = jax.random.split(rng_key)
             stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
-
             # data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :, :]
             data_batch = X_data
-            state = jax.jit(csgld.step)(subkey, state, data_batch, lr, stepsize_SA)
+            state = jax.jit(csgld.step)(rng_key, state, data_batch, lr, stepsize_SA)
             # state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
             csgld_samples = jnp.append(csgld_samples, state.position)
             csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
@@ -323,7 +323,7 @@ class contourSGLD:
 
         csgld_re_samples = jnp.array([])
         for _ in range(5):
-            rng_key, subkey = jax.random.split(rng_key)
+            rng_key, _ = jax.random.split(rng_key)
             for my_idx in important_idx:
                 if jax.random.bernoulli(rng_key, p=scaled_energy_pdf[my_idx], shape=None) == 1:
                     samples_in_my_idx = csgld_samples[csgld_energy_idx_list == my_idx]
@@ -369,28 +369,19 @@ class MYULA:
         pass 
 
 
-def main(seed, num_training_steps):
-
-    pass    
-
-
-
-
-if __name__ == '__main__':
-    # fire.Fire(main)
-
-    lamda = 1/25
+def main(lamda=1/25, seed=0, num_training_steps=50000):
     positions = [-4, -2, 0, 2, 4]
     sigma = 0.03
     xmin, ymin = -5, -5
     xmax, ymax = 5, 5
     N = 300
     nbins = 300j
+
     X = np.linspace(-5, 5, N)
     Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
     
-    Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
+    Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
     seed = 0 
     num_training_steps = 50000
@@ -406,7 +397,7 @@ if __name__ == '__main__':
     energy_gap = 0.25
     domain_radius = 50
     n = 10000
-    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temperature, num_partitions, energy_gap, domain_radius, 0, n)
+    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temperature, num_partitions, energy_gap, domain_radius, seed, n)
 
     # Z5 = HMC().sampling()
 
@@ -434,11 +425,16 @@ if __name__ == '__main__':
     # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     # axes[1,2].set_title("MLA")
 
+    plt.show()
+ 
 
 
+
+
+if __name__ == '__main__':
+    fire.Fire(main)
 
     
-    plt.show()
 
 
 
