@@ -278,12 +278,15 @@ class contourSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
+    def logprior_fn(self):
+        return 0
+
     def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):          
         # schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
         # schedule = [schedule_fn(i) for i in range(num_training_steps)]
         data_size = 1000
 
-        logdensity_fn = gradients.logdensity_estimator(0, self.logprob_fn, data_size)
+        logdensity_fn = gradients.logdensity_estimator(self.logprior_fn, self.logprob_fn, data_size)
         csgld = blackjax.csgld(
                     logdensity_fn,
                     zeta=zeta,  # can be specified at each step in lower-level interface
