@@ -170,12 +170,7 @@ class ScheduleState(NamedTuple):
     step_size: float
     do_sample: bool
 
-def build_schedule(
-    num_training_steps,
-    num_cycles=4,
-    initial_step_size=1e-3,
-    exploration_ratio=0.25,
-):
+def build_schedule(num_training_steps, num_cycles=4, initial_step_size=1e-3, exploration_ratio=0.25):
     cycle_length = num_training_steps // num_cycles
 
     def schedule_fn(step_id):
@@ -278,10 +273,18 @@ class contourSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):          
-        # schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
-        # schedule = [schedule_fn(i) for i in range(num_training_steps)]
+    def sample_fn(self, rng_key):
+        choose_key, sample_key = jax.random.split(rng_key)
+        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma)
+        return jax.random.choice(choose_key, samples)
+
+    def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):
         data_size = 1000
+        # batch_size = 100
+
+        rng_key = jax.random.PRNGKey(seed)
+        rng_key, sample_key = jax.random.split(rng_key)
+        X_data = self.sample_fn(sample_key, data_size)
 
         logprior_fn = lambda x: 0
         logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
@@ -294,7 +297,7 @@ class contourSGLD:
                     min_energy=0,
                 )
 
-        rng_key = jax.random.PRNGKey(seed)
+        # rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
         init_state = csgld.init(init_position)
         state = init_state
@@ -380,9 +383,9 @@ if __name__ == '__main__':
 
     seed = 0 
     num_training_steps = 50000
-    Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z2 = SGLD(lamda, positions, sigma).sampling()
 
-    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling()
 
     zeta = 2
     sz = 10
