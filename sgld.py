@@ -156,10 +156,10 @@ class SGLD:
         ax.set_ylim([-8, 8])
 
         plt.axis('off')
-        plt.show()
-        # plt.show(block=False)
-        # plt.pause(5)
-        # plt.close()
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
         return np.array(sgld_samples)
 
 
