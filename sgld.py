@@ -305,7 +305,7 @@ class contourSGLD:
 
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
-            _, subkey = jax.random.split(rng_key)
+            rng_key, subkey = jax.random.split(rng_key)
             stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
 
             data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
@@ -322,7 +322,7 @@ class contourSGLD:
 
         csgld_re_samples = jnp.array([])
         for _ in range(5):
-            rng_key, _ = jax.random.split(rng_key)
+            rng_key, subkey = jax.random.split(rng_key)
             for my_idx in important_idx:
                 if jax.random.bernoulli(rng_key, p=scaled_energy_pdf[my_idx], shape=None) == 1:
                     samples_in_my_idx = csgld_samples[csgld_energy_idx_list == my_idx]
