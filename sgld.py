@@ -275,6 +275,7 @@ class contourSGLD:
 
     def sample_fn(self, rng_key, num_samples):
         _, sample_key = jax.random.split(rng_key)
+        print(self.mu.shape)
         samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, *self.mu.shape))
         return samples
 
