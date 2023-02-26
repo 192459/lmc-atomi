@@ -219,7 +219,11 @@ if __name__ == '__main__':
     sigma = 0.03
     xmin, ymin = -5, -5
     xmax, ymax = 5, 5
-    nbins = 300j
+    nbins = 300
+    X = np.linspace(-5, 5, nbins)
+    Y = np.linspace(-5, 5, nbins)
+    X, Y = np.meshgrid(X, Y)
+    
     Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
     seed = 0 
@@ -234,10 +238,7 @@ if __name__ == '__main__':
 
     # fire.Fire(Langevin())
 
-    N = 100
-    X = np.linspace(-5, 5, N)
-    Y = np.linspace(-5, 5, N)
-    X, Y = np.meshgrid(X, Y)
+    
 
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     # fig2.suptitle("True density and KDEs of samples") 
@@ -252,4 +253,3 @@ if __name__ == '__main__':
 
 
 
-    
