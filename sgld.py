@@ -109,7 +109,7 @@ class SGLD:
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
 
         position = init_position
-        position = sgld.init(position, 0)
+        position = sgld.init(position)
         sgld_samples = []
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     nbins = 300j
     GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
-    SGLD(lamda, positions, sigma).sampling(3, 50000)
+    SGLD(lamda, positions, sigma).sampling(0, 10000)
 
     # cyclicalSGLD().sampling()
 
