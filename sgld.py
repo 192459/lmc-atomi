@@ -315,8 +315,9 @@ class contourSGLD:
             csgld_samples = jnp.append(csgld_samples, state.position)
             csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
 
+        print(csgld_samples.shape)
+        print(csgld_energy_idx_list.shape)
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
-        print(jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95)))
         scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
         csgld_re_samples = jnp.array([])
