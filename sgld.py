@@ -219,9 +219,10 @@ if __name__ == '__main__':
     sigma = 0.03
     xmin, ymin = -5, -5
     xmax, ymax = 5, 5
-    nbins = 300
-    X = np.linspace(-5, 5, nbins)
-    Y = np.linspace(-5, 5, nbins)
+    N = 300
+    nbins = 300j
+    X = np.linspace(-5, 5, N)
+    Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
     
     Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
