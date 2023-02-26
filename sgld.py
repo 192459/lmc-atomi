@@ -130,7 +130,7 @@ class SGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sampling(self, seed, num_training_steps):
+    def sampling(self, seed=0, num_training_steps=50000):
         schedule_fn = lambda k: 0.05 * k ** (-0.55)
         schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
 
@@ -245,7 +245,7 @@ class cyclicalSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sampling(self, seed, num_training_steps):        
+    def sampling(self, seed=0, num_training_steps=50000):        
         schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
         schedule = [schedule_fn(i) for i in range(num_training_steps)]
 
@@ -277,7 +277,7 @@ class contourSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sampling(self, seed, num_training_steps):          
+    def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):          
         schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
         schedule = [schedule_fn(i) for i in range(num_training_steps)]
 
@@ -297,15 +297,35 @@ class contourSGLD:
         init_state = init(init_position)
 
         state = init_state
-        contour_samples = []
+        csgld_samples, csgld_energy_idx_list = jnp.array([]), jnp.array([])
 
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
+            rng_key, subkey = jax.random.split(rng_key)
+            stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
+
+            data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
+            state = jax.jit(csgld.step)(subkey, state, data_batch, lr, stepsize_SA)
+
             _, rng_key = jax.random.split(rng_key)
             state = jax.jit(step)(rng_key, state, 0, schedule[i])
             if schedule[i].do_sample:
-                contour_samples.append(state.position)
-        return np.array(contour_samples)
+                csgld_samples.append(state.position)
+
+        important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
+        scaled_energy_pdf = (
+            state.energy_pdf[important_idx] ** zeta
+            / (state.energy_pdf[important_idx] ** zeta).max()
+        )
+
+        csgld_re_samples = jnp.array([])
+        for _ in range(5):
+            rng_key, subkey = jax.random.split(rng_key)
+            for my_idx in important_idx:
+                if jax.random.bernoulli(rng_key, p=scaled_energy_pdf[my_idx], shape=None) == 1:
+                    samples_in_my_idx = csgld_samples[csgld_energy_idx_list == my_idx]
+                    csgld_re_samples = jnp.concatenate((csgld_re_samples, samples_in_my_idx))
+        return csgld_re_samples
 
 
 class SPGLD:
@@ -366,7 +386,10 @@ if __name__ == '__main__':
 
     Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    # Z4 = contourSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    # zeta = 2
+    # sz = 10
+    # lr = 1e-3
+    # Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz)
 
     # Z5 = HMC().sampling()
 
