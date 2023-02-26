@@ -109,7 +109,7 @@ class SGLD:
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
 
         position = init_position
-        position = sgld.init(position)
+        position = sgld.init(position, 0)
         sgld_samples = []
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
