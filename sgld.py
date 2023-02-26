@@ -408,7 +408,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
 
 
     
-    print("Constructing the plots of samples...")
+    print("\nConstructing the plots of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     # fig2.suptitle("True density and KDEs of samples") 
 
