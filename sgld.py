@@ -248,3 +248,8 @@ if __name__ == '__main__':
     sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("SGLD")
     
+    plt.show()
+
+
+
+    
