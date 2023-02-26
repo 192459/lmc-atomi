@@ -401,7 +401,7 @@ if __name__ == '__main__':
     sz = 10
     lr = 1e-3
     temperature = 50
-    num_partitions = 1000
+    num_partitions = 512
     energy_gap = 0.25
     domain_radius = 50
     n = 10000
