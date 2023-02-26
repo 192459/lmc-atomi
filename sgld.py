@@ -112,7 +112,7 @@ class SGLD:
         sgld_samples = []
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
-            position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
+            position, _ = jax.jit(sgld)(rng_key, position, 0, schedule[i])
             sgld_samples.append(position)
 
         fig = plt.figure()
