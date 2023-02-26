@@ -368,7 +368,15 @@ class MYULA:
         pass 
 
 
+def main(seed, num_training_steps):
+
+
+
+
+
 if __name__ == '__main__':
+    # fire.Fire(main)
+
     lamda = 1/25
     positions = [-4, -2, 0, 2, 4]
     sigma = 0.03
@@ -384,14 +392,14 @@ if __name__ == '__main__':
 
     seed = 0 
     num_training_steps = 50000
-    Z2 = SGLD(lamda, positions, sigma).sampling()
+    Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling()
+    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     zeta = 2
     sz = 10
     lr = 1e-3
-    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz)
+    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, seed=seed, num_training_steps=10000)
 
     # Z5 = HMC().sampling()
 
