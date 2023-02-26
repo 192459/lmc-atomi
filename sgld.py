@@ -143,7 +143,7 @@ class SGLD:
         position = init_position
         sgld_samples = []
 
-        print("\nSampling with SGLD: ")
+        print("\nSampling with SGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
@@ -254,7 +254,7 @@ class cyclicalSGLD:
 
         state = init_state
         cyclical_samples = []
-        print("\nSampling with Cyclical SGLD: ")
+        print("\nSampling with Cyclical SGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             state = jax.jit(step)(rng_key, state, 0, schedule[i])
@@ -303,7 +303,7 @@ class contourSGLD:
         state = csgld.init(init_position)
         csgld_samples, csgld_energy_idx_list = [], jnp.array([])
 
-        print("\nSampling with Contour SGLD: ")
+        print("\nSampling with Contour SGLD:")
         for i in progress_bar(range(num_training_steps)):
             # rng_key, subkey = jax.random.split(rng_key)
             _, rng_key = jax.random.split(rng_key)
@@ -322,7 +322,8 @@ class contourSGLD:
         scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
         csgld_re_samples = []
-        for _ in range(5):
+        print("\nResampling:")
+        for _ in progress_bar(range(5)):
             rng_key, _ = jax.random.split(rng_key)
             for my_idx in important_idx:
                 if jax.random.bernoulli(rng_key, p=scaled_energy_pdf[my_idx], shape=None) == 1:
