@@ -305,10 +305,11 @@ class contourSGLD:
 
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
-            rng_key, subkey = jax.random.split(rng_key)
+            # rng_key, subkey = jax.random.split(rng_key)
             stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
 
-            data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :, :]
+            # data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :, :]
+            data_batch = X_data
             state = jax.jit(csgld.step)(subkey, state, data_batch, lr, stepsize_SA)
             # state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
             csgld_samples = jnp.append(csgld_samples, state.position)
