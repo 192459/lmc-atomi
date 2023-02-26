@@ -89,8 +89,9 @@ class GaussianMixtureSampling:
         plt.pause(5)
         plt.close()
 
-        fig = plt.figure(figsize=(10, 5))
-        ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+        print("Constructing the true 2D Gaussian mixture density... ")
+        fig2 = plt.figure(figsize=(10, 5))
+        ax1 = fig2.add_subplot(1, 2, 1, projection='3d')
 
         ax1.plot_surface(xx, yy, f, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
         ax1.view_init(45, -70)
@@ -101,7 +102,7 @@ class GaussianMixtureSampling:
         # ax1.set_ylabel(r'$x_2$')
 
 
-        ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+        ax2 = fig2.add_subplot(1, 2, 2, projection='3d')
         ax2.contourf(xx, yy, f, zdir='z', offset=0, cmap=cm.viridis)
         ax2.view_init(90, 270)
 
@@ -141,6 +142,7 @@ class SGLD:
 
         position = init_position
         sgld_samples = []
+        print("\nSampling with SGLD: ")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
@@ -256,12 +258,54 @@ class cyclicalSGLD:
 
         state = init_state
         cyclical_samples = []
+        print("\nSampling with Cyclical SGLD: ")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             state = jax.jit(step)(rng_key, state, 0, schedule[i])
             if schedule[i].do_sample:
                 cyclical_samples.append(state.position)
         return np.array(cyclical_samples)
+
+
+class contourSGLD:
+    def __init__(self, lamda, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+
+    def sampling(self, seed, num_training_steps):          
+        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+
+        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        csgld = blackjax.csgld(
+                    self.logprob_fn,
+                    zeta=zeta,  # can be specified at each step in lower-level interface
+                    temperature=temperature,  # can be specified at each step
+                    num_partitions=num_partitions,  # cannot be specified at each step
+                    energy_gap=energy_gap,  # cannot be specified at each step
+                    min_energy=0,
+                )
+        init, step = blackjax.csgld(grad_fn, self.logprob_fn)
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+        init_state = init(init_position)
+
+        state = init_state
+        contour_samples = []
+
+        print("\nSampling with Contour SGLD: ")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            state = jax.jit(step)(rng_key, state, 0, schedule[i])
+            if schedule[i].do_sample:
+                contour_samples.append(state.position)
+        return np.array(contour_samples)
 
 
 class SPGLD:
@@ -318,15 +362,14 @@ if __name__ == '__main__':
 
     seed = 0 
     num_training_steps = 50000
-    Z1 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z2 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    # Langevin().sampling()
+    # Z4 = contourSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    # HMC().sampling()
+    # Z5 = HMC().sampling()
 
-    # fire.Fire(Langevin())
 
     
 
@@ -336,13 +379,20 @@ if __name__ == '__main__':
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density")
 
-    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("SGLD")
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
     axes[0,2].set_title("Cyclical SGLD")
     
+    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    # axes[1,0].set_title("Contour SGLD")
 
+    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    # axes[1,1].set_title("IHPULA")
+
+    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    # axes[1,2].set_title("MLA")
 
 
 
