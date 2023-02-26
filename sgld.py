@@ -142,6 +142,7 @@ class SGLD:
 
         position = init_position
         sgld_samples = []
+
         print("\nSampling with SGLD: ")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
@@ -278,39 +279,35 @@ class contourSGLD:
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
     def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):          
-        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
-        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+        # schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        # schedule = [schedule_fn(i) for i in range(num_training_steps)]
+        data_size = 1000
 
-        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        logdensity_fn = gradients.logdensity_estimator(0, self.logprob_fn, data_size)
         csgld = blackjax.csgld(
-                    self.logprob_fn,
+                    logdensity_fn,
                     zeta=zeta,  # can be specified at each step in lower-level interface
                     temperature=temperature,  # can be specified at each step
                     num_partitions=num_partitions,  # cannot be specified at each step
                     energy_gap=energy_gap,  # cannot be specified at each step
                     min_energy=0,
                 )
-        init, step = blackjax.csgld(grad_fn, self.logprob_fn)
 
         rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
-        init_state = init(init_position)
-
+        init_state = csgld.init(init_position)
         state = init_state
         csgld_samples, csgld_energy_idx_list = jnp.array([]), jnp.array([])
 
         print("\nSampling with Contour SGLD: ")
         for i in progress_bar(range(num_training_steps)):
-            rng_key, subkey = jax.random.split(rng_key)
+            _, rng_key = jax.random.split(rng_key)
             stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
 
-            data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
-            state = jax.jit(csgld.step)(subkey, state, data_batch, lr, stepsize_SA)
-
-            _, rng_key = jax.random.split(rng_key)
-            state = jax.jit(step)(rng_key, state, 0, schedule[i])
-            if schedule[i].do_sample:
-                csgld_samples.append(state.position)
+            # data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
+            state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
+            csgld_samples = jnp.append(csgld_samples, state.position)
+            csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
 
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
         scaled_energy_pdf = (
@@ -386,10 +383,10 @@ if __name__ == '__main__':
 
     Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    # zeta = 2
-    # sz = 10
-    # lr = 1e-3
-    # Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz)
+    zeta = 2
+    sz = 10
+    lr = 1e-3
+    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz)
 
     # Z5 = HMC().sampling()
 
@@ -408,8 +405,8 @@ if __name__ == '__main__':
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
     axes[0,2].set_title("Cyclical SGLD")
     
-    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    # axes[1,0].set_title("Contour SGLD")
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    axes[1,0].set_title("Contour SGLD")
 
     # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
     # axes[1,1].set_title("IHPULA")
