@@ -273,24 +273,24 @@ class contourSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
-    def sample_fn(self, rng_key):
+    def sample_fn(self, rng_key, num_samples):
         choose_key, sample_key = jax.random.split(rng_key)
-        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma)
-        return jax.random.choice(choose_key, samples)
+        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, 1))
+        return samples
 
     def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):
         data_size = 1000
-        # batch_size = 100
+        batch_size = 100
 
-        # rng_key = jax.random.PRNGKey(seed)
-        # rng_key, sample_key = jax.random.split(rng_key)
-        # X_data = self.sample_fn(sample_key, data_size)
-        # X_data = self.sample_fn(sample_key)
+        rng_key = jax.random.PRNGKey(seed)
+        rng_key, sample_key = jax.random.split(rng_key)
+        X_data = self.sample_fn(sample_key, data_size)
 
-        # logprior_fn = lambda _: 0
-        # logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
+        logprior_fn = lambda _: 0
+        logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
         csgld = blackjax.csgld(
-                    self.logprob_fn,
+                    logdensity_fn,
+                    # self.logprob_fn,
                     zeta=zeta,  # can be specified at each step in lower-level interface
                     temperature=temperature,  # can be specified at each step
                     num_partitions=num_partitions,  # cannot be specified at each step
@@ -298,7 +298,7 @@ class contourSGLD:
                     min_energy=0,
                 )
 
-        rng_key = jax.random.PRNGKey(seed)
+        # rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
         state = csgld.init(init_position)
         csgld_samples, csgld_energy_idx_list = jnp.array([]), jnp.array([])
@@ -308,8 +308,9 @@ class contourSGLD:
             _, subkey = jax.random.split(rng_key)
             stepsize_SA = min(1e-2, (i + 100) ** (-0.8)) * sz
 
-            # data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
-            state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
+            data_batch = jax.random.shuffle(rng_key, X_data)[:batch_size, :]
+            state = jax.jit(csgld.step)(subkey, state, data_batch, lr, stepsize_SA)
+            # state = jax.jit(csgld.step)(subkey, state, 0, lr, stepsize_SA)
             csgld_samples = jnp.append(csgld_samples, state.position)
             csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
 
