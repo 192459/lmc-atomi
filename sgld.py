@@ -282,15 +282,15 @@ class contourSGLD:
         data_size = 1000
         # batch_size = 100
 
-        rng_key = jax.random.PRNGKey(seed)
-        rng_key, sample_key = jax.random.split(rng_key)
+        # rng_key = jax.random.PRNGKey(seed)
+        # rng_key, sample_key = jax.random.split(rng_key)
         # X_data = self.sample_fn(sample_key, data_size)
-        X_data = self.sample_fn(sample_key)
+        # X_data = self.sample_fn(sample_key)
 
-        logprior_fn = lambda _: 0
-        logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
+        # logprior_fn = lambda _: 0
+        # logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
         csgld = blackjax.csgld(
-                    logdensity_fn,
+                    self.logprob_fn,
                     zeta=zeta,  # can be specified at each step in lower-level interface
                     temperature=temperature,  # can be specified at each step
                     num_partitions=num_partitions,  # cannot be specified at each step
@@ -298,7 +298,7 @@ class contourSGLD:
                     min_energy=0,
                 )
 
-        # rng_key = jax.random.PRNGKey(seed)
+        rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
         state = csgld.init(init_position)
         csgld_samples, csgld_energy_idx_list = jnp.array([]), jnp.array([])
