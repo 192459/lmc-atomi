@@ -85,8 +85,34 @@ class GaussianMixtureSampling:
         plt.title("Samples from a mixture of 25 normal distributions")
 
         plt.show(block=False)
-        plt.pause(5)
-        plt.close()
+        # plt.pause(5)
+        # plt.close()
+
+        fig = plt.figure(figsize=(10, 5))
+        ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+        ax1.plot_surface(xx, yy, f, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
+        ax1.view_init(45, -70)
+        # ax1.set_xticks([])
+        # ax1.set_yticks([])
+        # ax1.set_zticks([])
+        # ax1.set_xlabel(r'$x_1$')
+        # ax1.set_ylabel(r'$x_2$')
+
+
+        ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+        ax2.contourf(xx, yy, f, zdir='z', offset=0, cmap=cm.viridis)
+        ax2.view_init(90, 270)
+
+        ax2.grid(False)
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+        ax2.set_zticks([])
+        # ax2.set_xlabel(r'$x_1$')
+        # ax2.set_ylabel(r'$x_2$')
+
+        # plt.suptitle("True 2D Gaussian Mixture") 
+        plt.show(block=False)
 
 
 class SGLD:
