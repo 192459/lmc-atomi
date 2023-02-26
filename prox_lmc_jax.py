@@ -52,7 +52,7 @@ from blackjax.types import PyTree
 from optax._src.base import OptState
 
 import proxop
-from prox import *
+from prox_jax import *
 
 
 def multivariate_gaussian(theta, mu, Sigma):
