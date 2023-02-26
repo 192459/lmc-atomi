@@ -274,8 +274,8 @@ class contourSGLD:
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
     def sample_fn(self, rng_key, num_samples):
-        choose_key, sample_key = jax.random.split(rng_key)
-        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, 1))
+        _, sample_key = jax.random.split(rng_key)
+        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, *self.mu.shape))
         return samples
 
     def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):
