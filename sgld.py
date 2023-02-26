@@ -369,7 +369,7 @@ class MYULA:
         pass 
 
 
-def main(lamda=1/25, seed=0, num_training_steps=50000):
+def main(lamda=1/25, zeta=.75, sz=10, le=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000):
     positions = [-4, -2, 0, 2, 4]
     sigma = 0.03
     xmin, ymin = -5, -5
@@ -389,15 +389,15 @@ def main(lamda=1/25, seed=0, num_training_steps=50000):
 
     Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    zeta = 2
-    sz = 10
-    lr = 1e-3
-    temperature = 50
-    num_partitions = 100
+    # zeta = 0.75
+    # sz = 10
+    # lr = 1e-3
+    # temp = 1
+    # num_partitions = 50
     energy_gap = 0.25
     domain_radius = 50
     n = 10000
-    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temperature, num_partitions, energy_gap, domain_radius, seed, n)
+    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
 
     # Z5 = HMC().sampling()
 
