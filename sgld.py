@@ -280,7 +280,7 @@ class contourSGLD:
 
     def sampling(self, zeta, sz, lr=1e-3, temperature=50, num_partitions=100000, energy_gap=0.25, domain_radius=50, seed=0, num_training_steps=50000):
         data_size = 1000
-        batch_size = 100
+        batch_size = 1000
 
         rng_key = jax.random.PRNGKey(seed)
         rng_key, sample_key = jax.random.split(rng_key)
@@ -401,7 +401,7 @@ if __name__ == '__main__':
     sz = 10
     lr = 1e-3
     temperature = 50
-    num_partitions = 512
+    num_partitions = 100
     energy_gap = 0.25
     domain_radius = 50
     n = 10000
