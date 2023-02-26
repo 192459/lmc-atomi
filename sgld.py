@@ -400,7 +400,12 @@ if __name__ == '__main__':
     zeta = 2
     sz = 10
     lr = 1e-3
-    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, seed=seed, num_training_steps=10000)
+    temperature = 50
+    num_partitions = 1000
+    energy_gap = 0.25
+    domain_radius = 50
+    n = 10000
+    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temperature, num_partitions, energy_gap, domain_radius, 0, n)
 
     # Z5 = HMC().sampling()
 
