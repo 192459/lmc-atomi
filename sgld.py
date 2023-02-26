@@ -84,7 +84,7 @@ class GaussianMixtureSampling:
         plt.rcParams['axes.titlepad'] = 15.
         plt.title("Samples from a mixture of 25 normal distributions")
 
-        plt.show(block=False)
+        plt.show()
         # plt.pause(5)
         # plt.close()
 
@@ -112,7 +112,7 @@ class GaussianMixtureSampling:
         # ax2.set_ylabel(r'$x_2$')
 
         # plt.suptitle("True 2D Gaussian Mixture") 
-        plt.show(block=False)
+        plt.show()
 
 
 class SGLD:
