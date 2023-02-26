@@ -316,10 +316,8 @@ class contourSGLD:
             csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
 
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
-        scaled_energy_pdf = (
-            state.energy_pdf[important_idx] ** zeta
-            / (state.energy_pdf[important_idx] ** zeta).max()
-        )
+        print(jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95)).shape)
+        scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
         csgld_re_samples = jnp.array([])
         for _ in range(5):
@@ -369,7 +367,7 @@ class MYULA:
         pass 
 
 
-def main(lamda=1/25, zeta=.75, sz=10, le=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000):
+def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000, n=10000):
     positions = [-4, -2, 0, 2, 4]
     sigma = 0.03
     xmin, ymin = -5, -5
@@ -396,7 +394,7 @@ def main(lamda=1/25, zeta=.75, sz=10, le=1e-3, temp=1, num_partitions=50, seed=0
     # num_partitions = 50
     energy_gap = 0.25
     domain_radius = 50
-    n = 10000
+    # n = 10000
     Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
 
     # Z5 = HMC().sampling()
