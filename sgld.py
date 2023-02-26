@@ -28,6 +28,7 @@ from scipy.stats import gaussian_kde
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 
@@ -113,6 +114,7 @@ class GaussianMixtureSampling:
 
         # plt.suptitle("True 2D Gaussian Mixture") 
         plt.show()
+        return f
 
 
 class SGLD:
@@ -156,6 +158,7 @@ class SGLD:
         # plt.show(block=False)
         # plt.pause(5)
         # plt.close()
+        return sgld_samples
 
 
 class cyclicalSGLD:
@@ -217,11 +220,11 @@ if __name__ == '__main__':
     xmin, ymin = -5, -5
     xmax, ymax = 5, 5
     nbins = 300j
-    GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
+    Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(0, xmin, ymin, xmax, ymax, nbins)
 
     seed = 0 
     num_training_steps = 50000
-    SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z1 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     # cyclicalSGLD().sampling()
 
@@ -230,3 +233,18 @@ if __name__ == '__main__':
     # HMC().sampling()
 
     # fire.Fire(Langevin())
+
+    N = 100
+    X = np.linspace(-5, 5, N)
+    Y = np.linspace(-5, 5, N)
+    X, Y = np.meshgrid(X, Y)
+
+    fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
+    # fig2.suptitle("True density and KDEs of samples") 
+
+    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
+    axes[0,0].set_title("True density")
+
+    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    axes[0,1].set_title("SGLD")
+    
