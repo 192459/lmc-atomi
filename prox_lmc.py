@@ -163,12 +163,12 @@ def myula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed
 ## Moreau--Yosida regularized Metropolis-Adjusted Langevin Algorithm (MYMALA)
 def q_prob(theta1, theta2, gamma, mus, Sigmas, lambdas, alpha):
     # return np.exp(-1/(4*gamma) * np.linalg.norm(theta1 - gd_update(theta2, mus, Sigmas, lambdas, gamma))**2)
-    return multivariate_normal(theta1, mean=gd_update(theta2, mus, Sigmas, lambdas, gamma)+prox_update(theta2, gamma, alpha), cov=2*gamma).pdf
+    return multivariate_normal(mean=gd_update(theta2, mus, Sigmas, lambdas, gamma) + prox_update(theta2, gamma, alpha), cov=2*gamma).pdf(theta1)
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas, alpha):
     density_ratio = density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas)
-    q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas)
+    q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas, alpha) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas, alpha)
     return density_ratio * q_ratio
 
 

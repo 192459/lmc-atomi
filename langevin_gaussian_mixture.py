@@ -35,7 +35,7 @@ from matplotlib.colors import LogNorm
 import seaborn as sns
 
 from scipy.linalg import sqrtm
-from scipy.stats import kde
+from scipy.stats import kde, multivariate_normal
 
 import scienceplots
 plt.style.use(['science', 'grid', 'nature'])
@@ -126,7 +126,7 @@ def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
 
 ## Metropolis-Adjusted Langevin Algorithm (MALA)
 def q_prob(theta1, theta2, gamma, mus, Sigmas, lambdas):
-    return np.exp(-1/(4*gamma) * np.linalg.norm(theta1 - gd_update(theta2, mus, Sigmas, lambdas, gamma))**2)
+    return multivariate_normal(mean=gd_update(theta2, mus, Sigmas, lambdas, gamma), cov=2*gamma).pdf(theta1)
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
