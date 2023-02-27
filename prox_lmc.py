@@ -14,8 +14,8 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python prox_lmc.py --gamma_proxula=7.5e-2 --gamma_myula=7.5e-2 \
-# --gamma_mymala=7.5e-2 --gamma_ppula=8e-2 --gamma_eula=5e-4 --gamma_bmumla=5e-2 --K=5000 --n=5
+# Usage: python prox_lmc.py --gamma_proxula=7.5e-2 --gamma_myula=7.5e-2  --gamma_mymala=7.5e-2\
+# --gamma_ppula=8e-2 --gamma_eula=5e-4 --gamma_bmumla=5e-2 --K=5000 --n=5
 
 import os
 import itertools
@@ -26,7 +26,6 @@ import fire
 import random
 import numpy as np
 from numpy.random import default_rng
-rng = default_rng()
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -94,10 +93,9 @@ def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 
 
 def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
-    return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
+    return -grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
 
-'''
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
     n = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
@@ -118,24 +116,18 @@ def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
     grad_density = grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
     return np.outer(grad_density, grad_density) / density**2 - hess_density / density
-'''
 
 
 def gd_update(theta, mus, Sigmas, lambdas, gamma): 
     return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas) 
 
-def grad_Moreau_env(theta, alpha):
-    return (theta - prox_laplace(theta, alpha)) / alpha
-
-def prox_update(theta, gamma, alpha):
-    return -gamma * grad_Moreau_env(theta, alpha)
-
 
 ## Proximal Unadjusted Langevin Algorithm (P-ULA)
-def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed=0):
-    print("\nSampling with Proximal ULA... ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with Proximal ULA:")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         theta0 = prox_laplace(theta0, alpha)
@@ -147,10 +139,17 @@ def prox_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, s
 
 
 ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
-def myula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed=0):
-    print("\nSampling with MYULA... ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def grad_Moreau_env(theta, alpha):
+    return (theta - prox_laplace(theta, alpha)) / alpha
+
+def prox_update(theta, gamma, alpha):
+    return -gamma * grad_Moreau_env(theta, alpha)
+
+def myula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with MYULA:")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -162,25 +161,26 @@ def myula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed
 
 ## Moreau--Yosida regularized Metropolis-Adjusted Langevin Algorithm (MYMALA)
 def q_prob(theta1, theta2, gamma, mus, Sigmas, lambdas, alpha):
-    # return np.exp(-1/(4*gamma) * np.linalg.norm(theta1 - gd_update(theta2, mus, Sigmas, lambdas, gamma))**2)
     return multivariate_normal(mean=gd_update(theta2, mus, Sigmas, lambdas, gamma) + prox_update(theta2, gamma, alpha), cov=2*gamma).pdf(theta1)
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas, alpha):
-    density_ratio = density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) / density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas)
+    density_ratio = ((density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) * prior(theta_new, alpha)) / 
+                     (density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas) * prior(theta_old, alpha)))
     q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas, alpha) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas, alpha)
     return density_ratio * q_ratio
 
 
-def mymala_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed=0):
-    print("\nSampling with Proximal MALA... ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def mymala_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with MYMALA:")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
-        p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
+        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + prox_update(theta0, gamma, alpha) + np.sqrt(2*gamma) * xi
+        p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas, alpha))
         alpha = min(1, p)
         if random.random() <= alpha:
             theta.append(theta_new)    
@@ -188,37 +188,53 @@ def mymala_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, see
     return np.array(theta), len(theta)
 
 
-
 ## Preconditioned Proximal ULA 
 def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M): 
     return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
 
-def preconditioned_prox_update(theta, gamma, alpha):
+def preconditioned_prox(x, gamma, M): 
+    rho = 1 / np.linalg.norm(M, ord=2)
+    eps = min(1, rho)
+    eta = 2 * rho - eps
+    w = np.zeros(x.shape[0])
+    for _ in range(500):
+        u = x - M @ w
+        w += eta * u - eta * prox_laplace(eta*w + u, 1/eta * gamma)
+    return w
 
-    return
+def preconditioned_prox_update(theta, mus, Sigmas, lambdas, gamma, M):
+    return preconditioned_prox(theta - gamma * M @ grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
 
-def ppula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, M, d=2, n=1000, seed=0):
-    print("\nSampling with Preconditioned Proximal Langevin Algorithm: ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def ppula_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with PP-ULA:")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+        theta_new = preconditioned_prox_update(theta0, mus, Sigmas, lambdas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
         theta.append(theta_new)    
         theta0 = theta_new
     return np.array(theta)
 
 
 ## Envelope Unadjusted Langevin Algorithm (EULA)
-def eula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, d=2, n=1000, seed=0):
-    print("\nSampling with MYULA... ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def grad_FB_env(theta, mus, Sigmas, lambdas, alpha):
+    return (np.eye(theta.shape[0]) - alpha * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, lambdas, alpha), alpha)) / alpha
+
+def gd_FB_update(theta, gamma, mus, Sigmas, lambdas, alpha):
+    return theta - gamma * grad_FB_env(theta, mus, Sigmas, lambdas, alpha)
+
+def eula_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with EULA:")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + prox_update(theta0, gamma, alpha) + np.sqrt(2*gamma) * xi
+        theta_new = gd_FB_update(theta0, gamma, mus, Sigmas, lambdas, alpha) + np.sqrt(2*gamma) * xi
         theta.append(theta_new)    
         theta0 = theta_new
     return np.array(theta)
@@ -231,21 +247,46 @@ def grad_mirror_hyp(theta, beta):
 def grad_conjugate_mirror_hyp(theta, beta):
     return beta * np.sinh(theta)
 
-def bmumla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, alpha, d=2, n=1000, seed=0):
-    print("\nSampling with Proximal MLA: ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+def left_bregman_prox_ell_one_hypent(theta, beta, gamma):
+    if isinstance(theta, float):
+        if theta > beta * np.sinh(gamma):
+            prox = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
+        elif theta < beta * np.sinh(-gamma):
+            prox = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
+        else: 
+            prox = np.sqrt(theta ** 2 + beta ** 2) - beta
+    else:
+        prox = np.array(len(theta))
+        p1 = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
+        p2 = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
+        p3 = np.sqrt(theta ** 2 + beta ** 2) - beta
+        prox = np.where(theta > beta * np.sinh(gamma), p1, p3)
+        prox = np.where(theta < beta * np.sinh(-gamma), p2, prox)
+    return prox
+
+def grad_BM_env(theta, beta, lamda, alpha):
+    return 1/lamda * (theta**2 + beta**2)**(-.5) * (theta - left_bregman_prox_ell_one_hypent(theta, beta, lamda * alpha))
+
+def gd_BM_update(theta, gamma, mus, Sigmas, lambdas):
+    return -gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)
+
+def prox_BM_update(theta, beta, gamma, alpha):
+    return -gamma * grad_BM_env(theta, beta, gamma, alpha)
+
+def lbmumla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with LBMUMLA: ")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_gaussian_mixture(theta0, mus, Sigmas, lambdas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+        theta_new = grad_mirror_hyp(theta0, beta) + gd_BM_update(theta0, gamma, mus, Sigmas, lambdas) + prox_BM_update(theta0, sigma, lamda, alpha) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
-        theta.append(theta_new)    
+        theta.append(theta_new) 
+        theta_new = grad_mirror_hyp(theta0, beta) - gamma *  + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta0 = theta_new
     return np.array(theta)
-
-
-
 
 
 
@@ -292,8 +333,8 @@ def plot_contour_hist2d(z, title, bins=50):
 ## Main function
 def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2, 
                                 gamma_mymala=7.5e-2, gamma_ppula=8e-2, 
-                                gamma_eula=5e-4, gamma_bmumla=5e-2, 
-                                alpha=.1, n=2, K=5000):
+                                gamma_eula=5e-4, gamma_lbmumla=5e-2, 
+                                alpha=.1, n=2, K=10000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
     X = np.linspace(-8, 8, N)
@@ -371,31 +412,35 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     # ax2.set_ylabel(r'$x_2$')
 
     # plt.suptitle("True 2D Gaussian Mixture") 
-    plt.show()
-    # plt.show(block=False)
-    # plt.pause(10)
-    # plt.close()
-    # fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+    fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
 
 
     Z2 = prox_ula_gaussian_mixture(gamma_proxula, mus, Sigmas, lambdas, alpha, n=K)
-    Z2 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, lambdas, alpha, n=K)
 
-    Z3, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, lambdas, alpha, n=K)
+    Z3 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, lambdas, alpha, n=K)
+
+    Z4, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, lambdas, alpha, n=K)
     print('MYMALA acceptance rate:', eff_K / K)
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, lambdas, alpha, M, n=K)
+    Z5 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, lambdas, M, n=K)
 
-    Z5 = eula_gaussian_mixture(gamma_eula, mus, Sigmas, lambdas, alpha, n=K)
+    Z6 = eula_gaussian_mixture(gamma_eula, mus, Sigmas, lambdas, alpha, n=K)
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    Z6 = bmumla_gaussian_mixture(gamma_bmumla, mus, Sigmas, lambdas, beta, alpha, n=K)
+    sigma = (alpha * np.one(2))**2
+    lamda = gamma_lbmumla
+    Z7 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
     
 
     ## Plot of the true Gaussian mixture with KDE of samples
-    fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
+    # fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
+    fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
     # fig2.suptitle("True density and KDEs of samples") 
 
     sns.set(rc={'figure.figsize':(3.25, 3.5)})
@@ -406,19 +451,20 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("Proximal ULA")
 
-
-
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MYMALA")
+    axes[0,2].set_title("MYULA")
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("PP-ULA")
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
+    axes[0,3].set_title("PP-ULA")
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    axes[1,0].set_title("MYMALA")
+
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
     axes[1,1].set_title("EULA")
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("BMUMLA")
+    sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    axes[1,2].set_title("LBMUMLA")
 
     plt.show()
     # plt.pause(5)

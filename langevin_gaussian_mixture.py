@@ -26,7 +26,6 @@ import fire
 import random
 import numpy as np
 from numpy.random import default_rng
-rng = default_rng()
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -113,8 +112,8 @@ def gd_update(theta, mus, Sigmas, lambdas, gamma):
 ## Unadjusted Langevin Algorithm (ULA)
 def ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with ULA:")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -137,8 +136,8 @@ def prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas):
 
 def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with MALA:")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -158,8 +157,8 @@ def preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma, M):
 
 def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
     print("\nSampling with Preconditioned Langevin Algorithm:")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -172,8 +171,8 @@ def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, d=2
 # Preconditioning with inverse Hessian
 def hess_preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
     print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []    
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -199,8 +198,8 @@ def grad_conjugate_mirror_hyp(theta, beta):
 
 def mla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
     print("\nSampling with MLA: ")
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
@@ -217,8 +216,8 @@ def cyclical_gd_update(theta, mus, Sigmas, lambdas, gamma):
 
 
 def cyclical_ula_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-    np.random.seed(seed)
-    theta0 = np.random.normal(0, 1, d)
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
