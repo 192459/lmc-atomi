@@ -20,12 +20,6 @@ import numpy as np
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
 
-import ProxNest
-import ProxNest.utils as utils
-import ProxNest.sampling as sampling
-import ProxNest.optimisations as optimisations
-import ProxNest.operators as operators
-
 # import prox_tv as ptv
 
 
