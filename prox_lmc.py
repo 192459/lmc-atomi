@@ -180,7 +180,7 @@ def mymala_gaussian_mixture(gamma, mus, Sigmas, lambdas, alpha, n=1000, seed=0):
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + prox_update(theta0, gamma, alpha) + np.sqrt(2*gamma) * xi
-        p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas, alpha))
+        p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas, alpha)
         alpha = min(1, p)
         if random.random() <= alpha:
             theta.append(theta_new)    
