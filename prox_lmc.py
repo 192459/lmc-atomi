@@ -34,7 +34,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
-plt.style.use(['science', 'grid'])
+plt.style.use(['science', 'grid', 'nature'])
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde

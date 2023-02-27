@@ -38,7 +38,7 @@ from scipy.linalg import sqrtm
 from scipy.stats import kde
 
 import scienceplots
-plt.style.use(['science', 'grid'])
+plt.style.use(['science', 'grid', 'nature'])
 
 
 def multivariate_gaussian(pos, mu, Sigma):

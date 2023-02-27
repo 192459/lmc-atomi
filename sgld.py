@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
 import scienceplots
-plt.style.use(['science', 'grid'])
+plt.style.use(['science', 'grid', 'nature'])
 
 import jax
 from jax import grad, jit
