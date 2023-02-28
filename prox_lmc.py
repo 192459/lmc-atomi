@@ -31,19 +31,13 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
+import seaborn as sns
 import scienceplots
 plt.style.use(['science'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
     "font.serif": ["Times"],  # specify font here
     } 
-    )
-
-import seaborn as sns
-sns.set_style({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"],  # specify font here
-    }
     )
 
 from scipy.linalg import sqrtm
@@ -452,7 +446,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
     # fig2.suptitle("True density and KDEs of samples") 
 
-    sns.set(rc={'figure.figsize':(3.25, 3.5)})
+    sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
@@ -482,7 +476,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
     
 
-
+    ''''''
     ## Plot of the true Gaussian mixture with KDE of samples
     print("Constructing the 2D histograms of samples...")
     fig3, axes = plt.subplots(2, 4, figsize=(17, 8))
@@ -518,7 +512,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_prox_{n}_3.pdf', dpi=500)  
+    fig3.savefig(f'./fig/fig_prox_{n}_3.pdf', dpi=500)  
 
 
 if __name__ == '__main__':
