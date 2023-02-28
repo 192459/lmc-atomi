@@ -219,7 +219,7 @@ def ppula_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, n=1000, seed=0):
 
 ## Envelope Unadjusted Langevin Algorithm (EULA)
 def grad_FB_env(theta, mus, Sigmas, lambdas, lamda, alpha):
-    return (np.eye(theta.shape[0]) - lamda * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, lambdas, alpha), lamda * alpha)) / lamda
+    return (np.eye(theta.shape[0]) - lamda * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, lambdas, lamda), lamda * alpha)) / lamda
 
 def gd_FB_update(theta, gamma, mus, Sigmas, lambdas, lamda, alpha):
     return theta - gamma * grad_FB_env(theta, mus, Sigmas, lambdas, lamda, alpha)
@@ -459,14 +459,14 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
     axes[0,3].set_title("PP-ULA", fontsize=16)
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("MYMALA", fontsize=16)
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    axes[1,1].set_title("MYMALA", fontsize=16)
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("EULA", fontsize=16)
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    axes[1,2].set_title("EULA", fontsize=16)
 
-    sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("LBMUMLA", fontsize=16)
+    sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    axes[1,3].set_title("LBMUMLA", fontsize=16)
 
     plt.show()
     # plt.pause(5)
