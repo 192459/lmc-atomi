@@ -37,10 +37,11 @@ from scipy.linalg import sqrtm
 from scipy.stats import kde, multivariate_normal
 
 import scienceplots
-plt.style.use(['science', 'grid', 'nature'])
+plt.style.use(['science', 'grid'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"]}  # specify font here
+    "font.serif": ["Times"],  # specify font here
+    "axes.titlesize": 16}  
     )
 
 
