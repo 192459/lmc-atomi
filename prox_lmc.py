@@ -190,7 +190,7 @@ def preconditioned_prox(x, gamma, M):
     eps = min(1, rho)
     eta = 2 * rho - eps
     w = np.zeros(x.shape[0])
-    for _ in range(500):
+    for _ in range(100):
         u = x - M @ w
         w += eta * u - eta * prox_laplace(eta*w + u, 1/eta * gamma)
     return w
