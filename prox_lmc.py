@@ -335,6 +335,8 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
                                 lamda=0.01, alpha=.1, n=2, K=10000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
+    # X = np.linspace(-8, 8, N)
+    # Y = np.linspace(-8, 8, N)
     X = np.linspace(-8, 8, N)
     Y = np.linspace(-8, 8, N)
     X, Y = np.meshgrid(X, Y)
@@ -342,15 +344,17 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
 
     # Mean vectors and covariance matrices
     mu1 = np.array([3., 3.])
-    Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
+    # Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
     mu2 = np.array([-4., 6.])
-    Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
+    # Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
     mu3 = np.array([4., -6.])
-    Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
+    # Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
     mu4 = np.array([5., 5.])
-    Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
+    # Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
     mu5 = np.array([-4., -4.])
-    Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
+    # Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
+    Sigma = np.eye(2)
+    Sigma1 = Sigma2 = Sigma3 = Sigma4 = Sigma5 = Sigma
 
 
     if n == 1:
