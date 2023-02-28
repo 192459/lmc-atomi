@@ -38,6 +38,7 @@ from scipy.stats import kde, multivariate_normal
 
 import scienceplots
 plt.style.use(['science', 'grid', 'nature'])
+plt.rcParams["font.family"] = "Times New Roman"
 
 
 def multivariate_gaussian(pos, mu, Sigma):
