@@ -34,7 +34,10 @@ from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid', 'nature'])
-plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"]}  # specify font here
+    )
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde, multivariate_normal

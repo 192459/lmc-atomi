@@ -31,7 +31,10 @@ from matplotlib import cm
 import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid', 'nature'])
-plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"]}  # specify font here
+    )
 
 import jax
 from jax import grad, jit
