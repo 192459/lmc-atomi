@@ -36,8 +36,8 @@ import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"]}  # specify font here
+    "axes.titlesize": 16,
+    "font.serif": "Times New Roman"} 
     )
 
 from scipy.linalg import sqrtm

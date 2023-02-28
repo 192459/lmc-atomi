@@ -20,8 +20,6 @@ import numpy as np
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
 
-# import prox_tv as ptv
-
 
 def prox_laplace(x, gamma): 
     return np.sign(x) * np.maximum(np.abs(x) - gamma, 0)

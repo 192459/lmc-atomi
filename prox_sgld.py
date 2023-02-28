@@ -48,11 +48,7 @@ import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
 
-import ProxNest
-import ProxNest.utils as utils
-import ProxNest.sampling as sampling
-import ProxNest.optimisations as optimisations
-import ProxNest.operators as operators
+from prox_jax import *
 
 
 class GaussianMixtureSampling:
