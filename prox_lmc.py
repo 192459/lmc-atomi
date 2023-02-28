@@ -15,7 +15,7 @@
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
 # Usage: python prox_lmc.py --gamma_proxula=7.5e-2 --gamma_myula=7.5e-2  --gamma_mymala=7.5e-2\
-# --gamma_ppula=8e-2 --gamma_eula=5e-4 --gamma_bmumla=5e-2 --K=5000 --n=5
+# --gamma_ppula=8e-2 --gamma_eula=5e-4 --gamma_bmumla=5e-2 --K=10000 --n=5
 
 import os
 import itertools
@@ -203,7 +203,7 @@ def preconditioned_prox(x, gamma, M):
     return w
 
 def preconditioned_prox_update(theta, mus, Sigmas, lambdas, gamma, M):
-    return preconditioned_prox(theta - gamma * M @ grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
+    return preconditioned_prox(theta - gamma * M @ grad_density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas), gamma, M)
 
 def ppula_gaussian_mixture(gamma, mus, Sigmas, lambdas, M, n=1000, seed=0):
     d = mus[0].shape[0]
@@ -424,7 +424,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     Z3 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, lambdas, alpha, n=K)
 
     Z4, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, lambdas, alpha, n=K)
-    print('MYMALA acceptance rate:', eff_K / K)
+    print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z5 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, lambdas, M, n=K)
@@ -433,12 +433,13 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    sigma = (alpha * np.one(2))**2
+    sigma = (alpha * np.ones(2))**2
     lamda = gamma_lbmumla
     Z7 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
-    
+    print("\n")
 
     ## Plot of the true Gaussian mixture with KDE of samples
+    print("Constructing the plots of samples...")
     # fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
     # fig2.suptitle("True density and KDEs of samples") 
