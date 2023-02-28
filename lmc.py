@@ -23,7 +23,6 @@ from fastprogress import progress_bar
 from typing import NamedTuple
 import fire
 
-import random
 import numpy as np
 from numpy.random import default_rng
 from scipy.linalg import sqrtm
@@ -148,7 +147,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + np.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
         alpha = min(1, p)
-        if np.random.uniform() <= alpha:
+        if rng.random() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
     return np.array(theta), len(theta)

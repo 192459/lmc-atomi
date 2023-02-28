@@ -23,7 +23,6 @@ from fastprogress import progress_bar
 from typing import NamedTuple
 import fire
 
-import random
 import numpy as np
 from numpy.random import default_rng
 
@@ -180,7 +179,7 @@ def mymala_gaussian_mixture(gamma, mus, Sigmas, lambdas, lamda, alpha, n=1000, s
         theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + prox_update(theta0, gamma, lamda, alpha) + np.sqrt(2*gamma) * xi
         p = prob(theta_new, theta0, gamma, mus, Sigmas, lambdas, lamda, alpha)
         alpha = min(1, p)
-        if random.random() <= alpha:
+        if rng.random() <= alpha:
             theta.append(theta_new)    
             theta0 = theta_new
     return np.array(theta), len(theta)

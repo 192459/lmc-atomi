@@ -31,6 +31,7 @@ from jax import grad, jit
 import jax.numpy as jnp
 import jax.scipy as jsp
 import jax.scipy.stats as stats
+from jax.scipy.stats import multivariate_normal
 
 import blackjax
 import blackjax.sgmcmc.gradients as gradients
@@ -58,7 +59,7 @@ class GaussianMixtureSampling:
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
-        return self.lamda * jsp.special.logsumexp(stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+        return self.lamda * jsp.special.logsumexp(multivariate_normal.logpdf(x, self.mu, self.sigma))
 
     def sample_fn(self, rng_key):
         choose_key, sample_key = jax.random.split(rng_key)
@@ -129,8 +130,74 @@ class SGLD:
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
-        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+        return self.lamda * jsp.special.logsumexp(multivariate_normal.logpdf(x, self.mu, self.sigma))
 
+    def sampling(self, seed=0, num_training_steps=50000):
+        schedule_fn = lambda k: 0.05 * k ** (-0.55)
+        schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
+
+        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        sgld = blackjax.sgld(grad_fn)        
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+
+        position = init_position
+        sgld_samples = []
+
+        print("\nSampling with SGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
+            sgld_samples.append(position)
+
+        '''
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        x = [sample[0] for sample in sgld_samples]
+        y = [sample[1] for sample in sgld_samples]
+
+        ax.plot(x, y, 'k-', lw=0.1, alpha=0.5)
+        ax.set_xlim([-8, 8])
+        ax.set_ylim([-8, 8])
+
+        plt.axis('off')
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
+        '''
+        return np.array(sgld_samples)
+
+
+# Metropolised-adjusted SGLD (MSGLD)
+class MSGLD:
+    def __init__(self, lamda, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def gd_update(self, x, mus, Sigmas, lambdas, gamma):
+        return x - gamma * jax.grad(self.logprob_fn)(x)
+
+    def q_prob(self, theta1, theta2, gamma, mus, Sigmas, lambdas):
+        return multivariate_normal(mean=self.gd_update(theta2, mus, Sigmas, lambdas, gamma), cov=2*gamma).pdf(theta1)
+    
+    def density_2d_gaussian_mixture(self, x, mus, Sigmas, lambdas):
+        return 
+    
+    def q_prob(self, x1, x2, gamma, mus, Sigmas, lambdas):
+        return 
+
+    def prob(self, theta_new, theta_old, gamma, mus, Sigmas, lambdas):
+        density_ratio = self.density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) / self.density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas)
+        q_ratio = self.q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas) / self.q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas)
+        return density_ratio * q_ratio
+    
     def sampling(self, seed=0, num_training_steps=50000):
         schedule_fn = lambda k: 0.05 * k ** (-0.55)
         schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
@@ -413,7 +480,9 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
 
     Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z3 = MSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+
+    Z4 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     # zeta = 0.75
     # sz = 10
@@ -423,7 +492,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     energy_gap = 0.25
     domain_radius = 50
     # n = 10000
-    Z4 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
+    Z5 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
 
     # Z5 = HMC().sampling()
 
@@ -440,13 +509,13 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     axes[0,1].set_title("SGLD", fontsize=16)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("Cyclical SGLD", fontsize=16)
+    axes[0,2].set_title("MSGLD", fontsize=16)
     
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("Contour SGLD", fontsize=16)
+    axes[1,0].set_title("Cyclical SGLD", fontsize=16)
 
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    # axes[1,1].set_title("IHPULA")
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    axes[1,1].set_title("Contour SGLD", fontsize=16)
 
     # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     # axes[1,2].set_title("MLA")
