@@ -224,7 +224,7 @@ def grad_FB_env(theta, mus, Sigmas, lambdas, lamda, alpha):
     return (np.eye(theta.shape[0]) - lamda * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, lambdas, alpha), lamda * alpha)) / lamda
 
 def gd_FB_update(theta, gamma, mus, Sigmas, lambdas, lamda, alpha):
-    return theta - gamma * grad_FB_env(theta, mus, Sigmas, lambdas, alpha)
+    return theta - gamma * grad_FB_env(theta, mus, Sigmas, lambdas, lamda, alpha)
 
 def eula_gaussian_mixture(gamma, mus, Sigmas, lambdas, lamda, alpha, n=1000, seed=0):
     d = mus[0].shape[0]
