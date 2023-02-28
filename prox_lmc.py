@@ -395,12 +395,6 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
 
     ax1.plot_surface(X, Y, Z, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
     ax1.view_init(45, -70)
-    # ax1.set_xticks([])
-    # ax1.set_yticks([])
-    # ax1.set_zticks([])
-    # ax1.set_xlabel(r'$x_1$')
-    # ax1.set_ylabel(r'$x_2$')
-
 
     ax2 = fig.add_subplot(1, 2, 2, projection='3d')
     ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
@@ -410,8 +404,6 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     ax2.set_xticks([])
     ax2.set_yticks([])
     ax2.set_zticks([])
-    # ax2.set_xlabel(r'$x_1$')
-    # ax2.set_ylabel(r'$x_2$')
 
     # plt.suptitle("True 2D Gaussian Mixture") 
     # plt.show()
@@ -476,7 +468,6 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
     
 
-    ''''''
     ## Plot of the true Gaussian mixture with KDE of samples
     print("Constructing the 2D histograms of samples...")
     fig3, axes = plt.subplots(2, 4, figsize=(17, 8))

@@ -42,7 +42,6 @@ plt.rcParams.update({
     "font.serif": ["Times"],  # specify font here
     } 
     )
-sns.set(font="Times")
 
 
 def multivariate_gaussian(pos, mu, Sigma):
@@ -339,12 +338,6 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
 
     ax1.plot_surface(X, Y, Z, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
     ax1.view_init(45, -70)
-    # ax1.set_xticks([])
-    # ax1.set_yticks([])
-    # ax1.set_zticks([])
-    # ax1.set_xlabel(r'$x_1$')
-    # ax1.set_ylabel(r'$x_2$')
-
 
     ax2 = fig.add_subplot(1, 2, 2, projection='3d')
     ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
@@ -354,8 +347,6 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     ax2.set_xticks([])
     ax2.set_yticks([])
     ax2.set_zticks([])
-    # ax2.set_xlabel(r'$x_1$')
-    # ax2.set_ylabel(r'$x_2$')
 
     # plt.suptitle("True 2D Gaussian Mixture") 
     plt.show(block=False)
@@ -364,87 +355,26 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
 
 
-    
     Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, lambdas, n=K)
-    # Plot of samples from the Langevin algorithm
-    # plot_hist2d(Z2, "Unadjusted Langevin Algorithm")
-    # plot_contour_hist2d(Z2, "Unadjusted Langevin Algorithm (ULA)")
-
-    sns.set(rc={'figure.figsize':(3.25, 3.5)})
-    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Unadjusted Langevin Algorithm (ULA)")
-    # plt.show()
-
-    # sns.jointplot(x=Z2[:,0], y=Z2[:,1], kind='kde')
-    # plt.show()
-
-    # print(error(Z2))
-
 
     Z3, eff_K = mala_gaussian_mixture(gamma_mala, mus, Sigmas, lambdas, n=K)
     print(f'\nMALA acceptance rate: {eff_K / K} ')
-    # Plot of samples from the MALA algorithm
-    # plot_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
-    # plot_contour_hist2d(Z3, "Metropolis-Adjusted Langevin Algorithm (MALA)")
-
-    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Metropolis-Adjusted Langevin Algorithm (MALA)")
-    # plt.show()
-
-    # sns.jointplot(x=Z3[:,0], y=Z3[:,1], kind='kde')
-    # plt.show()
-
-    # print(error(Z3))
-
-    
+        
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, lambdas, M, n=K)
-    # Plot of samples from the preconditioned Langevin algorithm
-    # plot_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
-    # plot_contour_hist2d(Z4, "Preconditioned Unadjusted Langevin Algorithm (PULA)")
-
-    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Preconditioned Unadjusted Langevin Algorithm (PULA)")
-    # plt.show()
-
-    # sns.jointplot(x=Z4[:,0], y=Z4[:,1], kind='kde')
-    # plt.show()
-
-    # print(error(Z4))
-
-    
+        
     Z5 = hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula, mus, Sigmas, lambdas, n=K)
-    # Plot of samples from the preconditioned Langevin algorithm
-    # plot_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
-    # plot_contour_hist2d(Z5, "Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
-
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Inverse Hessian Preconditioned Unadjusted Langevin Algorithm")
-    # plt.show()
-
-    # sns.jointplot(x=Z5[:,0], y=Z5[:,1], kind='kde')
-    # plt.show()
-
-    # print(error(Z5))
-
-    
+      
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     Z6 = mla_gaussian_mixture(gamma_mla, mus, Sigmas, lambdas, beta, n=K)
     print("\n")
-    # Plot of samples from the preconditioned Langevin algorithm
-    # plot_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
-    # plot_contour_hist2d(Z6, "Mirror-Langevin Algorithm (MLA)")
-
-    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, clip=(-5, 5)).set(title="Mirror-Langevin Algorithm (MLA)")
-    # plt.show()
-
-    # sns.jointplot(x=Z6[:,0], y=Z6[:,1], kind='kde')
-    # plt.show()
-
-    # print(error(Z6))
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
     print("Constructing the plots of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
-    # fig2.suptitle("True density and KDEs of samples") 
+    sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
@@ -468,8 +398,6 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     # plt.pause(5)
     # plt.close()
     fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
-
-
 
 
 if __name__ == '__main__':

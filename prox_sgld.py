@@ -351,7 +351,7 @@ class SPGLD:
         return 
 
 
-class Prox:
+class SSGLD:
     def __init__(self, lamda, positions, sigma) -> None:
         self.lamda = lamda 
         self.positions = positions
@@ -364,7 +364,7 @@ class Prox:
         return 
 
 
-class MYULA:
+class MYSGLD:
     def __init__(self, lamda, positions, sigma) -> None:
         self.lamda = lamda 
         self.positions = positions
@@ -375,6 +375,70 @@ class MYULA:
 
         pass 
 
+
+class cyclicalSPGLD:
+    def __init__(self, lamda, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+
+    def sampling(self, seed=0, num_training_steps=50000):        
+        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+
+        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+        init_state = init(init_position)
+
+        state = init_state
+        cyclical_samples = []
+        print("\nSampling with Cyclical SGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            state = jax.jit(step)(rng_key, state, 0, schedule[i])
+            if schedule[i].do_sample:
+                cyclical_samples.append(state.position)
+        return np.array(cyclical_samples)
+
+
+class cyclicalSSGLD:
+    def __init__(self, lamda, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+
+    def sampling(self, seed=0, num_training_steps=50000):        
+        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+
+        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+        init_state = init(init_position)
+
+        state = init_state
+        cyclical_samples = []
+        print("\nSampling with Cyclical SGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            state = jax.jit(step)(rng_key, state, 0, schedule[i])
+            if schedule[i].do_sample:
+                cyclical_samples.append(state.position)
+        return np.array(cyclical_samples)
+    
 
 def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000, n=10000):
     positions = [-4, -2, 0, 2, 4]
@@ -390,15 +454,15 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     
     Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
-    Z2 = SPGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
+    Z2 = SPGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z3 = SSGLD()
+    Z3 = SSGLD().sampling(seed, num_training_steps)
 
-    Z4 = MYSGLD()
+    Z4 = MYSGLD().sampling(seed, num_training_steps)
 
-    Z5 = cyclicalSPGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
+    Z5 = cyclicalSPGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z6 = cyclicalSSGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
+    Z6 = cyclicalSSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     # zeta = 0.75
     # sz = 10
@@ -438,8 +502,9 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     axes[1,2].set_title("Cylical SSGLD", fontsize=16)
 
     plt.show()
- 
-
+    # plt.pause(5)
+    # plt.close()
+    fig2.savefig(f'./fig/fig_prox_sgld_{n}_2.pdf', dpi=500)  
 
 
 

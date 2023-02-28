@@ -48,7 +48,6 @@ plt.rcParams.update({
     "font.serif": ["Times"],  # specify font here
     } 
     )
-sns.set(font="Times")
 
 
 class GaussianMixtureSampling:
@@ -388,8 +387,30 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     
     Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
-    seed = 0 
-    num_training_steps = 50000
+    ## Plot of the true Gaussian mixture
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+    ax1.plot_surface(X, Y, Z, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
+    ax1.view_init(45, -70)
+
+
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
+    ax2.view_init(90, 270)
+
+    ax2.grid(False)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.set_zticks([])
+
+    # plt.suptitle("True 2D Gaussian Mixture") 
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+    fig.savefig(f'./fig/fig_sgld_{n}_1.pdf', dpi=500)
+
     Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
     Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
@@ -406,11 +427,11 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
 
     # Z5 = HMC().sampling()
 
-
     
     print("\nConstructing the plots of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     # fig2.suptitle("True density and KDEs of samples") 
+    sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
@@ -431,8 +452,9 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     # axes[1,2].set_title("MLA")
 
     plt.show()
- 
-
+    # plt.pause(5)
+    # plt.close()
+    fig2.savefig(f'./fig/fig_sgld_{n}_2.pdf', dpi=500)  
 
 
 
