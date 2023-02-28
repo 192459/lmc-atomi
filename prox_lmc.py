@@ -444,9 +444,9 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     Z7 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
     print("\n")
 
-    '''
+    
     ## Plot of the true Gaussian mixture with KDE of samples
-    print("Constructing the plots of samples...")
+    print("Constructing the KDEs of samples...")
     # fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
     # fig2.suptitle("True density and KDEs of samples") 
@@ -479,38 +479,38 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     # plt.pause(5)
     # plt.close()
     fig2.savefig(f'./fig/fig_prox_{n}_2.pdf', dpi=500)  
-    '''
+    
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
-    print("Constructing the plots of samples...")
+    print("Constructing the 2D histograms of samples...")
     fig3, axes = plt.subplots(2, 4, figsize=(17, 8))
 
     axes[0,0].hist2d(Z[:, 0], Z[:, 1], bins=100, density=True)
     # axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
-    axes[0,1].hist2d(Z2[:, 0], Z2[:, 1], bins=100, density=True)
+    axes[0,1].hist2d(Z2[:, 0], Z2[:, 1], bins=100)
     # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("Proximal ULA", fontsize=16)
 
-    axes[0,2].hist2d(Z3[:, 0], Z2[:, 1], bins=100, density=True)
+    axes[0,2].hist2d(Z3[:, 0], Z2[:, 1], bins=100)
     # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
     axes[0,2].set_title("MYULA", fontsize=16)
 
-    axes[0,3].hist2d(Z4[:, 0], Z4[:, 1], bins=100, density=True)
+    axes[0,3].hist2d(Z4[:, 0], Z4[:, 1], bins=100)
     # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
     axes[0,3].set_title("PP-ULA", fontsize=16)
 
-    axes[1,1].hist2d(Z5[:, 0], Z5[:, 1], bins=100, density=True)
+    axes[1,1].hist2d(Z5[:, 0], Z5[:, 1], bins=100)
     # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
     axes[1,1].set_title("MYMALA", fontsize=16)
 
-    axes[1,2].hist2d(Z6[:, 0], Z6[:, 1], bins=100, density=True)
+    axes[1,2].hist2d(Z6[:, 0], Z6[:, 1], bins=100)
     # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("EULA", fontsize=16)
 
-    axes[1,3].hist2d(Z7[:, 0], Z7[:, 1], bins=100, density=True)
+    axes[1,3].hist2d(Z7[:, 0], Z7[:, 1], bins=100)
     # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
     axes[1,3].set_title("LBMUMLA", fontsize=16)
 
