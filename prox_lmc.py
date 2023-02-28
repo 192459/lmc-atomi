@@ -33,7 +33,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
-plt.style.use(['science', 'grid'])
+plt.style.use(['science'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
     "font.serif": ["Times"],  # specify font here
@@ -486,8 +486,8 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     print("Constructing the 2D histograms of samples...")
     fig3, axes = plt.subplots(2, 4, figsize=(17, 8))
 
-    axes[0,0].hist2d(Z[:, 0], Z[:, 1], bins=100, density=True)
-    # axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
+    # axes[0,0].hist2d(Z[:, 0], Z[:, 1], bins=100, density=True)
+    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
     axes[0,1].hist2d(Z2[:, 0], Z2[:, 1], bins=100)
@@ -515,7 +515,10 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     axes[1,3].set_title("LBMUMLA", fontsize=16)
 
     plt.show()
-
+    # plt.pause(5)
+    # plt.close()
+    fig2.savefig(f'./fig/fig_prox_{n}_3.pdf', dpi=500)  
+    
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
