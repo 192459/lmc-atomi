@@ -32,8 +32,9 @@ import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
-    "axes.titlesize": 16,
-    "font.serif": "Times New Roman"} 
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    } 
     )
 
 import jax
@@ -413,22 +414,23 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     # fig2.suptitle("True density and KDEs of samples") 
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density")
+    axes[0,0].set_title("True density", fontsize=16)
 
     sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("SGLD")
+    axes[0,1].set_title("SPGLD", fontsize=16)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("Cyclical SGLD")
+    axes[0,2].set_title("SSGLD", fontsize=16)
+
     
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("Contour SGLD")
+    axes[1,0].set_title("MYSGLD", fontsize=16)
 
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    # axes[1,1].set_title("IHPULA")
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    axes[1,1].set_title("Cylical SPGLD", fontsize=16)
 
-    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    # axes[1,2].set_title("MLA")
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    axes[1,2].set_title("Cylical SSGLD", fontsize=16)
 
     plt.show()
  

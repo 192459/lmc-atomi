@@ -39,8 +39,9 @@ from scipy.stats import kde, multivariate_normal
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
-    "axes.titlesize": 16,
-    "font.serif": "Times New Roman"} 
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    } 
     )
 
 
@@ -445,23 +446,25 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     # fig2.suptitle("True density and KDEs of samples") 
 
+    tfont = {'fontname':'Times'}
+
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density")
+    axes[0,0].set_title("True density", fontsize=16, **tfont)
 
     sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("ULA")
+    axes[0,1].set_title("ULA", fontname = "Times", fontsize=16, **tfont)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MALA")
+    axes[0,2].set_title("MALA", fontsize=16, **tfont)
 
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("PULA")
+    axes[1,0].set_title("PULA", fontsize=16, **tfont)
 
     sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("IHPULA")
+    axes[1,1].set_title("IHPULA", fontsize=16, **tfont)
 
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("MLA")
+    axes[1,2].set_title("MLA", fontsize=16, **tfont)
 
     plt.show()
     # plt.pause(5)

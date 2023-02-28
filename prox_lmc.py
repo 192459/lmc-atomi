@@ -35,8 +35,9 @@ import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
-    "axes.titlesize": 16,
-    "font.serif": "Times New Roman"} 
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    } 
     )
 
 from scipy.linalg import sqrtm
@@ -443,25 +444,25 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     sns.set(rc={'figure.figsize':(3.25, 3.5)})
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density")
+    axes[0,0].set_title("True density", fontsize=16)
 
     sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("Proximal ULA")
+    axes[0,1].set_title("Proximal ULA", fontsize=16)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MYULA")
+    axes[0,2].set_title("MYULA", fontsize=16)
 
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
-    axes[0,3].set_title("PP-ULA")
+    axes[0,3].set_title("PP-ULA", fontsize=16)
 
     sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("MYMALA")
+    axes[1,0].set_title("MYMALA", fontsize=16)
 
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("EULA")
+    axes[1,1].set_title("EULA", fontsize=16)
 
     sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("LBMUMLA")
+    axes[1,2].set_title("LBMUMLA", fontsize=16)
 
     plt.show()
     # plt.pause(5)
