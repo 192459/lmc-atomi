@@ -26,16 +26,15 @@ import fire
 import random
 import numpy as np
 from numpy.random import default_rng
+from scipy.linalg import sqrtm
+from scipy.stats import kde, multivariate_normal
+
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
 import seaborn as sns
-
-from scipy.linalg import sqrtm
-from scipy.stats import kde, multivariate_normal
-
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
@@ -43,6 +42,7 @@ plt.rcParams.update({
     "font.serif": ["Times"],  # specify font here
     } 
     )
+sns.set(font="Times")
 
 
 def multivariate_gaussian(pos, mu, Sigma):

@@ -26,17 +26,6 @@ import fire
 import numpy as np
 from scipy.stats import gaussian_kde
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
-import seaborn as sns
-import scienceplots
-plt.style.use(['science', 'grid'])
-plt.rcParams.update({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"],  # specify font here
-    } 
-    )
-
 import jax
 from jax import grad, jit
 import jax.numpy as jnp
@@ -50,6 +39,18 @@ from blackjax.types import PyTree
 from optax._src.base import OptState
 
 from prox_jax import *
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import seaborn as sns
+import scienceplots
+plt.style.use(['science', 'grid'])
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    } 
+    )
+sns.set(font="Times")
 
 
 class GaussianMixtureSampling:
