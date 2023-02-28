@@ -431,7 +431,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    sigma = (alpha * np.ones(2))**2
+    sigma = np.array([0.2, 0.8])
     Z7 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
     print("\n")
 
