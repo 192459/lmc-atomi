@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LogNorm
-import seaborn as sns
 import scienceplots
 plt.style.use(['science'])
 plt.rcParams.update({
@@ -39,6 +38,8 @@ plt.rcParams.update({
     "font.serif": ["Times"],  # specify font here
     } 
     )
+
+import seaborn as sns
 sns.set_style({
     "font.family": "serif",   # specify font family here
     "font.serif": ["Times"],  # specify font here
@@ -518,7 +519,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     # plt.pause(5)
     # plt.close()
     fig2.savefig(f'./fig/fig_prox_{n}_3.pdf', dpi=500)  
-    
+
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
