@@ -389,11 +389,15 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     
     Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
-    seed = 0 
-    num_training_steps = 50000
-    Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z2 = SPGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
 
-    Z3 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z3 = SSGLD()
+
+    Z4 = MYSGLD()
+
+    Z5 = cyclicalSPGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
+
+    Z6 = cyclicalSSGLD(lamda, positions, sigma).sampling(seed=seed, num_training_steps=num_training_steps)
 
     # zeta = 0.75
     # sz = 10
