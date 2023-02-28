@@ -14,7 +14,7 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python langevin_gaussian_mixture_jax.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
+# Usage: python lmc_jax.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
 # --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=5000 --n=5
 
 import os
@@ -258,7 +258,7 @@ def plot_contour_hist2d(z, title, bins=50):
 
 
 ## Main function
-def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
+def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
     X = jnp.linspace(-5, 5, N)
@@ -454,4 +454,4 @@ def langevin_gaussian_mixture(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e
 if __name__ == '__main__':
     if not os.path.exists('fig'):
         os.makedirs('fig')
-    fire.Fire(langevin_gaussian_mixture)
+    fire.Fire(lmc)
