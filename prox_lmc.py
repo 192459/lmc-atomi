@@ -468,6 +468,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
     axes[1,3].set_title("LBMUMLA", fontsize=16)
 
+    plt.colorbar()
     plt.show()
     # plt.pause(5)
     # plt.close()
