@@ -274,7 +274,7 @@ def lbmumla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, sigma, lamda, al
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = grad_mirror_hyp(theta0, beta) + gd_BM_update(theta0, gamma, mus, Sigmas, lambdas) + prox_BM_update(theta0, sigma, lamda, alpha) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+        theta_new = grad_mirror_hyp(theta0, beta) + gd_BM_update(theta0, gamma, mus, Sigmas, lambdas) + prox_BM_update(theta0, sigma, gamma, lamda, alpha) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
         theta.append(theta_new) 
         theta_new = grad_mirror_hyp(theta0, beta) - gamma *  + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
