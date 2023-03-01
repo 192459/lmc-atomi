@@ -286,10 +286,10 @@ def lbmumla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, sigma, lamda, al
     return np.array(theta)
 
 
-# Primal-Dual Langevin Algorithm (PDLA)
-def pdla_gaussian_mixture(gamma, mus, Sigmas, lambdas, lamda, alpha, n=1000, seed=0):
+# Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
+def ulpda_gaussian_mixture(gamma, mus, Sigmas, lambdas, lamda, alpha, n=1000, seed=0):
     d = mus[0].shape[0]
-    print("\nSampling with Primal-Dual Langevin Algorithm (PDLA):")
+    print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
     rng = default_rng(seed)
     theta0 = rng.normal(0, 1, d)
     theta = []
@@ -443,7 +443,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     sigma = np.array([0.2, 0.8])
     Z6 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
 
-    Z7 = pdla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
+    Z7 = ulpda_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
 
     print("\n")
 
