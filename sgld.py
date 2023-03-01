@@ -387,7 +387,6 @@ class contourSGLD:
             csgld_energy_idx_list = jnp.append(csgld_energy_idx_list, state.energy_idx)
         
         csgld_samples = jnp.array(csgld_samples)
-
         important_idx = jnp.where(state.energy_pdf > jnp.quantile(state.energy_pdf, 0.95))[0]
         scaled_energy_pdf = state.energy_pdf[important_idx] ** zeta / (state.energy_pdf[important_idx] ** zeta).max()
 
@@ -400,44 +399,6 @@ class contourSGLD:
                     samples_in_my_idx = csgld_samples[csgld_energy_idx_list == my_idx]
                     csgld_re_samples.extend(samples_in_my_idx)
         return np.array(csgld_re_samples)
-
-
-class SPGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-
-    def sampling(self):
-        
-        return 
-
-
-class Prox:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-
-    def sampling(self):
-        
-        return 
-
-
-class MYULA:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-    def sampling(self):
-
-        pass 
 
 
 def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000, n=10000):
@@ -494,10 +455,8 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     # n = 10000
     Z5 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
 
-    # Z5 = HMC().sampling()
-
     
-    print("\nConstructing the plots of samples...")
+    print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     # fig2.suptitle("True density and KDEs of samples") 
     sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
