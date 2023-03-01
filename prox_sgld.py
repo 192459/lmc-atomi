@@ -65,8 +65,7 @@ class GaussianMixturewithLaplacianPriorSampling:
         return self.lamda * jsp.special.logsumexp(stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
     
     def logprior_fn(self, x, *_):
-        d = x.shape[0]
-        return (self.alpha * /2) ** d * jnp.exp()
+        return stats.laplace.logpdf(x, scale=self.alpha)
 
     def sample_fn(self, rng_key):
         choose_key, sample_key = jax.random.split(rng_key)
@@ -104,12 +103,6 @@ class GaussianMixturewithLaplacianPriorSampling:
 
         ax1.plot_surface(xx, yy, f, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
         ax1.view_init(45, -70)
-        # ax1.set_xticks([])
-        # ax1.set_yticks([])
-        # ax1.set_zticks([])
-        # ax1.set_xlabel(r'$x_1$')
-        # ax1.set_ylabel(r'$x_2$')
-
 
         ax2 = fig2.add_subplot(1, 2, 2, projection='3d')
         ax2.contourf(xx, yy, f, zdir='z', offset=0, cmap=cm.viridis)
@@ -119,8 +112,6 @@ class GaussianMixturewithLaplacianPriorSampling:
         ax2.set_xticks([])
         ax2.set_yticks([])
         ax2.set_zticks([])
-        # ax2.set_xlabel(r'$x_1$')
-        # ax2.set_ylabel(r'$x_2$')
 
         plt.suptitle("True 2D Gaussian Mixture") 
         plt.show(block=False)
@@ -129,34 +120,40 @@ class GaussianMixturewithLaplacianPriorSampling:
         return f
 
 
-class SGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
+class SPGLD:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
         self.lamda = lamda 
+        self.alpha = alpha
         self.positions = positions
         self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
 
     def sampling(self, seed=0, num_training_steps=50000):
+        data_size = 1000
         schedule_fn = lambda k: 0.05 * k ** (-0.55)
         schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
 
-        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
-        sgld = blackjax.sgld(grad_fn)        
+        # grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        grad_fn = gradients.grad_estimator(self.logprior_fn, self.logprob_fn, data_size)
+        spgld = blackjax.sgld(grad_fn)        
 
         rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
 
         position = init_position
-        sgld_samples = []
+        spgld_samples = []
 
         print("\nSampling with SGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
-            position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
-            sgld_samples.append(position)
+            position = jax.jit(spgld)(rng_key, position, 0, schedule[i])
+            spgld_samples.append(position)
 
         '''
         fig = plt.figure()
@@ -174,7 +171,123 @@ class SGLD:
         plt.pause(5)
         plt.close()
         '''
-        return np.array(sgld_samples)
+        return np.array(spgld_samples)
+
+
+class SSGLD:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.alpha = alpha
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
+
+    def sampling(self, seed=0, num_training_steps=50000):
+        data_size = 100
+        schedule_fn = lambda k: 0.05 * k ** (-0.55)
+        schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
+
+        # grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        grad_fn = gradients.grad_estimator(self.logprior_fn, self.logprob_fn, data_size)
+        ssgld = blackjax.sgld(grad_fn)        
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+
+        position = init_position
+        ssgld_samples = []
+
+        print("\nSampling with SGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            position = jax.jit(ssgld)(rng_key, position, 0, schedule[i])
+            ssgld_samples.append(position)
+
+        '''
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        x = [sample[0] for sample in sgld_samples]
+        y = [sample[1] for sample in sgld_samples]
+
+        ax.plot(x, y, 'k-', lw=0.1, alpha=0.5)
+        ax.set_xlim([-8, 8])
+        ax.set_ylim([-8, 8])
+
+        plt.axis('off')
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
+        '''
+        return np.array(ssgld_samples)
+
+
+
+class MYSGLD:
+    def __init__(self, lamda, alpha, gamma, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.alpha = alpha
+        self.gamma = gamma
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
+    
+    def grad_Moreau_env(self, x, *_):
+        return (self.gamma - prox_laplace(x, self.gamma * self.alpha)) / self.gamma
+
+    def prox_update(self, x, *_):
+        return -self.gamma * self.grad_Moreau_env(x, self.lamda, self.alpha)
+
+    def sampling(self, seed=0, num_training_steps=50000):
+        data_size = 100
+        schedule_fn = lambda k: 0.05 * k ** (-0.55)
+        schedule = [schedule_fn(i) for i in range(1, num_training_steps+1)]
+
+        # grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        grad_fn = gradients.grad_estimator(self.logprior_fn, self.logprob_fn, data_size)
+        ssgld = blackjax.sgld(grad_fn)        
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+
+        position = init_position
+        ssgld_samples = []
+
+        print("\nSampling with SGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            position = jax.jit(ssgld)(rng_key, position, 0, schedule[i])
+            ssgld_samples.append(position)
+
+        '''
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        x = [sample[0] for sample in sgld_samples]
+        y = [sample[1] for sample in sgld_samples]
+
+        ax.plot(x, y, 'k-', lw=0.1, alpha=0.5)
+        ax.set_xlim([-8, 8])
+        ax.set_ylim([-8, 8])
+
+        plt.axis('off')
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
+        '''
+        return np.array(ssgld_samples)
 
 
 class ScheduleState(NamedTuple):
@@ -241,22 +354,27 @@ def cyclical_sgld(grad_estimator_fn, loglikelihood_fn):
     return init_fn, step_fn
 
 
-
-class cyclicalSGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
+class cyclicalSPGLD:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
         self.lamda = lamda 
+        self.alpha = alpha
         self.positions = positions
         self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
 
-    def sampling(self, seed=0, num_training_steps=50000):        
+    def sampling(self, seed=0, num_training_steps=50000):       
+        data_size = 1000 
         schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
         schedule = [schedule_fn(i) for i in range(num_training_steps)]
 
-        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        # grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        grad_fn = gradients.grad_estimator(self.logprior_fn, self.logprob_fn, data_size)
         init, step = cyclical_sgld(grad_fn, self.logprob_fn)
 
         rng_key = jax.random.PRNGKey(seed)
@@ -265,7 +383,7 @@ class cyclicalSGLD:
 
         state = init_state
         cyclical_samples = []
-        print("\nSampling with Cyclical SGLD:")
+        print("\nSampling with Cyclical SPGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             state = jax.jit(step)(rng_key, state, 0, schedule[i])
@@ -274,9 +392,10 @@ class cyclicalSGLD:
         return np.array(cyclical_samples)
 
 
-class contourSGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
+class cyclicalSSGLD:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
         self.lamda = lamda 
+        self.alpha = alpha
         self.positions = positions
         self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
         self.sigma = sigma * jnp.eye(2)
@@ -284,6 +403,47 @@ class contourSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
 
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
+    
+    def sampling(self, seed=0, num_training_steps=50000):  
+        data_size = 1000      
+        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
+        schedule = [schedule_fn(i) for i in range(num_training_steps)]
+
+        # grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
+        grad_fn = gradients.grad_estimator(self.logprior_fn, self.logprob_fn, data_size)
+        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
+
+        rng_key = jax.random.PRNGKey(seed)
+        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
+        init_state = init(init_position)
+
+        state = init_state
+        cyclical_samples = []
+        print("\nSampling with Cyclical SSGLD:")
+        for i in progress_bar(range(num_training_steps)):
+            _, rng_key = jax.random.split(rng_key)
+            state = jax.jit(step)(rng_key, state, 0, schedule[i])
+            if schedule[i].do_sample:
+                cyclical_samples.append(state.position)
+        return np.array(cyclical_samples)
+
+
+class contourSPGLD:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.alpha = alpha
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
+
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
+    
     def sample_fn(self, rng_key, num_samples):
         _, sample_key = jax.random.split(rng_key)
         samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, self.mu.shape[0],))
@@ -297,8 +457,8 @@ class contourSGLD:
         rng_key, sample_key = jax.random.split(rng_key)
         X_data = self.sample_fn(sample_key, data_size)
 
-        logprior_fn = lambda _: 0
-        logdensity_fn = gradients.logdensity_estimator(logprior_fn, self.logprob_fn, data_size)
+        # logprior_fn = lambda _: 0
+        logdensity_fn = gradients.logdensity_estimator(self.logprior_fn, self.logprob_fn, data_size)
         csgld = blackjax.csgld(
                     logdensity_fn,
                     # self.logprob_fn,
@@ -343,106 +503,12 @@ class contourSGLD:
         return np.array(csgld_re_samples)
 
 
-class SPGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
 
 
-    def sampling(self):
-        
-        return 
 
 
-class SSGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
 
 
-    def sampling(self):
-        
-        return 
-
-
-class MYSGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-    def sampling(self):
-
-        pass 
-
-
-class cyclicalSPGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-    def logprob_fn(self, x, *_):
-        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
-
-    def sampling(self, seed=0, num_training_steps=50000):        
-        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
-        schedule = [schedule_fn(i) for i in range(num_training_steps)]
-
-        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
-        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
-
-        rng_key = jax.random.PRNGKey(seed)
-        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
-        init_state = init(init_position)
-
-        state = init_state
-        cyclical_samples = []
-        print("\nSampling with Cyclical SGLD:")
-        for i in progress_bar(range(num_training_steps)):
-            _, rng_key = jax.random.split(rng_key)
-            state = jax.jit(step)(rng_key, state, 0, schedule[i])
-            if schedule[i].do_sample:
-                cyclical_samples.append(state.position)
-        return np.array(cyclical_samples)
-
-
-class cyclicalSSGLD:
-    def __init__(self, lamda, positions, sigma) -> None:
-        self.lamda = lamda 
-        self.positions = positions
-        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
-        self.sigma = sigma * jnp.eye(2)
-
-    def logprob_fn(self, x, *_):
-        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
-
-    def sampling(self, seed=0, num_training_steps=50000):        
-        schedule_fn = build_schedule(num_training_steps, 30, 0.09, 0.25)
-        schedule = [schedule_fn(i) for i in range(num_training_steps)]
-
-        grad_fn = lambda x, _: jax.grad(self.logprob_fn)(x)
-        init, step = cyclical_sgld(grad_fn, self.logprob_fn)
-
-        rng_key = jax.random.PRNGKey(seed)
-        init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
-        init_state = init(init_position)
-
-        state = init_state
-        cyclical_samples = []
-        print("\nSampling with Cyclical SGLD:")
-        for i in progress_bar(range(num_training_steps)):
-            _, rng_key = jax.random.split(rng_key)
-            state = jax.jit(step)(rng_key, state, 0, schedule[i])
-            if schedule[i].do_sample:
-                cyclical_samples.append(state.position)
-        return np.array(cyclical_samples)
     
 
 def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0, num_training_steps=50000, n=10000):
@@ -457,7 +523,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
     
-    Z = GaussianMixtureSampling(lamda, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
+    Z = GaussianMixturewithLaplacianPriorSampling(lamda, alpha, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
     Z2 = SPGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
