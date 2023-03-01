@@ -205,7 +205,7 @@ class MSGLD:
         position = init_position
         sgld_samples = []
 
-        print("\nSampling with SGLD:")
+        print("\nSampling with MSGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
             position_new = jax.jit(sgld)(rng_key, position, 0, schedule[i])
