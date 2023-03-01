@@ -286,6 +286,20 @@ def lbmumla_gaussian_mixture(gamma, mus, Sigmas, lambdas, beta, sigma, lamda, al
     return np.array(theta)
 
 
+# Primal-Dual Langevin Algorithm (PDLA)
+def pdla_gaussian_mixture(gamma, mus, Sigmas, lambdas, lamda, alpha, n=1000, seed=0):
+    d = mus[0].shape[0]
+    print("\nSampling with Primal-Dual Langevin Algorithm (PDLA):")
+    rng = default_rng(seed)
+    theta0 = rng.normal(0, 1, d)
+    theta = []
+    for _ in progress_bar(range(n)):
+        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+        theta_new = gd_update(theta0, mus, Sigmas, lambdas, gamma) + prox_update(theta0, gamma, lamda, alpha) + np.sqrt(2*gamma) * xi
+        theta.append(theta_new)    
+        theta0 = theta_new
+    return np.array(theta)
+
 
 '''
 def error(theta, mus, Sigmas, lambdas):
@@ -412,22 +426,25 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
 
 
-    Z2 = prox_ula_gaussian_mixture(gamma_proxula, mus, Sigmas, lambdas, lamda, alpha, n=K)
+    Z1 = prox_ula_gaussian_mixture(gamma_proxula, mus, Sigmas, lambdas, lamda, alpha, n=K)
 
-    Z3 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, lambdas, lamda, alpha, n=K)
+    Z2 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, lambdas, lamda, alpha, n=K)
 
-    Z4, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, lambdas, lamda, alpha, n=K)
+    Z3, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, lambdas, lamda, alpha, n=K)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z5 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, lambdas, M, n=K)
+    Z4 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, lambdas, M, n=K)
 
-    Z6 = eula_gaussian_mixture(gamma_eula, mus, Sigmas, lambdas, lamda, alpha, n=K)
+    Z5 = eula_gaussian_mixture(gamma_eula, mus, Sigmas, lambdas, lamda, alpha, n=K)
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     sigma = np.array([0.2, 0.8])
-    Z7 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
+    Z6 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
+
+    Z7 = pdla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, lambdas, beta, sigma, lamda, alpha, n=K)
+
     print("\n")
 
     
@@ -442,24 +459,26 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
     axes[0,1].set_title("Proximal ULA", fontsize=16)
 
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
     axes[0,2].set_title("MYULA", fontsize=16)
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
     axes[0,3].set_title("PP-ULA", fontsize=16)
 
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    axes[1,0].set_title("MYMALA", fontsize=16)
+
     sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("MYMALA", fontsize=16)
+    axes[1,1].set_title("EULA", fontsize=16)
 
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("EULA", fontsize=16)
+    axes[1,2].set_title("LBMUMLA", fontsize=16)
 
     sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    axes[1,3].set_title("LBMUMLA", fontsize=16)
-
+    axes[1,3].set_title("PDLA", fontsize=16)
     
     plt.show()
     # plt.pause(5)
