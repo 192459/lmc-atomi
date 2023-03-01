@@ -181,21 +181,15 @@ class MSGLD:
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(multivariate_normal.logpdf(x, self.mu, self.sigma))
     
-    def gd_update(self, x, mus, Sigmas, lambdas, gamma):
+    def gd_update(self, x, gamma):
         return x - gamma * jax.grad(self.logprob_fn)(x)
 
-    def q_prob(self, theta1, theta2, gamma, mus, Sigmas, lambdas):
-        return multivariate_normal(mean=self.gd_update(theta2, mus, Sigmas, lambdas, gamma), cov=2*gamma).pdf(theta1)
+    def q_prob(self, theta1, theta2, gamma):
+        return multivariate_normal(mean=self.gd_update(theta2, gamma), cov=2*gamma).pdf(theta1)
     
-    def density_2d_gaussian_mixture(self, x, mus, Sigmas, lambdas):
-        return 
-    
-    def q_prob(self, x1, x2, gamma, mus, Sigmas, lambdas):
-        return 
-
-    def prob(self, theta_new, theta_old, gamma, mus, Sigmas, lambdas):
-        density_ratio = self.density_2d_gaussian_mixture(theta_new, mus, Sigmas, lambdas) / self.density_2d_gaussian_mixture(theta_old, mus, Sigmas, lambdas)
-        q_ratio = self.q_prob(theta_old, theta_new, gamma, mus, Sigmas, lambdas) / self.q_prob(theta_new, theta_old, gamma, mus, Sigmas, lambdas)
+    def prob(self, theta_new, theta_old, gamma):
+        density_ratio = self.logprob_fn(theta_new) / self.logprob_fn(theta_old)
+        q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
         return density_ratio * q_ratio
     
     def sampling(self, seed=0, num_training_steps=50000):
@@ -214,8 +208,12 @@ class MSGLD:
         print("\nSampling with SGLD:")
         for i in progress_bar(range(num_training_steps)):
             _, rng_key = jax.random.split(rng_key)
-            position = jax.jit(sgld)(rng_key, position, 0, schedule[i])
-            sgld_samples.append(position)
+            position_new = jax.jit(sgld)(rng_key, position, 0, schedule[i])
+            p = self.prob(position_new, position, schedule[i])
+            alpha = jnp.minimum(1, p)
+            if jax.random.uniform(rng_key) <= alpha:
+                sgld_samples.append(position_new)    
+                position = position_new
 
         '''
         fig = plt.figure()
@@ -233,7 +231,7 @@ class MSGLD:
         plt.pause(5)
         plt.close()
         '''
-        return np.array(sgld_samples)
+        return np.array(sgld_samples), len(sgld_samples)
 
 
 class ScheduleState(NamedTuple):
@@ -441,7 +439,8 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
 
     Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
-    Z3 = MSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    Z3, eff_K = MSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
+    print(f'\nMSGLD acceptance rate: {eff_K / num_training_steps} ')
 
     Z4 = cyclicalSGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
