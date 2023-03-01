@@ -454,7 +454,6 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     domain_radius = 50
     # n = 10000
     Z5 = contourSGLD(lamda, positions, sigma).sampling(zeta, sz, lr, temp, num_partitions, energy_gap, domain_radius, seed, n)
-    print(Z5)
     
     print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
