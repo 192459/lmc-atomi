@@ -185,7 +185,7 @@ class MSGLD:
         return x - gamma * jax.grad(self.logprob_fn)(x)
 
     def q_prob(self, theta1, theta2, gamma):
-        return multivariate_normal(theta1, mean=self.gd_update(theta2, gamma), cov=2*gamma)
+        return multivariate_normal.pdf(theta1, mean=self.gd_update(theta2, gamma), cov=2*gamma)
     
     def prob(self, theta_new, theta_old, gamma):
         density_ratio = self.logprob_fn(theta_new) / self.logprob_fn(theta_old)
