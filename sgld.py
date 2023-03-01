@@ -437,7 +437,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig.savefig(f'./fig/fig_sgld_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_sgld_1.pdf', dpi=500)
 
     Z2 = SGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
@@ -482,7 +482,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_sgld_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_sgld_2.pdf', dpi=500)  
 
 
 
