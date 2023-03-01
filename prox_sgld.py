@@ -53,15 +53,20 @@ plt.rcParams.update({
 sns.set(font="Times")
 
 
-class GaussianMixtureSampling:
-    def __init__(self, lamda, positions, sigma) -> None:
+class GaussianMixturewithLaplacianPriorSampling:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
         self.lamda = lamda 
+        self.alpha = alpha
         self.positions = positions
         self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
         self.sigma = sigma * jnp.eye(2)
 
     def logprob_fn(self, x, *_):
         return self.lamda * jsp.special.logsumexp(stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+    
+    def logprior_fn(self, x, *_):
+        d = x.shape[0]
+        return (self.alpha * /2) ** d * jnp.exp()
 
     def sample_fn(self, rng_key):
         choose_key, sample_key = jax.random.split(rng_key)
