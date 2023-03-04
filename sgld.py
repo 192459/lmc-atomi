@@ -485,6 +485,8 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
 
 
 if __name__ == '__main__':
+    if not os.path.exists('fig'):
+        os.makedirs('fig')
     fire.Fire(main)
 
     
