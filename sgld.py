@@ -141,7 +141,7 @@ class SGLD:
 
         rng_key = jax.random.PRNGKey(seed)
         init_position = -10 + 20 * jax.random.uniform(rng_key, shape=(2,))
-        print(init_position.shape)
+        # print(init_position.shape)
         position = init_position
         sgld_samples = []
 
