@@ -70,8 +70,8 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas):
 
 
 def prior(theta, alpha):    
-    n = theta.shape[0]
-    return (alpha/2)**n * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
+    d = theta.shape[0]
+    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
 
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
