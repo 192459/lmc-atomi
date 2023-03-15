@@ -296,7 +296,7 @@ def lbmumla_gaussian_mixture(gamma, mus, Sigmas, omegas, beta, sigma, lamda, alp
 
 
 # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
-def ulpda_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0):
+def ulpda_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, D, alpha, n=1000, seed=0):
     d = mus[0].shape[0]
     print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
     rng = default_rng(seed)
@@ -351,10 +351,11 @@ def plot_contour_hist2d(z, title, bins=50):
 
 
 ## Main function
-def prox_lmc_gaussian_mixture(gamma_pgld=7.5e-2, gamma_myula=7.5e-2, 
-                                gamma_mymala=7.5e-2, gamma_ppula=8e-2, 
-                                gamma_fbula=5e-4, gamma_lbmumla=5e-2, 
-                                lamda=0.01, alpha=.1, n=2, K=10000):
+def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2, 
+                                gamma_mymala=5e-2, gamma_ppula=5e-2, 
+                                gamma_fbula=5e-2, gamma_lbmumla=5e-2,
+                                gamma_ulpda=5e-2, lamda=0.01, 
+                                alpha=.1, n=2, K=10000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
     # X = np.linspace(-8, 8, N)
@@ -452,7 +453,8 @@ def prox_lmc_gaussian_mixture(gamma_pgld=7.5e-2, gamma_myula=7.5e-2,
     sigma = np.array([0.2, 0.8])
     Z6 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, omegas, beta, sigma, lamda, alpha, n=K)
 
-    Z7 = ulpda_gaussian_mixture(gamma_lbmumla, mus, Sigmas, omegas, beta, sigma, lamda, alpha, n=K)
+    # D = difference matrix
+    # Z7 = ulpda_gaussian_mixture(gamma_ulpda, mus, Sigmas, omegas, lamda, D, alpha, n=K)
 
     print("\n")
 
@@ -486,8 +488,8 @@ def prox_lmc_gaussian_mixture(gamma_pgld=7.5e-2, gamma_myula=7.5e-2,
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("LBMUMLA", fontsize=16)
 
-    sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    axes[1,3].set_title("PDLA", fontsize=16)
+    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    # axes[1,3].set_title("ULPDA", fontsize=16)
     
     plt.show()
     # plt.pause(5)
