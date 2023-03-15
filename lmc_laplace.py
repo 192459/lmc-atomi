@@ -55,12 +55,12 @@ def multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N
 
 def multivariate_laplacian(pos, alpha):
-    d = mu.shape[0]
+    d = alpha.shape[0]
     return 
 
 def density_2d_laplacian_mixture(theta, alphas, omegas): 
-    K = len(mus)
-    den = [lambdas[k] * multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
+    K = len(alphas)
+    den = [omegas[k] * multivariate_laplacian(theta, alphas[k]) for k in range(K)]
     return sum(den)
 
 
