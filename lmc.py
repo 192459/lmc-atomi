@@ -357,7 +357,7 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
 
 
     Z2 = ula_gaussian_mixture(gamma_ula, mus, Sigmas, omegas, n=K)
@@ -401,7 +401,7 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
 
 
 if __name__ == '__main__':
