@@ -47,10 +47,11 @@ from prox import *
 
 
 class ProximalLangevinMonteCarlo:
-    def __init__(self, mus, Sigmas, omegas) -> None:
+    def __init__(self, mus, Sigmas, omegas, lamda) -> None:
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas
+        self.lamda = lamda
 
 
 
@@ -79,7 +80,7 @@ def potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
 
 def prior(theta, alpha):    
     d = theta.shape[0]
-    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
+    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1))
 
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
