@@ -45,29 +45,27 @@ plt.rcParams.update({
 
 def multivariate_gaussian(pos, mu, Sigma):
     """Return the multivariate Gaussian distribution on array pos."""
-
-    n = mu.shape[0]
+    d = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
+    N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
     # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
     # way across all the input variables.
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-
     return np.exp(-fac / 2) / N
 
 def multivariate_laplacian(pos, alpha):
     d = mu.shape[0]
     return 
 
-def density_2d_laplacian_mixture(theta, mus, Sigmas, lambdas): 
+def density_2d_laplacian_mixture(theta, alphas, omegas): 
     K = len(mus)
     den = [lambdas[k] * multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(den)
 
 
 def potential_2d_laplacian_mixture(theta, mus, Sigmas, lambdas): 
-    return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, lambdas))
+    return -np.log(density_2d_laplacian_mixture(theta, mus, Sigmas, lambdas))
 
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
