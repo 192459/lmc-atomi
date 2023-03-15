@@ -129,7 +129,7 @@ def gd_update(theta, mus, Sigmas, omegas, gamma):
 
 
 ## Proximal Gradient Langevin Dynamics (PGLD)
-def prox_ula_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0):
+def pgld_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0):
     d = mus[0].shape[0]
     print("\nSampling with Proximal ULA:")
     rng = default_rng(seed)
@@ -225,14 +225,14 @@ def ppula_gaussian_mixture(gamma, mus, Sigmas, omegas, M, n=1000, seed=0):
     return np.array(theta)
 
 
-## Envelope Unadjusted Langevin Algorithm (EULA)
+## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
 def grad_FB_env(theta, mus, Sigmas, omegas, lamda, alpha):
     return (np.eye(theta.shape[0]) - lamda * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, omegas, lamda), lamda * alpha)) / lamda
 
 def gd_FB_update(theta, gamma, mus, Sigmas, omegas, lamda, alpha):
     return theta - gamma * grad_FB_env(theta, mus, Sigmas, omegas, lamda, alpha)
 
-def eula_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0):
+def fbula_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0):
     d = mus[0].shape[0]
     print("\nSampling with EULA:")
     rng = default_rng(seed)
@@ -351,9 +351,9 @@ def plot_contour_hist2d(z, title, bins=50):
 
 
 ## Main function
-def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2, 
+def prox_lmc_gaussian_mixture(gamma_pgld=7.5e-2, gamma_myula=7.5e-2, 
                                 gamma_mymala=7.5e-2, gamma_ppula=8e-2, 
-                                gamma_eula=5e-4, gamma_lbmumla=5e-2, 
+                                gamma_fbula=5e-4, gamma_lbmumla=5e-2, 
                                 lamda=0.01, alpha=.1, n=2, K=10000):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 100
@@ -435,7 +435,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     fig.savefig(f'./fig/fig_prox_{n}_1.pdf', dpi=500)
 
 
-    Z1 = prox_ula_gaussian_mixture(gamma_proxula, mus, Sigmas, omegas, lamda, alpha, n=K)
+    Z1 = pgld_gaussian_mixture(gamma_pgld, mus, Sigmas, omegas, lamda, alpha, n=K)
 
     Z2 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, omegas, lamda, alpha, n=K)
 
@@ -445,7 +445,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, omegas, M, n=K)
 
-    Z5 = eula_gaussian_mixture(gamma_eula, mus, Sigmas, omegas, lamda, alpha, n=K)
+    Z5 = fbula_gaussian_mixture(gamma_fbula, mus, Sigmas, omegas, lamda, alpha, n=K)
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
@@ -505,7 +505,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
 
     axes[0,1].hist2d(Z2[:, 0], Z2[:, 1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("Proximal ULA", fontsize=16)
+    axes[0,1].set_title("PGLD", fontsize=16)
 
     axes[0,2].hist2d(Z3[:, 0], Z2[:, 1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
@@ -521,7 +521,7 @@ def prox_lmc_gaussian_mixture(gamma_proxula=7.5e-2, gamma_myula=7.5e-2,
 
     axes[1,2].hist2d(Z6[:, 0], Z6[:, 1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("EULA", fontsize=16)
+    axes[1,2].set_title("FBULA", fontsize=16)
 
     axes[1,3].hist2d(Z7[:, 0], Z7[:, 1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
