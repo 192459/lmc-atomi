@@ -51,7 +51,7 @@ class LangevinMonteCarloLaplacian:
 
     def multivariate_laplacian(self, theta, alpha):
         d = alpha.shape[0]
-        return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
+        return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1))
     
     def density_2d_laplacian_mixture(self, theta): 
         K = len(self.alphas)
