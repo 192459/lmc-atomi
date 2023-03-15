@@ -63,14 +63,14 @@ def multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N
 
 
-def density_2d_gaussian_mixture(theta, mus, Sigmas, omegas): 
+def density_gaussian_mixture(theta, mus, Sigmas, omegas): 
     K = len(mus)
     den = [omegas[k] * multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(den)
 
 
-def potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas): 
-    return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, omegas))
+def potential_gaussian_mixture(theta, mus, Sigmas, omegas): 
+    return -np.log(density_gaussian_mixture(theta, mus, Sigmas, omegas))
 
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
@@ -82,14 +82,14 @@ def grad_density_multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
-def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
+def grad_density_gaussian_mixture(theta, mus, Sigmas, omegas):
     K = len(mus)
     grad_den = [omegas[k] * grad_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(grad_den)
 
 
-def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
-    return - grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas) / density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+def grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas):
+    return - grad_density_gaussian_mixture(theta, mus, Sigmas, omegas) / density_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
@@ -101,21 +101,21 @@ def hess_density_multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
-def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
+def hess_density_gaussian_mixture(theta, mus, Sigmas, omegas):
     K = len(mus)
     hess_den = [omegas[k] * hess_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(hess_den)
     
 
 def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
-    density = density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
-    grad_density = grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
-    hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    density = density_gaussian_mixture(theta, mus, Sigmas, omegas)
+    grad_density = grad_density_gaussian_mixture(theta, mus, Sigmas, omegas)
+    hess_density = hess_density_gaussian_mixture(theta, mus, Sigmas, omegas)
     return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 
 
 def gd_update(theta, mus, Sigmas, omegas, gamma): 
-    return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    return theta - gamma * grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 
 ## Unadjusted Langevin Algorithm (ULA)
@@ -138,7 +138,7 @@ def q_prob(theta1, theta2, gamma, mus, Sigmas, omegas):
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, omegas):
-    density_ratio = density_2d_gaussian_mixture(theta_new, mus, Sigmas, omegas) / density_2d_gaussian_mixture(theta_old, mus, Sigmas, omegas)
+    density_ratio = density_gaussian_mixture(theta_new, mus, Sigmas, omegas) / density_gaussian_mixture(theta_old, mus, Sigmas, omegas)
     q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, omegas) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, omegas)
     return density_ratio * q_ratio
 
@@ -161,7 +161,7 @@ def mala_gaussian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
 
 ## Preconditioned ULA 
 def preconditioned_gd_update(theta, mus, Sigmas, omegas, gamma, M): 
-    return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    return theta - gamma * M @ grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 
 def preconditioned_langevin_gaussian_mixture(gamma, mus, Sigmas, omegas, M, d=2, n=1000, seed=0):
@@ -212,7 +212,7 @@ def mla_gaussian_mixture(gamma, mus, Sigmas, omegas, beta, d=2, n=1000, seed=0):
     theta = []
     for _ in progress_bar(range(n)):
         xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_gaussian_mixture(theta0, mus, Sigmas, omegas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+        theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_gaussian_mixture(theta0, mus, Sigmas, omegas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
         theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
         theta.append(theta_new)    
         theta0 = theta_new
@@ -221,7 +221,7 @@ def mla_gaussian_mixture(gamma, mus, Sigmas, omegas, beta, d=2, n=1000, seed=0):
 
 # Cyclical step sizes
 def cyclical_gd_update(theta, mus, Sigmas, omegas, gamma): 
-    return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    return theta - gamma * grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 
 def cyclical_ula_gaussian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
@@ -333,7 +333,7 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
 
     # The distribution on the variables X, Y packed into pos.
     print("Constructing the true 2D Gaussian mixture density...")
-    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, omegas)
+    Z = density_gaussian_mixture(pos, mus, Sigmas, omegas)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, omegas)) - 0.005 * np.sum(np.abs(pos)))
 
 
