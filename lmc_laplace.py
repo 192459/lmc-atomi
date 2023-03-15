@@ -53,15 +53,21 @@ class LangevinMonteCarloLaplacian:
         d = alpha.shape[0]
         return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1))
     
-    def density_2d_laplacian_mixture(self, theta): 
+    def density_laplacian_mixture(self, theta): 
         K = len(self.alphas)
         den = [self.omegas[k] * multivariate_laplacian(theta, self.alphas[k]) for k in range(K)]
         return sum(den)
-
-    def potential_2d_laplacian_mixture(self, theta): 
-        return -np.log(density_2d_laplacian_mixture(theta))
     
+    def smooth_density_laplacian_mixture(theta, alphas, omegas): 
+        K = len(alphas)
+        den = [omegas[k] * multivariate_laplacian(theta, alphas[k]) for k in range(K)]
+        return sum(den)
 
+    def potential_laplacian_mixture(self, theta): 
+        return -np.log(self.density_2d_laplacian_mixture(theta))
+    
+    def smooth_potential_laplacian_mixture(self, theta): 
+        return -np.log(self.smooth_density_2d_laplacian_mixture(theta))
 
 
 def multivariate_laplacian(theta, alpha):
@@ -79,13 +85,10 @@ def potential_2d_laplacian_mixture(theta, alphas, omegas):
     return -np.log(density_2d_laplacian_mixture(theta, alphas, omegas))
 
 
-def grad_density_multivariate_laplacian(pos, alpha, lamda):
-    d = mu.shape[0]
-    Sigma_det = np.linalg.det(Sigma)
-    Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
-    return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
+def grad_density_multivariate_laplacian(theta, alpha, lamda):
+    d = alpha.shape[0]
+  
+    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
 
 
 def grad_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas):
