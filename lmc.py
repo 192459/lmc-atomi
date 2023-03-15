@@ -49,6 +49,8 @@ class LangevinMonteCarlo:
         self.Sigmas = Sigmas
         self.omegas = omegas
 
+    
+
 def multivariate_gaussian(pos, mu, Sigma):
     """Return the multivariate Gaussian distribution on array pos."""
     d = mu.shape[0]

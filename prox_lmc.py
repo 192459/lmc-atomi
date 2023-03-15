@@ -46,6 +46,14 @@ from scipy.integrate import quad, dblquad
 from prox import *
 
 
+class ProximalLangevinMonteCarlo:
+    def __init__(self, mus, Sigmas, omegas) -> None:
+        self.mus = mus
+        self.Sigmas = Sigmas
+        self.omegas = omegas
+
+
+
 def multivariate_gaussian(theta, mu, Sigma):
     """Return the multivariate Gaussian distribution on array theta."""
     n = mu.shape[0]

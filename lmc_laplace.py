@@ -54,9 +54,9 @@ def multivariate_gaussian(pos, mu, Sigma):
     fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
     return np.exp(-fac / 2) / N
 
-def multivariate_laplacian(pos, alpha):
+def multivariate_laplacian(theta, alpha):
     d = alpha.shape[0]
-    return 
+    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
 
 def density_2d_laplacian_mixture(theta, alphas, omegas): 
     K = len(alphas)
