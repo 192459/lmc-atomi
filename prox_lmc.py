@@ -453,14 +453,12 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     sigma = np.array([0.2, 0.8])
     Z6 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, omegas, beta, sigma, lamda, alpha, n=K)
 
-    # D = difference matrix
+    D = np.eye(2)
     # Z7 = ulpda_gaussian_mixture(gamma_ulpda, mus, Sigmas, omegas, lamda, D, alpha, n=K)
-
-    print("\n")
 
     
     ## Plot of the true Gaussian mixture with KDE of samples
-    print("Constructing the KDEs of samples...")
+    print("\nConstructing the KDEs of samples...")
     # fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
     # fig2.suptitle("True density and KDEs of samples") 

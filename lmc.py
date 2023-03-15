@@ -373,11 +373,10 @@ def lmc(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4,
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     Z6 = mla_gaussian_mixture(gamma_mla, mus, Sigmas, omegas, beta, n=K)
-    print("\n")
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
-    print("Constructing the KDEs of samples...")
+    print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
 
