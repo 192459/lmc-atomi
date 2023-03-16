@@ -321,6 +321,33 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     beta = np.array([0.7, 0.3])
     Z6 = lmc.mla(gamma_mla, beta)
 
+    ## Plot of the true Gaussian mixture with KDE of samples
+    print("Constructing the 2D histograms of samples...")
+    fig3, axes = plt.subplots(2, 4, figsize=(13, 8))
+
+    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
+    axes[0,0].set_title("True density", fontsize=16)
+
+    axes[0,1].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
+    axes[0,1].set_title("ULA", fontsize=16)
+
+    axes[0,2].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
+    axes[0,2].set_title("MALA", fontsize=16)
+
+    axes[1,0].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
+    axes[1,0].set_title("PULA", fontsize=16)
+
+    axes[1,1].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
+    axes[1,1].set_title("IHPULA", fontsize=16)
+
+    axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
+    axes[1,2].set_title("MLA", fontsize=16)
+
+    plt.show()
+    plt.pause(10)
+    plt.close()
+    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_3.pdf', dpi=500)
+    
 
     ## Plot of the true Gaussian mixture with KDE of samples
     print("\nConstructing the KDEs of samples...")

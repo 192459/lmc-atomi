@@ -296,7 +296,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ax2.set_yticks([])
     ax2.set_zticks([])
 
-    # plt.suptitle("True 2D Gaussian Mixture") 
+    # plt.suptitle("True 2D Laplacian Mixture") 
     plt.show(block=False)
     plt.pause(5)
     plt.close()
@@ -310,7 +310,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ax1.view_init(45, -70)
 
     ax2 = fig.add_subplot(1, 2, 2, projection='3d')
-    ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
+    ax2.contourf(X, Y, Z_smooth, zdir='z', offset=0, cmap=cm.viridis)
     ax2.view_init(90, 270)
 
     ax2.grid(False)
@@ -318,7 +318,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ax2.set_yticks([])
     ax2.set_zticks([])
 
-    # plt.suptitle("True 2D Gaussian Mixture") 
+    # plt.suptitle("2D Smoothed Laplacian Mixture") 
     plt.show(block=False)
     plt.pause(5)
     plt.close()
@@ -339,7 +339,35 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     Z6 = lmc_laplacian.mla(gamma_mla, beta)
 
 
-    ## Plot of the true Gaussian mixture with KDE of samples
+    ## Plot of the true Laplacian mixture with KDE of samples
+    print("Constructing the 2D histograms of samples...")
+    fig3, axes = plt.subplots(2, 4, figsize=(13, 8))
+
+    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
+    axes[0,0].set_title("True density", fontsize=16)
+
+    axes[0,1].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
+    axes[0,1].set_title("ULA", fontsize=16)
+
+    axes[0,2].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
+    axes[0,2].set_title("MALA", fontsize=16)
+
+    axes[1,0].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
+    axes[1,0].set_title("PULA", fontsize=16)
+
+    axes[1,1].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
+    axes[1,1].set_title("IHPULA", fontsize=16)
+
+    axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
+    axes[1,2].set_title("MLA", fontsize=16)
+
+    plt.show()
+    plt.pause(10)
+    plt.close()
+    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_3.pdf', dpi=500)  
+
+
+    ## Plot of the true Laplacian mixture with KDE of samples
     print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
