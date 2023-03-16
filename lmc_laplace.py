@@ -260,37 +260,6 @@ def error(theta, mus, Sigmas, omegas):
 '''
 
 
-def plot_hist2d(z, title): 
-    z0 = z[:,0]
-    z1 = z[:,1]
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    hist, xedges, yedges = np.histogram2d(z0, z1, bins=50, range=[[-5, 5], [-5, 5]], density=True)
-
-    # Construct arrays for the anchor positions of the 16 bars.
-    xpos, ypos = np.meshgrid(xedges[:-1] + 0.25, yedges[:-1] + 0.25, indexing="ij")
-    xpos = xpos.ravel()
-    ypos = ypos.ravel()
-    zpos = 0
-
-    # Construct arrays with the dimensions for the 16 bars.
-    dx = dy = 0.5 * np.ones_like(zpos)
-    dz = hist.ravel()
-
-    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, zsort='average')
-    ax.set_title(title)
-    ax.set_xlabel(r'$x_1$')
-    ax.set_ylabel(r'$x_2$')
-    plt.show()
-
-
-def plot_contour_hist2d(z, title, bins=50):
-    counts, xbins, ybins, image = plt.hist2d(z[:,0], z[:,1], bins=bins, norm=LogNorm(), cmap=cm.viridis)
-    plt.colorbar()
-    plt.title(title)
-    plt.show()
-
-
 ## Main function
 def lmc_laplace(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
     # Our 2-dimensional distribution will be over variables X and Y
