@@ -16,25 +16,21 @@
 
 '''
 Usage: 
-python lmc.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=10000 --n=5 --seed=0
+python lmc.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-2 --gamma_mla=5e-2 --K=10000 --n=5 --seed=0
 '''
 
 import os
-import itertools
 from fastprogress import progress_bar
-from typing import NamedTuple
 import fire
 
 import numpy as np
 from numpy.random import default_rng
 from scipy.linalg import sqrtm
-from scipy.stats import kde, multivariate_normal
+from scipy.stats import multivariate_normal
 
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
@@ -64,10 +60,8 @@ class LangevinMonteCarlo:
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
         return np.exp(-fac / 2) / N
 
-
     def density_gaussian_mixture(self, theta): 
-        K = len(self.mus)
-        den = [self.omegas[k] * self.multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        den = [self.omegas[i] * self.multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(den)
 
     def potential_gaussian_mixture(self, theta): 
@@ -81,8 +75,7 @@ class LangevinMonteCarlo:
         return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
 
     def grad_density_gaussian_mixture(self, theta):
-        K = len(self.mus)
-        grad_den = [self.omegas[k] * self.grad_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(grad_den)
 
     def grad_potential_gaussian_mixture(self, theta):
@@ -96,8 +89,7 @@ class LangevinMonteCarlo:
         return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
     def hess_density_gaussian_mixture(self, theta):
-        K = len(self.mus)
-        hess_den = [self.omegas[k] * self.hess_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(hess_den)
         
     def hess_potential_gaussian_mixture(self, theta):
@@ -111,7 +103,7 @@ class LangevinMonteCarlo:
 
 
     ## Unadjusted Langevin Algorithm (ULA)
-    def ula_gaussian_mixture(self, gamma):
+    def ula(self, gamma):
         print("\nSampling with ULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -135,7 +127,7 @@ class LangevinMonteCarlo:
         return density_ratio * q_ratio
 
 
-    def mala_gaussian_mixture(self, gamma):
+    def mala(self, gamma):
         print("\nSampling with MALA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -155,7 +147,7 @@ class LangevinMonteCarlo:
     def preconditioned_gd_update(self, theta, gamma, M): 
         return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
 
-    def preconditioned_langevin_gaussian_mixture(self, gamma, M):
+    def pula(self, gamma, M):
         print("\nSampling with Preconditioned Langevin Algorithm:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -169,7 +161,7 @@ class LangevinMonteCarlo:
 
 
     # Preconditioning with inverse Hessian
-    def hess_preconditioned_langevin_gaussian_mixture(self, gamma):
+    def ihpula(self, gamma):
         print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -196,7 +188,7 @@ class LangevinMonteCarlo:
     def grad_conjugate_mirror_hyp(self, theta, beta):
         return beta * np.sinh(theta)
 
-    def mla_gaussian_mixture(self, gamma, beta):
+    def mla(self, gamma, beta):
         print("\nSampling with MLA: ")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -215,7 +207,7 @@ class LangevinMonteCarlo:
         return theta - gamma * self.grad_potential_gaussian_mixture(theta)
 
 
-    def cyclical_ula_gaussian_mixture(self, gamma):
+    def cyclical_ula(self, gamma):
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
@@ -227,16 +219,13 @@ class LangevinMonteCarlo:
         return np.array(theta)
 
 
+    '''
+    def error(self, theta1s, thetas2):
+        density_2d_gaussian_mixture(theta, mus, Sigmas)
+        np.sum()
 
-
-
-'''
-def error(theta, mus, Sigmas, omegas):
-    density_2d_gaussian_mixture(theta, mus, Sigmas)
-    np.sum()
-
-    return 
-'''
+        return 
+    '''
 
 
 ## Main function
@@ -318,19 +307,19 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
 
 
-    Z2 = lmc.ula_gaussian_mixture(gamma_ula)
+    Z2 = lmc.ula(gamma_ula)
 
-    Z3, eff_K = lmc.mala_gaussian_mixture(gamma_mala)
+    Z3, eff_K = lmc.mala(gamma_mala)
     print(f'\nMALA acceptance rate: {eff_K / K} ')
         
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = lmc.preconditioned_langevin_gaussian_mixture(gamma_pula, M)
+    Z4 = lmc.pula(gamma_pula, M)
         
-    Z5 = lmc.hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula)
+    Z5 = lmc.ihpula(gamma_ihpula)
       
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    Z6 = lmc.mla_gaussian_mixture(gamma_mla, beta)
+    Z6 = lmc.mla(gamma_mla, beta)
 
 
     ## Plot of the true Gaussian mixture with KDE of samples

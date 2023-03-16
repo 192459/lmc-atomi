@@ -21,9 +21,7 @@ Usage: python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e
 '''
 
 import os
-import itertools
 from fastprogress import progress_bar
-from typing import NamedTuple
 import fire
 
 import numpy as np
@@ -31,8 +29,6 @@ from numpy.random import default_rng
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
 plt.style.use(['science'])
@@ -43,7 +39,7 @@ plt.rcParams.update({
     )
 
 from scipy.linalg import sqrtm
-from scipy.stats import kde, multivariate_normal
+from scipy.stats import multivariate_normal
 from scipy.integrate import quad, dblquad
 
 from prox import *
@@ -71,8 +67,7 @@ class ProximalLangevinMonteCarlo:
         return np.exp(-fac / 2) / N
 
     def density_gaussian_mixture(self, theta): 
-        K = len(self.mus)
-        den = [self.omegas[k] * self.multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        den = [self.omegas[i] * self.multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(den)
 
     def potential_gaussian_mixture(self, theta): 
@@ -90,8 +85,7 @@ class ProximalLangevinMonteCarlo:
         return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
 
     def grad_density_gaussian_mixture(self, theta):
-        K = len(self.mus)
-        grad_den = [self.omegas[k] * self.grad_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(grad_den)
 
     def grad_potential_gaussian_mixture(self, theta):
@@ -105,8 +99,7 @@ class ProximalLangevinMonteCarlo:
         return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
     def hess_density_gaussian_mixture(self, theta):
-        K = len(self.mus)
-        hess_den = [self.omegas[k] * self.hess_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(hess_den)
         
     def hess_potential_gaussian_mixture(self, theta):
@@ -299,13 +292,13 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta)
 
 
-'''
-def error(theta, mus, Sigmas, omegas):
-    density_2d_gaussian_mixture(theta, mus, Sigmas)
-    np.sum()
+    '''
+    def error(self, thetas1, thetas2):
+        density_2d_gaussian_mixture(theta, mus, Sigmas)
+        np.sum()
 
-    return 
-'''
+        return 
+    '''
 
 
 ## Main function

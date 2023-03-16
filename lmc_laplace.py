@@ -14,25 +14,23 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python lmc.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
-# --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=10000 --n=5
+'''
+Usage: 
+python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=0.01 --alpha=.1 --n=5 --K=10000 --seed=0
+'''
 
 import os
-import itertools
 from fastprogress import progress_bar
-from typing import NamedTuple
 import fire
 
 import numpy as np
 from numpy.random import default_rng
 from scipy.linalg import sqrtm
-from scipy.stats import kde, multivariate_normal
+from scipy.stats import multivariate_normal
 
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.colors import LogNorm
 import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
@@ -42,211 +40,192 @@ plt.rcParams.update({
     } 
     )
 
+from prox import *
 
 class LangevinMonteCarloLaplacian:
-    def __init__(self, alphas, omegas, lamda) -> None:
+    def __init__(self, mus, alphas, omegas, lamda, K=1000, seed=0) -> None:
+        self.mus = mus
         self.alphas = alphas
         self.omegas = omegas
-        self.lamda = lamda
+        self.lamda = lamda        
+        self.n = K
+        self.seed = seed
+        self.d = alphas[0].shape[0]  
 
-    def multivariate_laplacian(self, theta, alpha):
-        d = alpha.shape[0]
-        return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1))
+    def multivariate_laplacian(self, theta, mu, alpha):
+        return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta - mu, ord=1, axis=-1))
     
     def density_laplacian_mixture(self, theta): 
-        K = len(self.alphas)
-        den = [self.omegas[k] * multivariate_laplacian(theta, self.alphas[k]) for k in range(K)]
+        den = [self.omegas[i] * self.multivariate_laplacian(theta, self.mus[i], self.alphas[i]) for i in range(len(self.alphas))]
         return sum(den)
     
-    def smooth_density_laplacian_mixture(theta, alphas, omegas): 
-        K = len(alphas)
-        den = [omegas[k] * multivariate_laplacian(theta, alphas[k]) for k in range(K)]
-        return sum(den)
-
     def potential_laplacian_mixture(self, theta): 
-        return -np.log(self.density_2d_laplacian_mixture(theta))
+        return -np.log(self.density_laplacian_mixture(theta))
+    
+    def prox_uncentered_laplace(self, theta, gamma, mu):
+        return mu + prox_laplace(theta - mu, gamma)
+    
+    def moreau_env_uncentered_laplace(self, theta, mu, alpha):
+        prox = self.prox_uncentered_laplace(theta, self.lamda * alpha, mu)
+        return alpha * np.linalg.norm(prox - mu, ord=1, axis=-1) +  np.linalg.norm(prox - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
+    
+    def smooth_multivariate_laplacian(self, theta, mu, alpha):
+        return (alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta, mu, alpha))
+    
+    def smooth_density_laplacian_mixture(self, theta): 
+        den = [self.omegas[i] * self.smooth_multivariate_laplacian(theta, self.mus[i], self.alphas[i]) for i in range(len(self.alphas))]
+        return sum(den)
     
     def smooth_potential_laplacian_mixture(self, theta): 
-        return -np.log(self.smooth_density_2d_laplacian_mixture(theta))
+        return -np.log(self.smooth_density_laplacian_mixture(theta))
 
+    def prox_uncentered_laplace(self, theta, gamma, mu):
+        return mu + prox_laplace(theta - mu, gamma)
 
-def multivariate_laplacian(theta, alpha):
-    d = alpha.shape[0]
-    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
-
-
-def density_2d_laplacian_mixture(theta, alphas, omegas): 
-    K = len(alphas)
-    den = [omegas[k] * multivariate_laplacian(theta, alphas[k]) for k in range(K)]
-    return sum(den)
-
-
-def potential_2d_laplacian_mixture(theta, alphas, omegas): 
-    return -np.log(density_2d_laplacian_mixture(theta, alphas, omegas))
-
-
-def grad_density_multivariate_laplacian(theta, alpha, lamda):
-    d = alpha.shape[0]
-  
-    return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, axis=-1))
-
-
-def grad_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas):
-    K = len(mus)
-    grad_den = [omegas[k] * grad_density_multivariate_laplacian(theta, mus[k], Sigmas[k]) for k in range(K)]
-    return sum(grad_den)
-
-
-def grad_potential_2d_laplacian_mixture(theta, mus, Sigmas, omegas):
-    return - grad_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas) / density_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
-
-
-def hess_density_multivariate_laplacian(pos, mu, Sigma):
-    n = mu.shape[0]
-    Sigma_det = np.linalg.det(Sigma)
-    Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-    return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
-
-
-def hess_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas):
-    K = len(mus)
-    hess_den = [omegas[k] * hess_density_multivariate_laplacian(theta, mus[k], Sigmas[k]) for k in range(K)]
-    return sum(hess_den)
+    def grad_smooth_density_multivariate_laplacian(self, theta, mu, alpha):        
+        return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * (self.prox_uncentered_laplace(theta, self.lamda * alpha, mu) - theta) / self.lamda
     
+    def grad_smooth_density_laplacian_mixture(self, theta):
+        grad_den = [self.omegas[i] * self.grad_smooth_density_multivariate_laplacian(theta, self.alphas[i]) for i in range(len(self.alphas))]
+        return sum(grad_den)
+    
+    def grad_smooth_potential_laplacian_mixture(self, theta):
+        return -self.grad_smooth_density_laplacian_mixture(theta) / self.smooth_density_laplacian_mixture(theta)
+    
+    def hess_smooth_density_multivariate_laplacian(self, theta, alpha):
+        grad_laplace = (prox_laplace(theta, self.lamda * alpha) - theta) / self.lamda
+        return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * ( - np.eye(self.d) + np.outer(grad_laplace, grad_laplace))
 
-def hess_potential_2d_laplacian_mixture(theta, mus, Sigmas, omegas):
-    density = density_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
-    grad_density = grad_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
-    hess_density = hess_density_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
-    return np.outer(grad_density, grad_density) / density**2 - hess_density / density
-
-
-def gd_update(theta, mus, Sigmas, omegas, gamma): 
-    return theta - gamma * grad_potential_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
-
-
-## Unadjusted Langevin Algorithm (ULA)
-def ula_laplacian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
-    print("\nSampling with ULA:")
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, omegas, gamma) + np.sqrt(2*gamma) * xi
-        theta.append(theta_new)    
-        theta0 = theta_new
-    return np.array(theta)
-
-
-## Metropolis-Adjusted Langevin Algorithm (MALA)
-def q_prob(theta1, theta2, gamma, mus, Sigmas, omegas):
-    return multivariate_normal(mean=gd_update(theta2, mus, Sigmas, omegas, gamma), cov=2*gamma).pdf(theta1)
+    def hess_smooth_density_laplacian_mixture(self, theta):
+        hess_den = [self.omegas[i] * self.hess_smooth_density_multivariate_laplacian(theta, self.alphas[i]) for i in range(len(self.alphas))]
+        return sum(hess_den)
+        
+    def hess_smooth_potential_laplacian_mixture(self, theta):
+        density = self.smooth_density_laplacian_mixture(theta)
+        grad_density = self.grad_smooth_density_laplacian_mixture(theta)
+        hess_density = self.hess_smooth_density_laplacian_mixture(theta)
+        return np.outer(grad_density, grad_density) / density**2 - hess_density / density
+    
+    def gd_update(self, theta, gamma): 
+        return theta - gamma * self.grad_smooth_potential_laplacian_mixture(theta) 
 
 
-def prob(theta_new, theta_old, gamma, mus, Sigmas, omegas):
-    density_ratio = density_2d_laplacian_mixture(theta_new, mus, Sigmas, omegas) / density_2d_laplacian_mixture(theta_old, mus, Sigmas, omegas)
-    q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, omegas) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, omegas)
-    return density_ratio * q_ratio
-
-
-def mala_laplacian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
-    print("\nSampling with MALA:")
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = gd_update(theta0, mus, Sigmas, omegas, gamma) + np.sqrt(2*gamma) * xi
-        p = prob(theta_new, theta0, gamma, mus, Sigmas, omegas)
-        alpha = min(1, p)
-        if rng.random() <= alpha:
+    ## Unadjusted Langevin Algorithm (ULA)
+    def ula(self, gamma):
+        print("\nSampling with ULA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
-    return np.array(theta), len(theta)
+        return np.array(theta)
 
 
-## Preconditioned ULA 
-def preconditioned_gd_update(theta, mus, Sigmas, omegas, gamma, M): 
-    return theta - gamma * M @ grad_potential_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
+    ## Metropolis-Adjusted Langevin Algorithm (MALA)
+    def q_prob(self, theta1, theta2, gamma):
+        return multivariate_normal(mean=self.gd_update(theta2, gamma), cov=2*gamma).pdf(theta1)
 
 
-def preconditioned_langevin_laplacian_mixture(gamma, mus, Sigmas, omegas, M, d=2, n=1000, seed=0):
-    print("\nSampling with Preconditioned Langevin Algorithm:")
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = preconditioned_gd_update(theta0, mus, Sigmas, omegas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
-        theta.append(theta_new)    
-        theta0 = theta_new
-    return np.array(theta)
+    def prob(self, theta_new, theta_old, gamma):
+        density_ratio = self.smooth_density_laplacian_mixture(theta_new) / self.smooth_density_laplacian_mixture(theta_old)
+        q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
+        return density_ratio * q_ratio
 
 
-# Preconditioning with inverse Hessian
-def hess_preconditioned_langevin_laplacian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
-    print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []    
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        hess = hess_potential_2d_laplacian_mixture(theta0, mus, Sigmas, omegas)
-        if len(mus) > 1:
-            e = np.linalg.eigvals(hess)
-            M = hess + (np.abs(min(e)) + .02) * np.eye(d)
-            M = np.linalg.inv(M)
-        else:
-            M = np.linalg.inv(hess)
-        theta_new = preconditioned_gd_update(theta0, mus, Sigmas, omegas, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
-        theta.append(theta_new)    
-        theta0 = theta_new
-    return np.array(theta)
+    def mala(self, gamma):
+        print("\nSampling with MALA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            p = self.prob(theta_new, theta0, gamma)
+            alpha = min(1, p)
+            if rng.random() <= alpha:
+                theta.append(theta_new)    
+                theta0 = theta_new
+        return np.array(theta), len(theta)
 
 
-## Mirror-Langevin Algorithm (MLA)
-def grad_mirror_hyp(theta, beta): 
-    return np.arcsinh(theta / beta)
+    ## Preconditioned ULA 
+    def preconditioned_gd_update(self, theta, gamma, M): 
+        return theta - gamma * M @ self.grad_smooth_potential_laplacian_mixture(theta)
 
-def grad_conjugate_mirror_hyp(theta, beta):
-    return beta * np.sinh(theta)
-
-def mla_laplacian_mixture(gamma, mus, Sigmas, omegas, beta, d=2, n=1000, seed=0):
-    print("\nSampling with MLA: ")
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = grad_mirror_hyp(theta0, beta) - gamma * grad_potential_2d_laplacian_mixture(theta0, mus, Sigmas, omegas) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
-        theta_new = grad_conjugate_mirror_hyp(theta_new, beta)
-        theta.append(theta_new)    
-        theta0 = theta_new
-    return np.array(theta)
+    def pula(self, gamma, M):
+        print("\nSampling with Preconditioned Langevin Algorithm:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
 
 
-# Cyclical step sizes
-def cyclical_gd_update(theta, mus, Sigmas, omegas, gamma): 
-    return theta - gamma * grad_potential_2d_laplacian_mixture(theta, mus, Sigmas, omegas)
+    # Preconditioning with inverse Hessian
+    def ihpula(self, gamma):
+        print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []    
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            hess = self.hess_smooth_potential_laplacian_mixture(theta0)
+            if len(self.mus) > 1:
+                e = np.linalg.eigvals(hess)
+                M = hess + (np.abs(min(e)) + .02) * np.eye(self.d)
+                M = np.linalg.inv(M)
+            else:
+                M = np.linalg.inv(hess)
+            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
 
 
-def cyclical_ula_laplacian_mixture(gamma, mus, Sigmas, omegas, d=2, n=1000, seed=0):
-    rng = default_rng(seed)
-    theta0 = rng.normal(0, 1, d)
-    theta = []
-    for _ in progress_bar(range(n)):
-        xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
-        theta_new = cyclical_gd_update(theta0, mus, Sigmas, omegas, gamma) + np.sqrt(2*gamma) * xi
-        theta.append(theta_new)    
-        theta0 = theta_new
-    return np.array(theta)
+    ## Mirror-Langevin Algorithm (MLA)
+    def grad_mirror_hyp(self, theta, beta): 
+        return np.arcsinh(theta / beta)
+
+    def grad_conjugate_mirror_hyp(self, theta, beta):
+        return beta * np.sinh(theta)
+
+    def mla(self, gamma, beta):
+        print("\nSampling with MLA: ")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.grad_mirror_hyp(theta0, beta) - gamma * self.grad_smooth_potential_laplacian_mixture(theta0) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+            theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
 
 
+    # Cyclical step sizes
+    def cyclical_gd_update(self, theta, gamma): 
+        return theta - gamma * self.grad_smooth_potential_laplacian_mixture(theta)
 
-# Contour algorithms
+
+    def cyclical_ula(self, gamma):
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.cyclical_gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
+
 
 
 
@@ -261,43 +240,36 @@ def error(theta, mus, Sigmas, omegas):
 
 
 ## Main function
-def lmc_laplace(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpula=5e-4, gamma_mla=5e-2, n=2, K=5000):
+def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2, 
+                         gamma_pula=5e-2, gamma_ihpula=5e-2, 
+                         gamma_mla=5e-2, lamda=0.01, alpha=.1, 
+                         n=5, K=5000, seed=0):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 300
     X = np.linspace(-5, 5, N)
     Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
 
-
-    # Mean vectors and covariance matrices
+    # location parameters
     mu1 = np.array([0., 0.])
-    Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
     mu2 = np.array([-2., 3.])
-    Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
     mu3 = np.array([2., -3.])
-    Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
     mu4 = np.array([3., 3.])
-    Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
     mu5 = np.array([-2., -2.])
-    Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
-
 
     if n == 1:
         mus = [mu1]
-        Sigmas = [Sigma1]
     elif n == 2: 
         mus = [mu1, mu2]
-        Sigmas = [Sigma1, Sigma2]
     elif n == 3: 
         mus = [mu1, mu2, mu3]
-        Sigmas = [Sigma1, Sigma2, Sigma3]
     elif n == 4: 
         mus = [mu2, mu3, mu4, mu5]
-        Sigmas = [Sigma2, Sigma3, Sigma4, Sigma5]
     elif n == 5: 
         mus = [mu1, mu2, mu3, mu4, mu5]
-        Sigmas = [Sigma1, Sigma2, Sigma3, Sigma4, Sigma5]
 
+    # scale parameters
+    alphas = np.arange(1, n + 1) * alpha
 
     # weight vector
     omegas = np.ones(n) / n
@@ -309,13 +281,14 @@ def lmc_laplace(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpu
     pos[:, :, 1] = Y
 
 
+    lmc_laplacian = LangevinMonteCarloLaplacian(mus, alphas, omegas, lamda, K, seed)
+
     # The distribution on the variables X, Y packed into pos.
-    print("Constructing the true 2D Gaussian mixture density...")
-    Z = density_2d_laplacian_mixture(pos, mus, Sigmas, omegas)
-    # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, omegas)) - 0.005 * np.sum(np.abs(pos)))
+    Z = lmc_laplacian.density_laplacian_mixture(pos)
+    Z_smooth = lmc_laplacian.smooth_density_laplacian_mixture(pos)
 
 
-    ## Plot of the true Gaussian mixture
+    ## Plot of the true Laplacian mixture
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
@@ -335,25 +308,46 @@ def lmc_laplace(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpu
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_laplace_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
 
 
-    Z2 = ula_laplacian_mixture(gamma_ula, mus, Sigmas, omegas, n=K)
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
-    Z3, eff_K = mala_laplacian_mixture(gamma_mala, mus, Sigmas, omegas, n=K)
+    ax1.plot_surface(X, Y, Z_smooth, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
+    ax1.view_init(45, -70)
+
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
+    ax2.view_init(90, 270)
+
+    ax2.grid(False)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.set_zticks([])
+
+    # plt.suptitle("True 2D Gaussian Mixture") 
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close()
+    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1_smooth.pdf', dpi=500)
+
+    Z2 = lmc_laplacian.ula(gamma_ula)
+
+    Z3, eff_K = lmc_laplacian.mala(gamma_mala)
     print(f'\nMALA acceptance rate: {eff_K / K} ')
         
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = preconditioned_langevin_laplacian_mixture(gamma_pula, mus, Sigmas, omegas, M, n=K)
+    Z4 = lmc_laplacian.pula(gamma_pula, M)
         
-    Z5 = hess_preconditioned_langevin_laplacian_mixture(gamma_ihpula, mus, Sigmas, omegas, n=K)
+    Z5 = lmc_laplacian.ihpula(gamma_ihpula)
       
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
-    Z6 = mla_laplacian_mixture(gamma_mla, mus, Sigmas, omegas, beta, n=K)
+    Z6 = lmc_laplacian.mla(gamma_mla, beta)
 
 
-    ## Plot of the true Laplacian mixture with KDE of samples
+    ## Plot of the true Gaussian mixture with KDE of samples
     print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
     sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
@@ -379,10 +373,10 @@ def lmc_laplace(gamma_ula=7.5e-2, gamma_mala=7.5e-2, gamma_pula=8e-2, gamma_ihpu
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_laplace_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
 
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
         os.makedirs('fig')
-    fire.Fire(lmc_laplace)
+    fire.Fire(lmc_laplacian_mixture)
