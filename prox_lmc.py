@@ -47,11 +47,74 @@ from prox import *
 
 
 class ProximalLangevinMonteCarlo:
-    def __init__(self, mus, Sigmas, omegas, lamda) -> None:
+    def __init__(self, mus, Sigmas, omegas, lamda, alpha) -> None:
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas
         self.lamda = lamda
+        self.alpha = alpha
+
+    def multivariate_gaussian(self, theta, mu, Sigma):
+        """Return the multivariate Gaussian distribution on array theta."""
+        d = mu.shape[0]
+        Sigma_det = np.linalg.det(Sigma)
+        Sigma_inv = np.linalg.inv(Sigma)
+        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
+        # way across all the input variables.
+        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
+        return np.exp(-fac / 2) / N
+
+    def density_gaussian_mixture(self, theta): 
+        K = len(self.mus)
+        den = [self.omegas[k] * self.multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        return sum(den)
+
+    def potential_gaussian_mixture(self, theta): 
+        return -np.log(self.density_gaussian_mixture(theta))
+
+    def laplacian_prior(self, theta):    
+        d = theta.shape[0]
+        return (self.alpha/2)**d * np.exp(-self.alpha * np.linalg.norm(theta, ord=1, axis=-1))
+
+    def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
+        d = mu.shape[0]
+        Sigma_det = np.linalg.det(Sigma)
+        Sigma_inv = np.linalg.inv(Sigma)
+        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
+        return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
+
+    def grad_density_gaussian_mixture(self, theta):
+        K = len(self.mus)
+        grad_den = [self.omegas[k] * self.grad_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        return sum(grad_den)
+
+    def grad_potential_gaussian_mixture(self, theta):
+        return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
+
+    def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
+        d = mu.shape[0]
+        Sigma_det = np.linalg.det(Sigma)
+        Sigma_inv = np.linalg.inv(Sigma)
+        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
+        return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
+
+    def hess_density_2d_gaussian_mixture(self, theta):
+        K = len(self.mus)
+        hess_den = [self.omegas[k] * self.hess_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
+        return sum(hess_den)
+        
+    def hess_potential_2d_gaussian_mixture(self, theta):
+        density = self.density_gaussian_mixture(theta)
+        grad_density = self.grad_density_gaussian_mixture(theta)
+        hess_density = self.hess_density_2d_gaussian_mixture(theta)
+        return np.outer(grad_density, grad_density) / density**2 - hess_density / density
+
+    def gd_update(self, theta, gamma): 
+        return theta - gamma * self.grad_potential_gaussian_mixture(theta) 
+
 
 
 
@@ -83,11 +146,11 @@ def laplacian_prior(theta, alpha):
 
 
 def grad_density_multivariate_gaussian(pos, mu, Sigma):
-    n = mu.shape[0]
+    d = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
+    N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+    fac = np.einsum('...k,kl,...l->...', pos - mu, Sigma_inv, pos - mu)    
     return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
@@ -102,11 +165,11 @@ def grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas):
 
 
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
-    n = mu.shape[0]
+    d = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+    N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+    fac = np.einsum('...k,kl,...l->...', pos - mu, Sigma_inv, pos - mu)
     return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
@@ -170,8 +233,8 @@ def q_prob(theta1, theta2, gamma, mus, Sigmas, omegas, lamda, alpha):
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, omegas, lamda, alpha):
-    density_ratio = ((density_2d_gaussian_mixture(theta_new, mus, Sigmas, omegas) * laplacian_prior(theta_new, alpha)) / 
-                     (density_2d_gaussian_mixture(theta_old, mus, Sigmas, omegas) * laplacian_prior(theta_old, alpha)))
+    density_ratio = ((density_gaussian_mixture(theta_new, mus, Sigmas, omegas) * laplacian_prior(theta_new, alpha)) / 
+                     (density_gaussian_mixture(theta_old, mus, Sigmas, omegas) * laplacian_prior(theta_old, alpha)))
     q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, omegas, lamda, alpha) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, omegas, lamda, alpha)
     return density_ratio * q_ratio
 
@@ -195,7 +258,7 @@ def mymala_gaussian_mixture(gamma, mus, Sigmas, omegas, lamda, alpha, n=1000, se
 
 ## Preconditioned Proximal ULA 
 def preconditioned_gd_update(theta, mus, Sigmas, omegas, gamma, M): 
-    return theta - gamma * M @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    return theta - gamma * M @ grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 def preconditioned_prox(x, gamma, M): 
     rho = 1 / np.linalg.norm(M, ord=2)
@@ -208,7 +271,7 @@ def preconditioned_prox(x, gamma, M):
     return w
 
 def preconditioned_prox_update(theta, mus, Sigmas, omegas, gamma, M):
-    return preconditioned_prox(theta - gamma * M @ grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas), gamma, M)
+    return preconditioned_prox(theta - gamma * M @ grad_density_gaussian_mixture(theta, mus, Sigmas, omegas), gamma, M)
 
 def ppula_gaussian_mixture(gamma, mus, Sigmas, omegas, M, n=1000, seed=0):
     d = mus[0].shape[0]
@@ -226,7 +289,7 @@ def ppula_gaussian_mixture(gamma, mus, Sigmas, omegas, M, n=1000, seed=0):
 
 ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
 def grad_FB_env(theta, mus, Sigmas, omegas, lamda, alpha):
-    return (np.eye(theta.shape[0]) - lamda * hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, omegas, lamda), lamda * alpha)) / lamda
+    return (np.eye(theta.shape[0]) - lamda * hess_potential_gaussian_mixture(theta, mus, Sigmas, omegas)) @ (theta - prox_laplace(gd_update(theta, mus, Sigmas, omegas, lamda), lamda * alpha)) / lamda
 
 def gd_FB_update(theta, gamma, mus, Sigmas, omegas, lamda, alpha):
     return theta - gamma * grad_FB_env(theta, mus, Sigmas, omegas, lamda, alpha)
@@ -273,7 +336,7 @@ def grad_BM_env(theta, beta, lamda, alpha):
     return 1/lamda * (theta**2 + beta**2)**(-.5) * (theta - left_bregman_prox_ell_one_hypent(theta, beta, lamda * alpha))
 
 def gd_BM_update(theta, gamma, mus, Sigmas, omegas):
-    return -gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    return -gamma * grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 def prox_BM_update(theta, beta, gamma, lamda, alpha):
     return -gamma * grad_BM_env(theta, beta, lamda, alpha)
@@ -318,35 +381,6 @@ def error(theta, mus, Sigmas, omegas):
 '''
 
 
-def plot_hist2d(z, title): 
-    z0 = z[:,0]
-    z1 = z[:,1]
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    hist, xedges, yedges = np.histogram2d(z0, z1, bins=50, range=[[-5, 5], [-5, 5]], density=True)
-
-    # Construct arrays for the anchor positions of the 16 bars.
-    xpos, ypos = np.meshgrid(xedges[:-1] + 0.25, yedges[:-1] + 0.25, indexing="ij")
-    xpos = xpos.ravel()
-    ypos = ypos.ravel()
-    zpos = 0
-
-    # Construct arrays with the dimensions for the 16 bars.
-    dx = dy = 0.5 * np.ones_like(zpos)
-    dz = hist.ravel()
-
-    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, zsort='average')
-    ax.set_title(title)
-    ax.set_xlabel(r'$x_1$')
-    ax.set_ylabel(r'$x_2$')
-    plt.show()
-
-
-def plot_contour_hist2d(z, title, bins=50):
-    counts, xbins, ybins, image = plt.hist2d(z[:,0], z[:,1], bins=bins, norm=LogNorm(), cmap=cm.viridis)
-    plt.colorbar()
-    plt.title(title)
-    plt.show()
 
 
 ## Main function
