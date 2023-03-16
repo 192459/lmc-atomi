@@ -114,7 +114,8 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
+        gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             gamma = gammas[i]
@@ -138,7 +139,8 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
+        gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             gamma = gammas[i]
@@ -160,7 +162,8 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
+        gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             gamma = gammas[i]
@@ -176,7 +179,8 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
+        gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             gamma = gammas[i]
@@ -205,7 +209,8 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
+        gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             gamma = gammas[i]
