@@ -57,28 +57,27 @@ class ProximalLangevinMonteCarlo:
 
 def multivariate_gaussian(theta, mu, Sigma):
     """Return the multivariate Gaussian distribution on array theta."""
-    n = mu.shape[0]
+    d = mu.shape[0]
     Sigma_det = np.linalg.det(Sigma)
     Sigma_inv = np.linalg.inv(Sigma)
-    N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
+    N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
     # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
     # way across all the input variables.
     fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
-
     return np.exp(-fac / 2) / N
 
 
-def density_2d_gaussian_mixture(theta, mus, Sigmas, omegas): 
+def density_gaussian_mixture(theta, mus, Sigmas, omegas): 
     K = len(mus)
     den = [omegas[k] * multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(den)
 
 
-def potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas): 
-    return -np.log(density_2d_gaussian_mixture(theta, mus, Sigmas, omegas))
+def potential_gaussian_mixture(theta, mus, Sigmas, omegas): 
+    return -np.log(density_gaussian_mixture(theta, mus, Sigmas, omegas))
 
 
-def prior(theta, alpha):    
+def laplacian_prior(theta, alpha):    
     d = theta.shape[0]
     return (alpha/2)**d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1))
 
@@ -92,14 +91,14 @@ def grad_density_multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
 
 
-def grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
+def grad_density_gaussian_mixture(theta, mus, Sigmas, omegas):
     K = len(mus)
     grad_den = [omegas[k] * grad_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(grad_den)
 
 
-def grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
-    return -grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas) / density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+def grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas):
+    return -grad_density_gaussian_mixture(theta, mus, Sigmas, omegas) / density_gaussian_mixture(theta, mus, Sigmas, omegas)
 
 
 def hess_density_multivariate_gaussian(pos, mu, Sigma):
@@ -118,14 +117,14 @@ def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
     
 
 def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
-    density = density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
-    grad_density = grad_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    density = density_gaussian_mixture(theta, mus, Sigmas, omegas)
+    grad_density = grad_density_gaussian_mixture(theta, mus, Sigmas, omegas)
     hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
     return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 
 
 def gd_update(theta, mus, Sigmas, omegas, gamma): 
-    return theta - gamma * grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas) 
+    return theta - gamma * grad_potential_gaussian_mixture(theta, mus, Sigmas, omegas) 
 
 
 ## Proximal Gradient Langevin Dynamics (PGLD)
@@ -171,8 +170,8 @@ def q_prob(theta1, theta2, gamma, mus, Sigmas, omegas, lamda, alpha):
 
 
 def prob(theta_new, theta_old, gamma, mus, Sigmas, omegas, lamda, alpha):
-    density_ratio = ((density_2d_gaussian_mixture(theta_new, mus, Sigmas, omegas) * prior(theta_new, alpha)) / 
-                     (density_2d_gaussian_mixture(theta_old, mus, Sigmas, omegas) * prior(theta_old, alpha)))
+    density_ratio = ((density_2d_gaussian_mixture(theta_new, mus, Sigmas, omegas) * laplacian_prior(theta_new, alpha)) / 
+                     (density_2d_gaussian_mixture(theta_old, mus, Sigmas, omegas) * laplacian_prior(theta_old, alpha)))
     q_ratio = q_prob(theta_old, theta_new, gamma, mus, Sigmas, omegas, lamda, alpha) / q_prob(theta_new, theta_old, gamma, mus, Sigmas, omegas, lamda, alpha)
     return density_ratio * q_ratio
 
@@ -404,11 +403,12 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
+    print(pos.shape)
 
     # The distribution on the variables X, Y packed into pos.
     
-    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, omegas) * prior(pos, alpha)
-    # Z = prior(pos, alpha)
+    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, omegas) * laplacian_prior(pos, alpha)
+    # Z = laplacian_prior(pos, alpha)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, omegas)) - 0.005 * np.sum(np.abs(pos)))
     # print(Z.shape)
 
