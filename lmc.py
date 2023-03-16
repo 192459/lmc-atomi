@@ -14,8 +14,10 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python lmc.py --gamma_ula=7.5e-2 --gamma_mala=7.5e-2 
-# --gamma_pula=8e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=10000 --n=5
+'''
+Usage: 
+python lmc.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --K=10000 --n=5 --seed=0
+'''
 
 import os
 import itertools
