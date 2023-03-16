@@ -16,7 +16,7 @@
 
 '''
 Usage: 
-python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=0.01 --alpha=.1 --n=5 --K=10000 --seed=0
+python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=1e-1 --alpha=1e-1 --n=5 --K=10000 --seed=0
 '''
 
 import os
@@ -50,7 +50,7 @@ class LangevinMonteCarloLaplacian:
         self.lamda = lamda        
         self.n = K
         self.seed = seed
-        self.d = alphas[0].shape[0]  
+        self.d = mus[0].shape[0]  
 
     def multivariate_laplacian(self, theta, mu, alpha):
         return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta - mu, ord=1, axis=-1))
@@ -86,18 +86,18 @@ class LangevinMonteCarloLaplacian:
         return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * (self.prox_uncentered_laplace(theta, self.lamda * alpha, mu) - theta) / self.lamda
     
     def grad_smooth_density_laplacian_mixture(self, theta):
-        grad_den = [self.omegas[i] * self.grad_smooth_density_multivariate_laplacian(theta, self.alphas[i]) for i in range(len(self.alphas))]
+        grad_den = [self.omegas[i] * self.grad_smooth_density_multivariate_laplacian(theta, self.mus[i], self.alphas[i]) for i in range(len(self.alphas))]
         return sum(grad_den)
     
     def grad_smooth_potential_laplacian_mixture(self, theta):
         return -self.grad_smooth_density_laplacian_mixture(theta) / self.smooth_density_laplacian_mixture(theta)
     
-    def hess_smooth_density_multivariate_laplacian(self, theta, alpha):
-        grad_laplace = (prox_laplace(theta, self.lamda * alpha) - theta) / self.lamda
+    def hess_smooth_density_multivariate_laplacian(self, theta, mu, alpha):
+        grad_laplace = (theta - self.prox_uncentered_laplace(theta, self.lamda * alpha, mu)) / self.lamda
         return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * ( - np.eye(self.d) + np.outer(grad_laplace, grad_laplace))
 
     def hess_smooth_density_laplacian_mixture(self, theta):
-        hess_den = [self.omegas[i] * self.hess_smooth_density_multivariate_laplacian(theta, self.alphas[i]) for i in range(len(self.alphas))]
+        hess_den = [self.omegas[i] * self.hess_smooth_density_multivariate_laplacian(theta, self.mus[i], self.alphas[i]) for i in range(len(self.alphas))]
         return sum(hess_den)
         
     def hess_smooth_potential_laplacian_mixture(self, theta):
@@ -242,7 +242,7 @@ def error(theta, mus, Sigmas, omegas):
 ## Main function
 def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2, 
                          gamma_pula=5e-2, gamma_ihpula=5e-2, 
-                         gamma_mla=5e-2, lamda=0.01, alpha=.1, 
+                         gamma_mla=5e-2, lamda=1e-1, alpha=1e-1, 
                          n=5, K=5000, seed=0):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 300
@@ -269,7 +269,8 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
         mus = [mu1, mu2, mu3, mu4, mu5]
 
     # scale parameters
-    alphas = np.arange(1, n + 1) * alpha
+    # alphas = np.arange(1, n + 1) * alpha
+    alphas = np.ones(n) * alpha
 
     # weight vector
     omegas = np.ones(n) / n
@@ -308,7 +309,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
 
 
     fig = plt.figure(figsize=(10, 5))
@@ -330,7 +331,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1_smooth.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_1_smooth.pdf', dpi=500)
 
     Z2 = lmc_laplacian.ula(gamma_ula)
 
@@ -373,7 +374,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show()
     # plt.pause(5)
     # plt.close()
-    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
 
 
 if __name__ == '__main__':

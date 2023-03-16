@@ -113,7 +113,7 @@ class ProximalLangevinMonteCarlo:
 
 
     ## Proximal Gradient Langevin Dynamics (PGLD)
-    def pgld_gaussian_mixture(self, gamma):
+    def pgld(self, gamma):
         print("\nSampling with Proximal ULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -134,7 +134,7 @@ class ProximalLangevinMonteCarlo:
     def prox_update(self, theta, gamma):
         return -gamma * self.grad_Moreau_env(theta)
 
-    def myula_gaussian_mixture(self, gamma):
+    def myula(self, gamma):
         print("\nSampling with MYULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -159,7 +159,7 @@ class ProximalLangevinMonteCarlo:
         return density_ratio * q_ratio
 
 
-    def mymala_gaussian_mixture(self, gamma):
+    def mymala(self, gamma):
         print("\nSampling with MYMALA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -192,7 +192,7 @@ class ProximalLangevinMonteCarlo:
     def preconditioned_prox_update(self, theta, gamma, M, t=100):
         return self.preconditioned_prox(theta - gamma * M @ self.grad_density_gaussian_mixture(theta), gamma, M, t)
 
-    def ppula_gaussian_mixture(self, gamma, M, t=100):
+    def ppula(self, gamma, M, t=100):
         print("\nSampling with PP-ULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -212,7 +212,7 @@ class ProximalLangevinMonteCarlo:
     def gd_FB_update(self, theta, gamma):
         return theta - gamma * self.grad_FB_env(theta)
 
-    def fbula_gaussian_mixture(self, gamma):
+    def fbula(self, gamma):
         print("\nSampling with EULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -258,7 +258,7 @@ class ProximalLangevinMonteCarlo:
     def prox_BM_update(self, theta, beta, gamma):
         return -gamma * self.grad_BM_env(theta, beta)
 
-    def lbmumla_gaussian_mixture(self, gamma, beta, sigma):
+    def lbmumla(self, gamma, beta, sigma):
         print("\nSampling with LBMUMLA: ")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -274,7 +274,7 @@ class ProximalLangevinMonteCarlo:
 
 
     # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
-    def ulpda_gaussian_mixture(self, gamma0, gamma1, tau, D, prox_f, prox_g):
+    def ulpda(self, gamma0, gamma1, tau, D, prox_f, prox_g):
         print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -381,26 +381,26 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.close()
     fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1.pdf', dpi=500)
 
-    Z1 = prox_lmc.pgld_gaussian_mixture(gamma_pgld)
+    Z1 = prox_lmc.pgld(gamma_pgld)
 
-    Z2 = prox_lmc.myula_gaussian_mixture(gamma_myula)
+    Z2 = prox_lmc.myula(gamma_myula)
 
-    Z3, eff_K = prox_lmc.mymala_gaussian_mixture(gamma_mymala)
+    Z3, eff_K = prox_lmc.mymala(gamma_mymala)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = prox_lmc.ppula_gaussian_mixture(gamma_ppula, M, t)
+    Z4 = prox_lmc.ppula(gamma_ppula, M, t)
 
-    Z5 = prox_lmc.fbula_gaussian_mixture(gamma_fbula)
+    Z5 = prox_lmc.fbula(gamma_fbula)
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     sigma = np.array([0.2, 0.8])
-    Z6 = prox_lmc.lbmumla_gaussian_mixture(gamma_lbmumla, beta, sigma)
+    Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
     D = np.eye(2)
     tau = .5
-    Z7 = prox_lmc.ulpda_gaussian_mixture(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
+    Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
 
     
     ## Plot of the true Gaussian mixture with KDE of samples
