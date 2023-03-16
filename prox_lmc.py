@@ -14,8 +14,11 @@
 
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
-# Usage: python prox_lmc.py --gamma_proxula=7.5e-2 --gamma_myula=7.5e-2  --gamma_mymala=7.5e-2\
-# --gamma_ppula=8e-2 --gamma_eula=5e-4 --gamma_bmumla=5e-2 --K=10000 --n=5
+'''
+Usage: python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 \
+--gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 \
+--gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
+'''
 
 import os
 import itertools
@@ -330,8 +333,6 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
     mu5 = np.array([-4., -4.])
     Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
-    # Sigma = np.eye(2)
-    # Sigma1 = Sigma2 = Sigma3 = Sigma4 = Sigma5 = Sigma
 
 
     if n == 1:
@@ -358,13 +359,11 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
-
-    # The distribution on the variables X, Y packed into pos.
+    
     prox_lmc = ProximalLangevinMonteCarlo(mus, Sigmas, omegas, lamda, alpha, K, seed)
 
+    # The distribution on the variables X, Y packed into pos.
     Z = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.laplacian_prior(pos)
-    # Z = density_gaussian_mixture(pos, mus, Sigmas, omegas) * laplacian_prior(pos, alpha)
-    
 
     ## Plot of the true Gaussian mixture
     fig = plt.figure(figsize=(10, 5))
@@ -390,32 +389,25 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1.pdf', dpi=500)
 
     Z1 = prox_lmc.pgld_gaussian_mixture(gamma_pgld)
-    # Z1 = pgld_gaussian_mixture(gamma_pgld, mus, Sigmas, omegas, lamda, alpha, n=K)
 
     Z2 = prox_lmc.myula_gaussian_mixture(gamma_myula)
-    # Z2 = myula_gaussian_mixture(gamma_myula, mus, Sigmas, omegas, lamda, alpha, n=K)
 
     Z3, eff_K = prox_lmc.mymala_gaussian_mixture(gamma_mymala)
-    # Z3, eff_K = mymala_gaussian_mixture(gamma_mymala, mus, Sigmas, omegas, lamda, alpha, n=K)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = prox_lmc.ppula_gaussian_mixture(gamma_ppula, M, t)
-    # Z4 = ppula_gaussian_mixture(gamma_ppula, mus, Sigmas, omegas, M, n=K)
 
     Z5 = prox_lmc.fbula_gaussian_mixture(gamma_fbula)
-    # Z5 = fbula_gaussian_mixture(gamma_fbula, mus, Sigmas, omegas, lamda, alpha, n=K)
     
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     sigma = np.array([0.2, 0.8])
     Z6 = prox_lmc.lbmumla_gaussian_mixture(gamma_lbmumla, beta, sigma)
-    # Z6 = lbmumla_gaussian_mixture(gamma_lbmumla, mus, Sigmas, omegas, beta, sigma, lamda, alpha, n=K)
 
     D = np.eye(2)
     tau = .5
     Z7 = prox_lmc.ulpda_gaussian_mixture(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
-    # Z7 = ulpda_gaussian_mixture(gamma_ulpda, mus, Sigmas, omegas, lamda, D, alpha, n=K)
 
     
     ## Plot of the true Gaussian mixture with KDE of samples
@@ -493,8 +485,8 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[1,3].set_title("ULPDA", fontsize=16)
 
     plt.show()
-    # plt.pause(5)
-    # plt.close()
+    plt.pause(10)
+    plt.close()
     fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_3.pdf', dpi=500)  
 
 
