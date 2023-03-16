@@ -281,6 +281,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
 
 
     ## Plot of the true Laplacian mixture
+    print("\nPlotting the true Laplacian mixture...")
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
@@ -303,6 +304,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     fig.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
 
 
+    print("\nPlotting the smoothed Laplacian mixture...")    
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
@@ -339,9 +341,9 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     Z6 = lmc_laplacian.mla(gamma_mla, beta)
 
 
-    ## Plot of the true Laplacian mixture with KDE of samples
-    print("Constructing the 2D histograms of samples...")
-    fig3, axes = plt.subplots(2, 4, figsize=(13, 8))
+    ## Plot of the true Laplacian mixture with 2d histograms of samples
+    print("\nConstructing the 2D histograms of samples...")
+    fig3, axes = plt.subplots(2, 3, figsize=(13, 8))
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
@@ -391,8 +393,8 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     axes[1,2].set_title("MLA", fontsize=16)
 
     plt.show()
-    # plt.pause(5)
-    # plt.close()
+    plt.pause(10)
+    plt.close()
     fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
 
 
