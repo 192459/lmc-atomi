@@ -21,6 +21,10 @@ from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
 
 
+def prox_conjugate(x, gamma, prox):
+    return x - gamma * prox(x / gamma, 1/gamma)
+
+
 def prox_laplace(x, gamma): 
     return np.sign(x) * np.maximum(np.abs(x) - gamma, 0)
 

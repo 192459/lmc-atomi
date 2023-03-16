@@ -47,19 +47,21 @@ from prox import *
 
 
 class ProximalLangevinMonteCarlo:
-    def __init__(self, mus, Sigmas, omegas, lamda, alpha) -> None:
+    def __init__(self, mus, Sigmas, omegas, lamda, alpha, n=1000, seed=0) -> None:
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas
         self.lamda = lamda
         self.alpha = alpha
+        self.n = n
+        self.seed = seed
+        self.d = mus[0].shape[0]
 
     def multivariate_gaussian(self, theta, mu, Sigma):
         """Return the multivariate Gaussian distribution on array theta."""
-        d = mu.shape[0]
         Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
         # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
         # way across all the input variables.
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
@@ -78,10 +80,9 @@ class ProximalLangevinMonteCarlo:
         return (self.alpha/2)**d * np.exp(-self.alpha * np.linalg.norm(theta, ord=1, axis=-1))
 
     def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
-        d = mu.shape[0]
         Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
         return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
 
@@ -94,26 +95,205 @@ class ProximalLangevinMonteCarlo:
         return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
 
     def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
-        d = mu.shape[0]
         Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**d * np.abs(Sigma_det))
+        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
         return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
-    def hess_density_2d_gaussian_mixture(self, theta):
+    def hess_density_gaussian_mixture(self, theta):
         K = len(self.mus)
         hess_den = [self.omegas[k] * self.hess_density_multivariate_gaussian(theta, self.mus[k], self.Sigmas[k]) for k in range(K)]
         return sum(hess_den)
         
-    def hess_potential_2d_gaussian_mixture(self, theta):
+    def hess_potential_gaussian_mixture(self, theta):
         density = self.density_gaussian_mixture(theta)
         grad_density = self.grad_density_gaussian_mixture(theta)
-        hess_density = self.hess_density_2d_gaussian_mixture(theta)
+        hess_density = self.hess_density_gaussian_mixture(theta)
         return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 
     def gd_update(self, theta, gamma): 
         return theta - gamma * self.grad_potential_gaussian_mixture(theta) 
+
+
+    ## Proximal Gradient Langevin Dynamics (PGLD)
+    def pgld_gaussian_mixture(self, gamma):
+        print("\nSampling with Proximal ULA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):        
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta0 = prox_laplace(theta0, self.lamda * self.alpha)
+            theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
+    
+
+    ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
+    def grad_Moreau_env(self, theta):
+        return (theta - prox_laplace(theta, self.lamda * self.alpha)) / self.lamda
+
+    def prox_update(self, theta, gamma):
+        return -gamma * grad_Moreau_env(theta, self.lamda, self.alpha)
+
+    def myula_gaussian_mixture(self, gamma):
+        print("\nSampling with MYULA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
+
+
+    ## Moreau--Yosida regularized Metropolis-Adjusted Langevin Algorithm (MYMALA)
+    def q_prob(self, theta1, theta2, gamma):
+        return multivariate_normal(mean=self.gd_update(theta2, gamma) + self.prox_update(theta2, gamma), cov=2*gamma).pdf(theta1)
+
+
+    def prob(self, theta_new, theta_old, gamma):
+        density_ratio = ((self.density_gaussian_mixture(theta_new) * self.laplacian_prior(theta_new)) / 
+                        (self.density_gaussian_mixture(theta_old) * self.laplacian_prior(theta_old)))
+        q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
+        return density_ratio * q_ratio
+
+
+    def mymala_gaussian_mixture(self, gamma):
+        print("\nSampling with MYMALA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            p = self.prob(theta_new, theta0, gamma)
+            alpha = min(1, p)
+            if rng.random() <= alpha:
+                theta.append(theta_new) 
+                theta0 = theta_new
+        return np.array(theta), len(theta)
+
+
+    ## Preconditioned Proximal ULA 
+    def preconditioned_gd_update(self, theta, gamma, M): 
+        return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
+
+    def preconditioned_prox(self, x, gamma, M, t=100): 
+        rho = 1 / np.linalg.norm(M, ord=2)
+        eps = min(1, rho)
+        eta = 2 * rho - eps
+        w = np.zeros(x.shape[0])
+        for _ in range(t):
+            u = x - M @ w
+            w += eta * u - eta * prox_laplace(eta*w + u, gamma / eta)
+        return w
+
+    def preconditioned_prox_update(self, theta, gamma, M, t=100):
+        return self.preconditioned_prox(theta - gamma * M @ self.grad_density_gaussian_mixture(theta), gamma, M, t)
+
+    def ppula_gaussian_mixture(self, gamma, M, t=100):
+        print("\nSampling with PP-ULA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.preconditioned_prox_update(theta0, gamma, M, t) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
+
+
+    ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
+    def grad_FB_env(self, theta):
+        return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
+
+    def gd_FB_update(self, theta, gamma):
+        return theta - gamma * self.grad_FB_env(theta)
+
+    def fbula_gaussian_mixture(self, gamma):
+        print("\nSampling with EULA:")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.gd_FB_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            theta.append(theta_new)    
+            theta0 = theta_new
+        return np.array(theta)
+
+
+    ## Bregman--Moreau Unadjusted Mirror-Langevin Algorithm (BMUMLA)
+    def grad_mirror_hyp(self, theta, beta): 
+        return np.arcsinh(theta / beta)
+
+    def grad_conjugate_mirror_hyp(self, theta, beta):
+        return beta * np.sinh(theta)
+
+    def left_bregman_prox_ell_one_hypent(self, theta, beta, gamma):
+        if isinstance(theta, float):
+            if theta > beta * np.sinh(gamma):
+                prox = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
+            elif theta < beta * np.sinh(-gamma):
+                prox = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
+            else: 
+                prox = np.sqrt(theta ** 2 + beta ** 2) - beta
+        else:
+            prox = np.array(len(theta))
+            p1 = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
+            p2 = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
+            p3 = np.sqrt(theta ** 2 + beta ** 2) - beta
+            prox = np.where(theta > beta * np.sinh(gamma), p1, p3)
+            prox = np.where(theta < beta * np.sinh(-gamma), p2, prox)
+        return prox
+
+    def grad_BM_env(self, theta, beta):
+        return 1/self.lamda * (theta**2 + beta**2)**(-.5) * (theta - self.left_bregman_prox_ell_one_hypent(theta, beta, self.lamda * self.alpha))
+
+    def gd_BM_update(self, theta, gamma):
+        return -gamma * self.grad_potential_gaussian_mixture(theta)
+
+    def prox_BM_update(self, theta, beta, gamma):
+        return -gamma * self.grad_BM_env(theta, beta)
+
+    def lbmumla_gaussian_mixture(self, gamma, beta, sigma):
+        print("\nSampling with LBMUMLA: ")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = self.grad_mirror_hyp(theta0, beta) + self.gd_BM_update(theta0, gamma) + self.prox_BM_update(theta0, sigma, gamma) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+            theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
+            theta.append(theta_new) 
+            theta_new = grad_mirror_hyp(theta0, beta) - gamma *  + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+            theta0 = theta_new
+        return np.array(theta)
+
+
+    # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
+    def ulpda_gaussian_mixture(self, gamma0, gamma1, tau, D):
+        print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
+        rng = default_rng(self.seed)
+        theta0 = rng.normal(0, 1, self.d)
+        u0 = tu0 = rng.normal(0, 1, self.d)
+        theta = []
+        for _ in progress_bar(range(self.n)):
+            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            theta_new = prox_(theta0 - gamma0 * D.T @ tu0, gamma0) + np.sqrt(2*gamma0) * xi
+            u_new = prox_conjugate(u0 + gamma1 * D @ (2*theta_new - theta0), gamma1, prox_laplace)
+            tu_new = u0 + tau * (u_new - u0)
+            theta.append(theta_new)    
+            theta0 = theta_new
+            u0 = u_new
+            tu0 = tu_new
+        return np.array(theta)
 
 
 
@@ -173,16 +353,16 @@ def hess_density_multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
 
 
-def hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
+def hess_density_gaussian_mixture(theta, mus, Sigmas, omegas):
     K = len(mus)
     hess_den = [omegas[k] * hess_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
     return sum(hess_den)
     
 
-def hess_potential_2d_gaussian_mixture(theta, mus, Sigmas, omegas):
+def hess_potential_gaussian_mixture(theta, mus, Sigmas, omegas):
     density = density_gaussian_mixture(theta, mus, Sigmas, omegas)
     grad_density = grad_density_gaussian_mixture(theta, mus, Sigmas, omegas)
-    hess_density = hess_density_2d_gaussian_mixture(theta, mus, Sigmas, omegas)
+    hess_density = hess_density_gaussian_mixture(theta, mus, Sigmas, omegas)
     return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 
 
@@ -441,7 +621,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
 
     # The distribution on the variables X, Y packed into pos.
     
-    Z = density_2d_gaussian_mixture(pos, mus, Sigmas, omegas) * laplacian_prior(pos, alpha)
+    Z = density_gaussian_mixture(pos, mus, Sigmas, omegas) * laplacian_prior(pos, alpha)
     # Z = laplacian_prior(pos, alpha)
     # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, omegas)) - 0.005 * np.sum(np.abs(pos)))
     # print(Z.shape)
