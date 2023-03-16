@@ -440,7 +440,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
     axes[1,3].set_title("ULPDA", fontsize=16)
 
-    plt.show()
+    plt.show(block=False)
     plt.pause(10)
     plt.close()
     fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_3.pdf', dpi=500)

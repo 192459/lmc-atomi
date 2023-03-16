@@ -345,7 +345,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
     axes[1,2].set_title("MLA", fontsize=16)
 
-    plt.show()
+    plt.show(block=False)
     plt.pause(10)
     plt.close()
     fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_3.pdf', dpi=500)
@@ -374,7 +374,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("MLA", fontsize=16)
 
-    plt.show()
+    plt.show(block=False)
     plt.pause(10)
     plt.close()
     fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
