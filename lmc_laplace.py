@@ -44,6 +44,7 @@ from prox import *
 
 class LangevinMonteCarloLaplacian:
     def __init__(self, mus, alphas, omegas, lamda, K=1000, seed=0) -> None:
+        super(LangevinMonteCarloLaplacian, self).__init__()
         self.mus = mus
         self.alphas = alphas
         self.omegas = omegas
@@ -113,8 +114,10 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        for _ in progress_bar(range(self.n)):
+        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            gamma = gammas[i]
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -135,8 +138,10 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        for _ in progress_bar(range(self.n)):
+        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            gamma = gammas[i]
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
@@ -155,8 +160,10 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        for _ in progress_bar(range(self.n)):
+        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            gamma = gammas[i]
             theta_new = self.preconditioned_gd_update(theta0, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -168,9 +175,11 @@ class LangevinMonteCarloLaplacian:
         print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
-        theta = []    
-        for _ in progress_bar(range(self.n)):
+        theta = []
+        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            gamma = gammas[i]
             hess = self.hess_smooth_potential_laplacian_mixture(theta0)
             if len(self.mus) > 1:
                 e = np.linalg.eigvals(hess)
@@ -196,8 +205,10 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        for _ in progress_bar(range(self.n)):
+        gammas = [gamma * i ** (-0.55) for i in range(1, self.n+1)]
+        for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            gamma = gammas[i]
             theta_new = self.grad_mirror_hyp(theta0, beta) - gamma * self.grad_smooth_potential_laplacian_mixture(theta0) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
             theta.append(theta_new)    

@@ -47,6 +47,7 @@ from prox import *
 
 class ProximalLangevinMonteCarlo:
     def __init__(self, mus, Sigmas, omegas, lamda, alpha, K=1000, seed=0) -> None:
+        super(ProximalLangevinMonteCarlo, self).__init__()
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas

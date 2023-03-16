@@ -43,6 +43,7 @@ plt.rcParams.update({
 
 class LangevinMonteCarlo:
     def __init__(self, mus, Sigmas, omegas, K=1000, seed=0) -> None:
+        super(LangevinMonteCarlo, self).__init__()
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas
