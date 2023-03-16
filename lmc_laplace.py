@@ -79,9 +79,6 @@ class LangevinMonteCarloLaplacian:
     def smooth_potential_laplacian_mixture(self, theta): 
         return -np.log(self.smooth_density_laplacian_mixture(theta))
 
-    def prox_uncentered_laplace(self, theta, gamma, mu):
-        return mu + prox_laplace(theta - mu, gamma)
-
     def grad_smooth_density_multivariate_laplacian(self, theta, mu, alpha):        
         return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * (self.prox_uncentered_laplace(theta, self.lamda * alpha, mu) - theta) / self.lamda
     
@@ -128,12 +125,10 @@ class LangevinMonteCarloLaplacian:
     def q_prob(self, theta1, theta2, gamma):
         return multivariate_normal(mean=self.gd_update(theta2, gamma), cov=2*gamma).pdf(theta1)
 
-
     def prob(self, theta_new, theta_old, gamma):
         density_ratio = self.smooth_density_laplacian_mixture(theta_new) / self.smooth_density_laplacian_mixture(theta_old)
         q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
         return density_ratio * q_ratio
-
 
     def mala(self, gamma):
         print("\nSampling with MALA:")
@@ -214,7 +209,6 @@ class LangevinMonteCarloLaplacian:
     def cyclical_gd_update(self, theta, gamma): 
         return theta - gamma * self.grad_smooth_potential_laplacian_mixture(theta)
 
-
     def cyclical_ula(self, gamma):
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
@@ -227,16 +221,13 @@ class LangevinMonteCarloLaplacian:
         return np.array(theta)
 
 
+    '''
+    def error(self, thetas1, thetas2):
+        density_2d_gaussian_mixture(theta, mus, Sigmas)
+        np.sum()
 
-
-
-'''
-def error(theta, mus, Sigmas, omegas):
-    density_2d_gaussian_mixture(theta, mus, Sigmas)
-    np.sum()
-
-    return 
-'''
+        return 
+    '''
 
 
 ## Main function
