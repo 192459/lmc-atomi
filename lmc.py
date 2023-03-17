@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install libraries: pip install -U numpy matplotlib scipy seaborn fire
+# Install libraries: pip install -U numpy matplotlib scipy seaborn fire fastprogress
 
 '''
 Usage: 
@@ -52,12 +52,9 @@ class LangevinMonteCarlo:
         self.d = mus[0].shape[0]   
 
     def multivariate_gaussian(self, theta, mu, Sigma):
-        """Return the multivariate Gaussian distribution on array theta."""
         Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
         N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
-        # way across all the input variables.
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
         return np.exp(-fac / 2) / N
 
@@ -69,11 +66,7 @@ class LangevinMonteCarlo:
         return -np.log(self.density_gaussian_mixture(theta))
 
     def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_det = np.linalg.det(Sigma)
-        Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
-        return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
+        return self.multivariate_gaussian(theta, mu, Sigma) * np.linalg.inv(Sigma) @ (mu - theta)
 
     def grad_density_gaussian_mixture(self, theta):
         grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
@@ -83,11 +76,8 @@ class LangevinMonteCarlo:
         return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
 
     def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
-        return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
+        return self.multivariate_gaussian(theta, mu, Sigma) * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
     def hess_density_gaussian_mixture(self, theta):
         hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]

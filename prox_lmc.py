@@ -58,12 +58,9 @@ class ProximalLangevinMonteCarlo:
         self.d = mus[0].shape[0]
 
     def multivariate_gaussian(self, theta, mu, Sigma):
-        """Return the multivariate Gaussian distribution on array theta."""
         Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
         N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        # This einsum call calculates (theta - mu)T.Sigma-1.(theta - mu) in a vectorized
-        # way across all the input variables.
         fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
         return np.exp(-fac / 2) / N
 
@@ -79,11 +76,7 @@ class ProximalLangevinMonteCarlo:
         return (self.alpha/2)**d * np.exp(-self.alpha * np.linalg.norm(theta, ord=1, axis=-1))
 
     def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_det = np.linalg.det(Sigma)
-        Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)    
-        return np.exp(-fac / 2) / N * Sigma_inv @ (mu - theta)
+        return self.multivariate_gaussian(theta, mu, Sigma) * np.linalg.inv(Sigma) @ (mu - theta)
 
     def grad_density_gaussian_mixture(self, theta):
         grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
@@ -93,11 +86,8 @@ class ProximalLangevinMonteCarlo:
         return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
 
     def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_det = np.linalg.det(Sigma)
         Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
-        return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
+        return self.multivariate_gaussian(theta, mu, Sigma) * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
     def hess_density_gaussian_mixture(self, theta):
         hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]

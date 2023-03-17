@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install libraries: pip install -U numpy matplotlib scipy seaborn fire
+# Install libraries: pip install -U numpy matplotlib scipy seaborn fire fastprogress
 
 '''
 Usage: 
-python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=1e-1 --alpha=1e-1 --n=5 --K=10000 --seed=0
+python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=1e0 --alpha=5e-1 --n=5 --K=10000 --seed=0
 '''
 
 import os
@@ -27,7 +27,6 @@ import numpy as np
 from numpy.random import default_rng
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
-
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -68,7 +67,7 @@ class LangevinMonteCarloLaplacian:
     
     def moreau_env_uncentered_laplace(self, theta, mu, alpha):
         prox = self.prox_uncentered_laplace(theta, self.lamda * alpha, mu)
-        return alpha * np.linalg.norm(prox - mu, ord=1, axis=-1) +  np.linalg.norm(prox - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
+        return alpha * np.linalg.norm(prox - mu, ord=1, axis=-1) + np.linalg.norm(prox - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
     
     def smooth_multivariate_laplacian(self, theta, mu, alpha):
         return (alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta, mu, alpha))
@@ -81,7 +80,7 @@ class LangevinMonteCarloLaplacian:
         return -np.log(self.smooth_density_laplacian_mixture(theta))
 
     def grad_smooth_density_multivariate_laplacian(self, theta, mu, alpha):        
-        return (alpha/2)**self.d * np.exp(-alpha * np.linalg.norm(theta, ord=1, axis=-1)) * (self.prox_uncentered_laplace(theta, self.lamda * alpha, mu) - theta) / self.lamda
+        return self.smooth_multivariate_laplacian(theta, mu, alpha) * (self.prox_uncentered_laplace(theta, self.lamda * alpha, mu) - theta) / self.lamda
     
     def grad_smooth_density_laplacian_mixture(self, theta):
         grad_den = [self.omegas[i] * self.grad_smooth_density_multivariate_laplacian(theta, self.mus[i], self.alphas[i]) for i in range(len(self.alphas))]
@@ -380,7 +379,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     axes[1,2].set_title("MLA", fontsize=16)
 
     plt.show(block=False)
-    plt.pause(10)
+    plt.pause(5)
     plt.close()
     fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_3.pdf', dpi=500)  
 
