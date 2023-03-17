@@ -15,9 +15,7 @@
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
 '''
-Usage: python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 \
---gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 \
---gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
+Usage: python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
 '''
 
 import os
@@ -40,19 +38,19 @@ plt.rcParams.update({
 
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
-from scipy.integrate import quad, dblquad
 
 from prox import *
 
 
 class ProximalLangevinMonteCarlo:
-    def __init__(self, mus, Sigmas, omegas, lamda, alpha, K=1000, seed=0) -> None:
+    def __init__(self, mus, Sigmas, omegas, lamda, alpha, mu, K=1000, seed=0) -> None:
         super(ProximalLangevinMonteCarlo, self).__init__()
         self.mus = mus
         self.Sigmas = Sigmas
         self.omegas = omegas
         self.lamda = lamda
         self.alpha = alpha
+        self.mu = mu
         self.n = K
         self.seed = seed
         self.d = mus[0].shape[0]
@@ -71,9 +69,20 @@ class ProximalLangevinMonteCarlo:
     def potential_gaussian_mixture(self, theta): 
         return -np.log(self.density_gaussian_mixture(theta))
 
-    def laplacian_prior(self, theta):    
-        d = theta.shape[0]
-        return (self.alpha/2)**d * np.exp(-self.alpha * np.linalg.norm(theta, ord=1, axis=-1))
+    def multivariate_laplacian(self, theta):    
+        return (self.alpha/2)**self.d * np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
+        # return np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
+    
+    def prox_uncentered_laplace(self, theta, gamma, mu):
+        return mu + prox_laplace(theta - mu, gamma)
+    
+    def moreau_env_uncentered_laplace(self, theta):
+        prox = self.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
+        return self.alpha * np.linalg.norm(prox - self.mu, ord=1, axis=-1) + np.linalg.norm(prox - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
+    
+    def smooth_multivariate_laplacian(self, theta):
+        return (self.alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta))
+        # return np.exp(-self.moreau_env_uncentered_laplace(theta))
 
     def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
         return self.multivariate_gaussian(theta, mu, Sigma) * np.linalg.inv(Sigma) @ (mu - theta)
@@ -144,8 +153,8 @@ class ProximalLangevinMonteCarlo:
 
 
     def prob(self, theta_new, theta_old, gamma):
-        density_ratio = ((self.density_gaussian_mixture(theta_new) * self.laplacian_prior(theta_new)) / 
-                        (self.density_gaussian_mixture(theta_old) * self.laplacian_prior(theta_old)))
+        density_ratio = ((self.density_gaussian_mixture(theta_new) * self.multivariate_laplacian(theta_new)) / 
+                        (self.density_gaussian_mixture(theta_old) * self.multivariate_laplacian(theta_old)))
         q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
         return density_ratio * q_ratio
 
@@ -305,6 +314,12 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Y = np.linspace(-8, 8, N)
     X, Y = np.meshgrid(X, Y)
 
+    # The distribution on the variables X, Y packed into pos.
+    pos = np.empty(X.shape + (2,))
+
+    # Pack X and Y into a single 3-dimensional array
+    pos[:, :, 0] = X
+    pos[:, :, 1] = Y
 
     # Mean vectors and covariance matrices
     mu1 = np.array([3., 3.])
@@ -336,21 +351,21 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
         Sigmas = [Sigma1, Sigma2, Sigma3, Sigma4, Sigma5]
 
 
+    # location parameter of Laplacian prior
+    mu = np.zeros_like(mus[0])
+
     # weight vector
     omegas = np.ones(n) / n
-
-    # Pack X and Y into a single 3-dimensional array
-    pos = np.empty(X.shape + (2,))
-    pos[:, :, 0] = X
-    pos[:, :, 1] = Y
     
-    prox_lmc = ProximalLangevinMonteCarlo(mus, Sigmas, omegas, lamda, alpha, K, seed)
 
-    # The distribution on the variables X, Y packed into pos.
-    Z = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.laplacian_prior(pos)
+    prox_lmc = ProximalLangevinMonteCarlo(mus, Sigmas, omegas, lamda, alpha, mu, K, seed)  
+    
+    Z = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.multivariate_laplacian(pos)
+    Z_smooth = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.smooth_multivariate_laplacian(pos)
 
-    ## Plot of the true Gaussian mixture
-    print("\nPlotting the true Gaussian mixture...")
+
+    ## Plot of the true Gaussian mixture with Laplacian prior
+    print("\nPlotting the true Gaussian mixture with Laplacian prior...")
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
@@ -373,6 +388,31 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.close()
     fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1.pdf', dpi=500)
 
+
+    print("\nPlotting the Gaussian mixture with smoothed Laplacian prior...")
+    fig = plt.figure(figsize=(10, 5))
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+    ax1.plot_surface(X, Y, Z_smooth, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
+    ax1.view_init(45, -70)
+
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    ax2.contourf(X, Y, Z_smooth, zdir='z', offset=0, cmap=cm.viridis)
+    ax2.view_init(90, 270)
+
+    ax2.grid(False)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.set_zticks([])
+
+    # plt.suptitle("True 2D Gaussian Mixture") 
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1_smooth.pdf', dpi=500)
+
+
     Z1 = prox_lmc.pgld(gamma_pgld)
 
     Z2 = prox_lmc.myula(gamma_myula)
@@ -390,9 +430,9 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     sigma = np.array([0.2, 0.8])
     Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
-    D = np.eye(2)
-    tau = .5
-    Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
+    # D = np.eye(2)
+    # tau = .5
+    # Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
 
 
     ## Plot of the true Gaussian mixture with 2d histograms of samples
@@ -403,33 +443,36 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
-    axes[0,1].hist2d(Z1[:,0], Z1[:,1], bins=100, cmap=cm.viridis)
+    axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
+    axes[0,1].set_title("Smoothed density", fontsize=16)
+
+    axes[0,2].hist2d(Z1[:,0], Z1[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("PGLD", fontsize=16)
+    axes[0,2].set_title("PGLD", fontsize=16)
 
-    axes[0,2].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
+    axes[0,3].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MYULA", fontsize=16)
+    axes[0,3].set_title("MYULA", fontsize=16)
 
-    axes[0,3].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
+    axes[1,0].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
-    axes[0,3].set_title("PP-ULA", fontsize=16)
+    axes[1,0].set_title("PP-ULA", fontsize=16)
 
-    axes[1,0].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
+    axes[1,1].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("MYMALA", fontsize=16)
+    axes[1,1].set_title("MYMALA", fontsize=16)
 
-    axes[1,1].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
+    axes[1,2].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("FBULA", fontsize=16)
+    axes[1,2].set_title("FBULA", fontsize=16)
 
-    axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
+    axes[1,3].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("LBMUMLA", fontsize=16)
+    axes[1,3].set_title("LBMUMLA", fontsize=16)
 
-    axes[1,3].hist2d(Z7[:,0], Z7[:,1], bins=100, cmap=cm.viridis)
+    # axes[1,3].hist2d(Z7[:,0], Z7[:,1], bins=100, cmap=cm.viridis)
     # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    axes[1,3].set_title("ULPDA", fontsize=16)
+    # axes[1,3].set_title("ULPDA", fontsize=16)
 
     plt.show(block=False)
     plt.pause(10)
@@ -448,26 +491,29 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
-    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("PGLD", fontsize=16)
+    axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
+    axes[0,1].set_title("Smoothed density", fontsize=16)
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MYULA", fontsize=16)
+    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    axes[0,2].set_title("PGLD", fontsize=16)
 
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
-    axes[0,3].set_title("PP-ULA", fontsize=16)
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
+    axes[0,3].set_title("MYULA", fontsize=16)
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("MYMALA", fontsize=16)
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    axes[1,0].set_title("PP-ULA", fontsize=16)
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("FBULA", fontsize=16)
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    axes[1,1].set_title("MYMALA", fontsize=16)
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("LBMUMLA", fontsize=16)
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    axes[1,2].set_title("FBULA", fontsize=16)
 
-    sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    axes[1,3].set_title("ULPDA", fontsize=16)
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    axes[1,3].set_title("LBMUMLA", fontsize=16)
+
+    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    # axes[1,3].set_title("ULPDA", fontsize=16)
     
     plt.show(block=False)
     plt.pause(10)
