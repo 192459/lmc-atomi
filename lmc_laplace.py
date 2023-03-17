@@ -395,17 +395,20 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
     axes[0,0].set_title("True density", fontsize=16)
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("ULA", fontsize=16)
+    axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
+    axes[0,1].set_title("Smoothed density", fontsize=16)
 
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MALA", fontsize=16)
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    axes[0,2].set_title("ULA", fontsize=16)
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("PULA", fontsize=16)
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    axes[1,0].set_title("MALA", fontsize=16)
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("IHPULA", fontsize=16)
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    axes[1,1].set_title("PULA", fontsize=16)
+
+    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    # axes[1,1].set_title("IHPULA", fontsize=16)
 
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("MLA", fontsize=16)
