@@ -247,9 +247,8 @@ class LangevinMonteCarloLaplacian:
 
 ## Main function
 def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2, 
-                         gamma_pula=5e-2, gamma_ihpula=5e-2, 
-                         gamma_mla=5e-2, lamda=1e-1, alpha=1e-1, 
-                         n=5, K=5000, seed=0):
+                         gamma_pula=5e-2, gamma_mla=5e-2, 
+                         lamda=1e-1, alpha=1e-1, n=5, K=5000, seed=0):
     # Our 2-dimensional distribution will be over variables X and Y
     N = 300
     X = np.linspace(-5, 5, N)
