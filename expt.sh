@@ -5,5 +5,9 @@ python prox_lmc.py --gamma_pgld=5e-3 --gamma_myula=5e-3 --gamma_mymala=5e-3 --ga
 
 CUDA_VISIBLE_DEVICES=0 python sgld.py --n=50000 --num_partitions=10000 --lr=1e-4
 
+python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=1 --K=50000 --seed=0
+python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=2 --K=50000 --seed=0
 python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=3 --K=50000 --seed=0
+python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=4 --K=50000 --seed=0
+python lmc_laplace.py --gamma_ula=8e-2 --gamma_mala=8e-2 --gamma_pula=8e-2 --gamma_mla=8e-2 --lamda=5e-1 --alpha=5e-1 --n=5 --K=80000 --seed=0
 
