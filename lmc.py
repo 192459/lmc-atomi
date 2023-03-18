@@ -162,7 +162,7 @@ class LangevinMonteCarlo:
             hess = self.hess_potential_gaussian_mixture(theta0)
             if len(self.mus) > 1:
                 e = np.linalg.eigvals(hess)
-                M = hess + (np.abs(min(e)) + .02) * np.eye(self.d)
+                M = hess + (np.abs(min(e)) + 0.05) * np.eye(self.d)
                 M = np.linalg.inv(M)
             else:
                 M = np.linalg.inv(hess)
@@ -339,7 +339,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_{K}_3.pdf', dpi=500)
+    fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_3.pdf', dpi=500)
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
