@@ -296,7 +296,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_1.pdf', dpi=500)
 
 
     Z2 = lmc.ula(gamma_ula)
@@ -339,7 +339,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_3.pdf', dpi=500)
+    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_{K}_3.pdf', dpi=500)
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
@@ -368,7 +368,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_2.pdf', dpi=500)  
 
 
 if __name__ == '__main__':
