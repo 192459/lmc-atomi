@@ -309,7 +309,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
                                 lamda=0.01, alpha=.1, n=5, t=100, 
                                 K=10000, seed=0):
     # Our 2-dimensional distribution will be over variables X and Y
-    N = 100
+    N = 500
     X = np.linspace(-8, 8, N)
     Y = np.linspace(-8, 8, N)
     X, Y = np.meshgrid(X, Y)
