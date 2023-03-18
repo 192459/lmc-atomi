@@ -447,31 +447,31 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[0,1].set_title("Smoothed density", fontsize=16)
 
     axes[0,2].hist2d(Z1[:,0], Z1[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
+    # sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[0,1])
     axes[0,2].set_title("PGLD", fontsize=16)
 
     axes[0,3].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[0,2])
     axes[0,3].set_title("MYULA", fontsize=16)
 
     axes[1,0].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
+    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[0,3])
     axes[1,0].set_title("PP-ULA", fontsize=16)
 
     axes[1,1].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,0])
     axes[1,1].set_title("MYMALA", fontsize=16)
 
     axes[1,2].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,1])
     axes[1,2].set_title("FBULA", fontsize=16)
 
     axes[1,3].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,2])
     axes[1,3].set_title("LBMUMLA", fontsize=16)
 
     # axes[1,3].hist2d(Z7[:,0], Z7[:,1], bins=100, cmap=cm.viridis)
-    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,3])
     # axes[1,3].set_title("ULPDA", fontsize=16)
 
     plt.show(block=False)
@@ -494,25 +494,25 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
     axes[0,1].set_title("Smoothed density", fontsize=16)
 
-    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
+    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[0,2])
     axes[0,2].set_title("PGLD", fontsize=16)
 
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
+    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[0,3])
     axes[0,3].set_title("MYULA", fontsize=16)
 
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
+    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,0])
     axes[1,0].set_title("PP-ULA", fontsize=16)
 
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
+    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,1])
     axes[1,1].set_title("MYMALA", fontsize=16)
 
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,2])
     axes[1,2].set_title("FBULA", fontsize=16)
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,3])
     axes[1,3].set_title("LBMUMLA", fontsize=16)
 
-    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
+    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-8, 8), ax=axes[1,3])
     # axes[1,3].set_title("ULPDA", fontsize=16)
     
     plt.show(block=False)
