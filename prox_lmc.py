@@ -521,10 +521,10 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     axes[0,3].set_title("MYULA", fontsize=16)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("PP-ULA", fontsize=16)
+    axes[1,0].set_title("MYMALA", fontsize=16)
 
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("MYMALA", fontsize=16)
+    axes[1,1].set_title("PP-ULA", fontsize=16)
 
     sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("FBULA", fontsize=16)
