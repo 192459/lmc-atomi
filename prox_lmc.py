@@ -213,7 +213,7 @@ class ProximalLangevinMonteCarlo:
         return theta - gamma * self.grad_FB_env(theta)
 
     def fbula(self, gamma):
-        print("\nSampling with EULA:")
+        print("\nSampling with FBULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
@@ -308,29 +308,40 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
                                 gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                                 lamda=0.01, alpha=.1, n=5, t=100, 
                                 K=10000, seed=0):
-    # Our 2-dimensional distribution will be over variables X and Y
-    N = 500
-    X = np.linspace(-8, 8, N)
-    Y = np.linspace(-8, 8, N)
+    # # Our 2-dimensional distribution will be over variables X and Y
+    # N = 500
+    # X = np.linspace(-8, 8, N)
+    # Y = np.linspace(-8, 8, N)
+    # X, Y = np.meshgrid(X, Y)
+
+    # # Mean vectors and covariance matrices
+    # mu1 = np.array([3., 3.])
+    # Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
+    # mu2 = np.array([-4., 6.])
+    # Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
+    # mu3 = np.array([4., -6.])
+    # Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
+    # mu4 = np.array([5., 5.])
+    # Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
+    # mu5 = np.array([-4., -4.])
+    # Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
+
+    N = 300
+    X = np.linspace(-5, 5, N)
+    Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
-
-    # The distribution on the variables X, Y packed into pos.
-    pos = np.empty(X.shape + (2,))
-
-    # Pack X and Y into a single 3-dimensional array
-    pos[:, :, 0] = X
-    pos[:, :, 1] = Y
+    
 
     # Mean vectors and covariance matrices
-    mu1 = np.array([3., 3.])
+    mu1 = np.array([0., 0.])
     Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
-    mu2 = np.array([-4., 6.])
+    mu2 = np.array([-2., 3.])
     Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
-    mu3 = np.array([4., -6.])
+    mu3 = np.array([2., -3.])
     Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
-    mu4 = np.array([5., 5.])
+    mu4 = np.array([3., 3.])
     Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
-    mu5 = np.array([-4., -4.])
+    mu5 = np.array([-2., -2.])
     Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
 
 
@@ -356,7 +367,13 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
 
     # weight vector
     omegas = np.ones(n) / n
-    
+
+    # The distribution on the variables X, Y packed into pos.
+    pos = np.empty(X.shape + (2,))
+
+    # Pack X and Y into a single 3-dimensional array
+    pos[:, :, 0] = X
+    pos[:, :, 1] = Y
 
     prox_lmc = ProximalLangevinMonteCarlo(mus, Sigmas, omegas, lamda, alpha, mu, K, seed)  
     
@@ -386,7 +403,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_1.pdf', dpi=500)
 
 
     print("\nPlotting the Gaussian mixture with smoothed Laplacian prior...")
@@ -410,7 +427,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_1_smooth.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_1_smooth.pdf', dpi=500)
 
 
     Z1 = prox_lmc.pgld(gamma_pgld)
@@ -477,7 +494,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_3.pdf', dpi=500)
+    fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_3.pdf', dpi=500)
 
     
     ## Plot of the true Gaussian mixture with KDE of samples
@@ -518,7 +535,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig2.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_2.pdf', dpi=500)  
     
 
 if __name__ == '__main__':
