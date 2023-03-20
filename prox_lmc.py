@@ -183,7 +183,7 @@ class ProximalLangevinMonteCarlo:
         rho = 1 / np.linalg.norm(M, ord=2)
         eps = min(1, rho)
         eta = 2 * rho - eps
-        w = np.zeros(x.shape[0])
+        w = np.zeros_like(x)
         for _ in range(t):
             u = x - M @ w
             w += eta * u - eta * prox_laplace(eta*w + u, gamma / eta)
