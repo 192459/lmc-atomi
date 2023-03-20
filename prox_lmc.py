@@ -179,27 +179,27 @@ class ProximalLangevinMonteCarlo:
     def preconditioned_gd_update(self, theta, gamma, M): 
         return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
 
-    def preconditioned_prox(self, x, gamma, M, t=100): 
-        rho = 1 / np.linalg.norm(M, ord=2)
-        eps = min(1, rho)
-        eta = 2 * rho - eps
+    def preconditioned_prox(self, x, gamma, Q, t=100): 
+        rho = 1 / np.linalg.norm(Q, ord=2)
+        eps = min(1, rho) - 1e-3
+        eta = rho - eps
         w = np.zeros_like(x)
         for _ in range(t):
-            u = x - M @ w
+            u = x - Q @ w
             w += eta * u - eta * prox_laplace(eta*w + u, gamma / eta)
         return w
 
-    def preconditioned_prox_update(self, theta, gamma, M, t=100):
-        return self.preconditioned_prox(theta - gamma * M @ self.grad_density_gaussian_mixture(theta), gamma, M, t)
+    def preconditioned_prox_update(self, theta, gamma, Q, t=100):
+        return -gamma * np.linalg.inv(Q) @ (theta - self.preconditioned_prox(theta, self.lamda, Q, t)) / self.lamda
 
-    def ppula(self, gamma, M, t=100):
+    def ppula(self, gamma, M, Q, t=100):
         print("\nSampling with PP-ULA:")
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.preconditioned_prox_update(theta0, gamma, M, t) + np.sqrt(2*gamma) * sqrtm(M) @ xi
+            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + self.preconditioned_prox_update(theta0, gamma, Q, t) + np.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
         return np.array(theta)
@@ -438,9 +438,10 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z3, eff_K = prox_lmc.mymala(gamma_mymala)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
-    # M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    M = np.eye(mus[0].shape[0])
-    Z4 = prox_lmc.ppula(gamma_ppula, M, t)
+    # M = np.array([[1.0, 0.1], [0.1, 0.5]])    
+    # Q = np.array([[1.0, 0.1], [0.1, 1.0]])
+    M = Q = np.eye(mus[0].shape[0])
+    Z4 = prox_lmc.ppula(gamma_ppula, M, Q, t)
 
     Z5 = prox_lmc.fbula(gamma_fbula)
     
