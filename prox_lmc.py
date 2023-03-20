@@ -268,7 +268,6 @@ class ProximalLangevinMonteCarlo:
             theta_new = self.grad_mirror_hyp(theta0, beta) + self.gd_BM_update(theta0, gamma) + self.prox_BM_update(theta0, sigma, gamma) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
             theta.append(theta_new) 
-            theta_new = self.grad_mirror_hyp(theta0, beta) - gamma *  + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta0 = theta_new
         return np.array(theta)
 
@@ -439,7 +438,8 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z3, eff_K = prox_lmc.mymala(gamma_mymala)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
-    M = np.array([[1.0, 0.1], [0.1, 0.5]])
+    # M = np.array([[1.0, 0.1], [0.1, 0.5]])
+    M = np.eye(mus[0].shape[0])
     Z4 = prox_lmc.ppula(gamma_ppula, M, t)
 
     Z5 = prox_lmc.fbula(gamma_fbula)
@@ -449,7 +449,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     sigma = np.array([0.8, 0.2])
     Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
-    # D = np.eye(2)
+    # D = np.eye(mus[0].shape[0])
     # tau = .5
     # Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
 
