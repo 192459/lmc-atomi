@@ -175,7 +175,7 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta), len(theta)
 
 
-    ## Preconditioned Proximal ULA 
+    ## Preconditioned Proximal ULA (PP-ULA)
     def preconditioned_gd_update(self, theta, gamma, M): 
         return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
 
