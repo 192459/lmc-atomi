@@ -78,69 +78,51 @@ class LangevinMonteCarlo:
     def potential_gaussian_mixture(self, theta): 
         return -jnp.log(self.density_gaussian_mixture(theta))
 
-
+    def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
+        return self.multivariate_gaussian(theta, mu, Sigma) * jnp.linalg.inv(Sigma) @ (mu - theta)
+    
     def grad_potential_gaussian_mixture(self, theta): 
-        return jax.grad(self.potential_gaussian_mixture, 0)
-
-    # '''
-    def grad_density_multivariate_gaussian(self, pos, mu, Sigma):
-        n = mu.shape[0]
-        Sigma_det = jnp.linalg.det(Sigma)
-        Sigma_inv = jnp.linalg.inv(Sigma)
-        N = jnp.sqrt((2*jnp.pi)**n * np.abs(Sigma_det))
-        fac = jnp.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)    
-        return jnp.exp(-fac / 2) / N * Sigma_inv @ (mu - pos)
-
-
-    def grad_density_gaussian_mixture(self, theta, mus, Sigmas, lambdas):
-        K = len(mus)
-        grad_den = [lambdas[k] * self.grad_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
+        # return jax.grad(self.potential_gaussian_mixture)
+        grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(grad_den)
 
+    def grad_density_gaussian_mixture(self, theta):
+        grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
+        return sum(grad_den)
 
-    def grad_potential_gaussian_mixture(self, theta, mus, Sigmas, lambdas):
-        return -self.grad_density_gaussian_mixture(theta, mus, Sigmas, lambdas) / self.density_gaussian_mixture(theta, mus, Sigmas, lambdas)
-    # '''
+    def grad_potential_gaussian_mixture(self, theta):
+        return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
 
-    # hess_potential_2d_gaussian_mixture = jax.hessian(potential_2d_gaussian_mixture, 0)
+    def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
+        Sigma_inv = jnp.linalg.inv(Sigma)
+        return self.multivariate_gaussian(theta, mu, Sigma) * (Sigma_inv @ jnp.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
-    # '''
-    def hess_density_multivariate_gaussian(self, pos, mu, Sigma):
-        n = mu.shape[0]
-        Sigma_det = np.linalg.det(Sigma)
-        Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**n * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
-        return np.exp(-fac / 2) / N * (Sigma_inv @ np.outer(pos - mu, pos - mu) @ Sigma_inv - Sigma_inv)
-
-
-    def hess_density_gaussian_mixture(self, theta, mus, Sigmas, lambdas):
-        K = len(mus)
-        hess_den = [lambdas[k] * self.hess_density_multivariate_gaussian(theta, mus[k], Sigmas[k]) for k in range(K)]
+    def hess_density_gaussian_mixture(self, theta):
+        # return jax.hessian(potential_2d_gaussian_mixture)
+        hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(hess_den)
-        
-
-    def hess_potential_gaussian_mixture(self, theta, mus, Sigmas, lambdas):
-        density = self.density_gaussian_mixture(theta, mus, Sigmas, lambdas)
-        grad_density = self.grad_density_gaussian_mixture(theta, mus, Sigmas, lambdas)
-        hess_density = self.hess_density_gaussian_mixture(theta, mus, Sigmas, lambdas)
-        return np.outer(grad_density, grad_density) / density**2 - hess_density / density
-    # '''
+    
+    def hess_potential_gaussian_mixture(self, theta):
+        density = self.density_gaussian_mixture(theta)
+        grad_density = self.grad_density_gaussian_mixture(theta)
+        hess_density = self.hess_density_gaussian_mixture(theta)
+        return jnp.outer(grad_density, grad_density) / density**2 - hess_density / density
 
     # @jax.jit
-    def gd_update(self, theta, mus, Sigmas, lambdas, gamma): 
-        return theta - gamma * self.grad_potential_gaussian_mixture(theta, mus, Sigmas, lambdas)
+    def gd_update(self, theta, gamma): 
+        return theta - gamma * self.grad_potential_gaussian_mixture(theta)
 
 
     ## Unadjusted Langevin Algorithm (ULA)
     # Use jax.pmap to sample with multiple chains
-    def ula_gaussian_mixture(self, gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-        key = jax.random.PRNGKey(seed)
-        theta0 = jax.random.normal(key, (d,))
+    def ula(self, gamma):
+        print("\nSampling with ULA:")
+        key = jax.random.PRNGKey(self.seed)
+        theta0 = jax.random.normal(key, (self.d,))
         theta = []
-        for _ in range(n):
-            xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
-            theta_new = self.gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
+        for _ in progress_bar(range(self.n)):
+            xi = jax.random.multivariate_normal(key, jnp.zeros(self.d), jnp.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + jnp.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
         return jnp.array(theta)
@@ -157,14 +139,15 @@ class LangevinMonteCarlo:
         return density_ratio * q_ratio
 
 
-    def mala_gaussian_mixture(self, gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-        key = jax.random.PRNGKey(seed)
-        theta0 = jax.random.normal(key, (d,))
+    def mala(self, gamma):
+        print("\nSampling with MALA:")
+        key = jax.random.PRNGKey(self.seed)
+        theta0 = jax.random.normal(key, (self.d,))
         theta = []
-        for _ in range(n):
-            xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
-            theta_new = self.gd_update(theta0, mus, Sigmas, lambdas, gamma) + jnp.sqrt(2*gamma) * xi
-            p = self.prob(theta_new, theta0, gamma, mus, Sigmas, lambdas)
+        for _ in progress_bar(range(self.n)):
+            xi = jax.random.multivariate_normal(key, jnp.zeros(self.d), jnp.eye(self.d))
+            theta_new = self.gd_update(theta0, gamma) + jnp.sqrt(2*gamma) * xi
+            p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
             if random.random() <= alpha:
                 theta.append(theta_new)    
@@ -174,8 +157,8 @@ class LangevinMonteCarlo:
 
     ## Preconditioned ULA 
     # @jax.jit
-    def preconditioned_gd_update(self, theta, mus, Sigmas, lambdas, gamma, M): 
-        return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta, mus, Sigmas, lambdas)
+    def preconditioned_gd_update(self, theta, gamma, M): 
+        return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
 
     # @jax.jit
     # def hess_preconditioned_gd_update(theta, mus, Sigmas, lambdas, gamma): 
@@ -185,31 +168,35 @@ class LangevinMonteCarlo:
     #     return theta - gamma * np.linalg.inv(M) @ grad_potential_2d_gaussian_mixture(theta, mus, Sigmas, lambdas)   
 
 
-    def preconditioned_langevin_gaussian_mixture(self, gamma, mus, Sigmas, lambdas, M, d=2, n=1000, seed=0):
-        key = jax.random.PRNGKey(seed)
-        theta0 = jax.random.normal(key, (d,))
+    def pula(self, gamma, M):
+        print("\nSampling with Preconditioned Langevin Algorithm:")
+        key = jax.random.PRNGKey(self.seed)
+        theta0 = jax.random.normal(key, (self.d,))
         theta = []
-        for _ in range(n):
-            xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
-            theta_new = self.preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + jnp.sqrt(2*gamma) * sqrtm(M) @ xi
+        for _ in progress_bar(range(self.n)):
+            xi = jax.random.multivariate_normal(key, jnp.zeros(self.d), jnp.eye(self.d))
+            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + jnp.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
         return jnp.array(theta)
 
 
     # Preconditioning with inverse Hessian
-    def hess_preconditioned_langevin_gaussian_mixture(self, gamma, mus, Sigmas, lambdas, d=2, n=1000, seed=0):
-        key = jax.random.PRNGKey(seed)
-        theta0 = jax.random.normal(key, (d,))
+    def ihpula(self, gamma):
+        print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
+        key = jax.random.PRNGKey(self.seed)
+        theta0 = jax.random.normal(key, (self.d,))
         theta = []    
-        for _ in range(n):
-            xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
-            hess = self.hess_potential_gaussian_mixture(theta0, mus, Sigmas, lambdas)
-            # e, _ = np.linalg.eig(hess)
-            # M = hess + np.abs(min(e)) * np.eye(hess.shape[0])
-            # print(np.linalg.det(hess))
-            M = jnp.linalg.inv(hess)
-            theta_new = self.preconditioned_gd_update(theta0, mus, Sigmas, lambdas, gamma, M) + jnp.sqrt(2*gamma) * sqrtm(M) @ xi
+        for _ in progress_bar(range(self.n)):
+            xi = jax.random.multivariate_normal(key, jnp.zeros(self.d), jnp.eye(self.d))
+            hess = self.hess_potential_gaussian_mixture(theta0)
+            if len(self.mus) > 1:
+                e = jnp.linalg.eigvals(hess)
+                M = hess + (jnp.abs(min(e)) + 0.05) * jnp.eye(self.d)
+                M = jnp.linalg.inv(M)
+            else:
+                M = jnp.linalg.inv(hess)
+            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + jnp.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
         return jnp.array(theta)
@@ -222,13 +209,14 @@ class LangevinMonteCarlo:
     def grad_conjugate_mirror_hyp(self, theta, beta):
         return beta * jnp.sinh(theta)
 
-    def mla_gaussian_mixture(self, gamma, mus, Sigmas, lambdas, beta, d=2, n=1000, seed=0):
-        key = jax.random.PRNGKey(seed)
-        theta0 = jax.random.normal(key, (d,))
+    def mla(self, gamma, beta):
+        print("\nSampling with MLA: ")
+        key = jax.random.PRNGKey(self.seed)
+        theta0 = jax.random.normal(key, (self.d,))
         theta = []
-        for _ in range(n):
-            xi = jax.random.multivariate_normal(key, jnp.zeros(d), jnp.eye(d))
-            theta_new = self.grad_mirror_hyp(theta0, beta) - gamma * self.grad_potential_gaussian_mixture(theta0, mus, Sigmas, lambdas) + jnp.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
+        for _ in progress_bar(range(self.n)):
+            xi = jax.random.multivariate_normal(key, jnp.zeros(self.d), jnp.eye(self.d))
+            theta_new = self.grad_mirror_hyp(theta0, beta) - gamma * self.grad_potential_gaussian_mixture(theta0) + jnp.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
             theta.append(theta_new)    
             theta0 = theta_new
@@ -241,7 +229,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
                          gamma_pula=5e-2, gamma_ihpula=5e-2, 
                          gamma_mla=5e-2, nChains=4, n=5, K=5000, seed=0):
     # Our 2-dimensional distribution will be over variables X and Y
-    N = 100
+    N = 300
     X = jnp.linspace(-5, 5, N)
     Y = jnp.linspace(-5, 5, N)
     X, Y = jnp.meshgrid(X, Y)
@@ -258,7 +246,6 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     mu5 = jnp.array([-2., -2.])
     Sigma5 = jnp.array([[1.2, 0.05], [0.05, 0.8]])
 
-
     if n == 1:
         mus = [mu1]
         Sigmas = [Sigma1]
@@ -274,7 +261,6 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     elif n == 5: 
         mus = [mu1, mu2, mu3, mu4, mu5]
         Sigmas = [Sigma1, Sigma2, Sigma3, Sigma4, Sigma5]
-
 
     # weight vector
     omegas = jnp.ones(n) / n
@@ -294,21 +280,14 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
 
     # The distribution on the variables X, Y packed into pos.
     Z = lmc.density_gaussian_mixture(pos)
-    # Z = np.exp(np.log(density_2d_gaussian_mixture(pos, mus, Sigmas, lambdas)) - 0.005 * np.sum(np.abs(pos)))
-
 
     ## Plot of the true Gaussian mixture
+    print("\nPlotting the true Gaussian mixture...")
     fig = plt.figure(figsize=(10, 5))
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
     ax1.plot_surface(X, Y, Z, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
     ax1.view_init(45, -70)
-    # ax1.set_xticks([])
-    # ax1.set_yticks([])
-    # ax1.set_zticks([])
-    # ax1.set_xlabel(r'$x_1$')
-    # ax1.set_ylabel(r'$x_2$')
-
 
     ax2 = fig.add_subplot(1, 2, 2, projection='3d')
     ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
@@ -318,62 +297,84 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ax2.set_xticks([])
     ax2.set_yticks([])
     ax2.set_zticks([])
-    # ax2.set_xlabel(r'$x_1$')
-    # ax2.set_ylabel(r'$x_2$')
 
     # plt.suptitle("True 2D Gaussian Mixture") 
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig.savefig(f'./fig/fig_{n}_1.pdf', dpi=500)
+    fig.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_jax_1.pdf', dpi=500)
 
 
-    Z2 = lmc.ula_gaussian_mixture(gamma_ula, mus, Sigmas, omegas, n=K)
+    Z2 = lmc.ula(gamma_ula)
 
-    sns.set(rc={'figure.figsize':(3.25, 3.5)})
-
-
-
-    Z3, eff_K = lmc.mala_gaussian_mixture(gamma_mala, mus, Sigmas, omegas, n=K)
+    Z3, eff_K = lmc.mala(gamma_mala)
     print(f'\nMALA percentage of effective samples: {eff_K / K}')
 
     M = jnp.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = lmc.preconditioned_langevin_gaussian_mixture(gamma_pula, mus, Sigmas, omegas, M, n=K)
+    Z4 = lmc.pula(gamma_pula, M)
 
-    Z5 = lmc.hess_preconditioned_langevin_gaussian_mixture(gamma_ihpula, mus, Sigmas, omegas, n=K)
+    Z5 = lmc.ihpula(gamma_ihpula)
 
     # beta = np.array([0.2, 0.8])
     beta = jnp.array([0.7, 0.3])
-    Z6 = lmc.mla_gaussian_mixture(gamma_mla, mus, Sigmas, omegas, beta, n=K)
+    Z6 = lmc.mla(gamma_mla, beta)
 
+
+    ## Plot of the true Gaussian mixture with 2d histograms of samples
+    print("\nConstructing the 2D histograms of samples...")
+    fig3, axes = plt.subplots(2, 3, figsize=(13, 8))
+
+    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
+    axes[0,0].set_title("True density", fontsize=16)
+
+    axes[0,1].hist2d(Z2[:,0], Z2[:,1], bins=100, cmap=cm.viridis)
+    axes[0,1].set_title("ULA", fontsize=16)
+
+    axes[0,2].hist2d(Z3[:,0], Z3[:,1], bins=100, cmap=cm.viridis)
+    axes[0,2].set_title("MALA", fontsize=16)
+
+    axes[1,0].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
+    axes[1,0].set_title("PULA", fontsize=16)
+
+    axes[1,1].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
+    axes[1,1].set_title("IHPULA", fontsize=16)
+
+    axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
+    axes[1,2].set_title("MLA", fontsize=16)
+
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+    fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_jax_3.pdf', dpi=500)
 
 
     ## Plot of the true Gaussian mixture with KDE of samples
+    print("\nConstructing the KDEs of samples...")
     fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
-    # fig2.suptitle("True density and KDEs of samples") 
+    sns.set(rc={'figure.figsize':(3.25, 3.5)})
 
     axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density")
+    axes[0,0].set_title("True density", fontsize=16)
 
     sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,1].set_title("ULA")
+    axes[0,1].set_title("ULA", fontsize=16)
 
     sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("MALA")
+    axes[0,2].set_title("MALA", fontsize=16)
 
     sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("PULA")
+    axes[1,0].set_title("PULA", fontsize=16)
 
     sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("IHPULA")
+    axes[1,1].set_title("IHPULA", fontsize=16)
 
     sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("MLA")
+    axes[1,2].set_title("MLA", fontsize=16)
 
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig2.savefig(f'./fig/fig_{n}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_jax_2.pdf', dpi=500)  
 
 
 
