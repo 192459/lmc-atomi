@@ -78,37 +78,44 @@ class LangevinMonteCarlo:
     def potential_gaussian_mixture(self, theta): 
         return -jnp.log(self.density_gaussian_mixture(theta))
 
+    @jax.jit
     def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
         return self.multivariate_gaussian(theta, mu, Sigma) * jnp.linalg.inv(Sigma) @ (mu - theta)
     
+    @jax.jit
     def grad_potential_gaussian_mixture(self, theta): 
         # return jax.grad(self.potential_gaussian_mixture)
         grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(grad_den)
 
+    @jax.jit
     def grad_density_gaussian_mixture(self, theta):
         grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(grad_den)
 
+    @jax.jit
     def grad_potential_gaussian_mixture(self, theta):
         return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
 
+    @jax.jit
     def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
         Sigma_inv = jnp.linalg.inv(Sigma)
         return self.multivariate_gaussian(theta, mu, Sigma) * (Sigma_inv @ jnp.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
 
+    @jax.jit
     def hess_density_gaussian_mixture(self, theta):
         # return jax.hessian(potential_2d_gaussian_mixture)
         hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
         return sum(hess_den)
     
+    @jax.jit
     def hess_potential_gaussian_mixture(self, theta):
         density = self.density_gaussian_mixture(theta)
         grad_density = self.grad_density_gaussian_mixture(theta)
         hess_density = self.hess_density_gaussian_mixture(theta)
         return jnp.outer(grad_density, grad_density) / density**2 - hess_density / density
 
-    # @jax.jit
+    @jax.jit
     def gd_update(self, theta, gamma): 
         return theta - gamma * self.grad_potential_gaussian_mixture(theta)
 
@@ -156,7 +163,7 @@ class LangevinMonteCarlo:
 
 
     ## Preconditioned ULA 
-    # @jax.jit
+    @jax.jit
     def preconditioned_gd_update(self, theta, gamma, M): 
         return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
 
