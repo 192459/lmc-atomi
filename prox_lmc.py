@@ -436,7 +436,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z2 = prox_lmc.myula(gamma_myula)
 
     Z3, eff_K = prox_lmc.mymala(gamma_mymala)
-    print(f'\nMYMALA acceptance rate: {eff_K / K} ')
+    print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])    
     Q = np.array([[1.0, 0.1], [0.1, 1.5]])

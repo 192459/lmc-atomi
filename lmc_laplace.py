@@ -343,7 +343,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     Z2 = lmc_laplacian.ula(gamma_ula)
 
     Z3, eff_K = lmc_laplacian.mala(gamma_mala)
-    print(f'\nMALA acceptance rate: {eff_K / K} ')
+    print(f'\nMALA percentage of effective samples: {eff_K / K} ')
         
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
     Z4 = lmc_laplacian.pula(gamma_pula, M)
