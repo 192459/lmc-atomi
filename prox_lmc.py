@@ -39,7 +39,7 @@ plt.rcParams.update({
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
 
-from prox import *
+import prox
 
 
 class ProximalLangevinMonteCarlo:
@@ -74,11 +74,11 @@ class ProximalLangevinMonteCarlo:
         # return np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
     
     def prox_uncentered_laplace(self, theta, gamma, mu):
-        return mu + prox_laplace(theta - mu, gamma)
+        return mu + prox.prox_laplace(theta - mu, gamma)
     
     def moreau_env_uncentered_laplace(self, theta):
-        prox = self.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
-        return self.alpha * np.linalg.norm(prox - self.mu, ord=1, axis=-1) + np.linalg.norm(prox - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
+        p = self.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
+        return self.alpha * np.linalg.norm(p - self.mu, ord=1, axis=-1) + np.linalg.norm(p - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
     
     def smooth_multivariate_laplacian(self, theta):
         return (self.alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta))
@@ -120,7 +120,7 @@ class ProximalLangevinMonteCarlo:
         theta = []
         for _ in progress_bar(range(self.n)):        
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta0 = prox_laplace(theta0, self.lamda * self.alpha)
+            theta0 = prox.prox_laplace(theta0, self.lamda * self.alpha)
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -129,7 +129,7 @@ class ProximalLangevinMonteCarlo:
 
     ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
     def grad_Moreau_env(self, theta):
-        return (theta - prox_laplace(theta, self.lamda * self.alpha)) / self.lamda
+        return (theta - prox.prox_laplace(theta, self.lamda * self.alpha)) / self.lamda
 
     def prox_update(self, theta, gamma):
         return -gamma * self.grad_Moreau_env(theta)
@@ -186,7 +186,7 @@ class ProximalLangevinMonteCarlo:
         w = np.zeros_like(x)
         for _ in range(t):
             u = x - Q @ w
-            w = w + eta * u - eta * prox_laplace(w / eta + u, gamma / eta)
+            w = w + eta * u - eta * prox.prox_laplace(w / eta + u, gamma / eta)
         return u
 
     def preconditioned_prox_update(self, theta, gamma, Q, t=100):
@@ -207,7 +207,7 @@ class ProximalLangevinMonteCarlo:
 
     ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
     def grad_FB_env(self, theta):
-        return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
+        return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox.prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
 
     def gd_FB_update(self, theta, gamma):
         return theta - gamma * self.grad_FB_env(theta)
@@ -235,19 +235,19 @@ class ProximalLangevinMonteCarlo:
     def left_bregman_prox_ell_one_hypent(self, theta, beta, gamma):
         if isinstance(theta, float):
             if theta > beta * np.sinh(gamma):
-                prox = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
+                pr = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
             elif theta < beta * np.sinh(-gamma):
-                prox = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
+                p = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
             else: 
-                prox = np.sqrt(theta ** 2 + beta ** 2) - beta
+                p = np.sqrt(theta ** 2 + beta ** 2) - beta
         else:
-            prox = np.array(len(theta))
+            p = np.array(len(theta))
             p1 = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
             p2 = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
             p3 = np.sqrt(theta ** 2 + beta ** 2) - beta
-            prox = np.where(theta > beta * np.sinh(gamma), p1, p3)
-            prox = np.where(theta < beta * np.sinh(-gamma), p2, prox)
-        return prox
+            p = np.where(theta > beta * np.sinh(gamma), p1, p3)
+            p = np.where(theta < beta * np.sinh(-gamma), p2, p)
+        return p
 
     def grad_BM_env(self, theta, beta):
         return 1/self.lamda * (theta**2 + beta**2)**(-.5) * (theta - self.left_bregman_prox_ell_one_hypent(theta, beta, self.lamda * self.alpha))
@@ -282,7 +282,7 @@ class ProximalLangevinMonteCarlo:
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
             theta_new = prox_f(theta0 - gamma0 * D.T @ tu0, gamma0) + np.sqrt(2*gamma0) * xi
-            u_new = prox_conjugate(u0 + gamma1 * D @ (2*theta_new - theta0), gamma1, prox_g)
+            u_new = prox.prox_conjugate(u0 + gamma1 * D @ (2*theta_new - theta0), gamma1, prox_g)
             tu_new = u0 + tau * (u_new - u0)
             theta.append(theta_new)    
             theta0 = theta_new

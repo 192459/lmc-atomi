@@ -39,7 +39,7 @@ plt.rcParams.update({
     } 
     )
 
-from prox import *
+import prox
 
 class LangevinMonteCarloLaplacian:
     def __init__(self, mus, alphas, omegas, lamda, K=1000, seed=0) -> None:
@@ -63,7 +63,7 @@ class LangevinMonteCarloLaplacian:
         return -np.log(self.density_laplacian_mixture(theta))
     
     def prox_uncentered_laplace(self, theta, gamma, mu):
-        return mu + prox_laplace(theta - mu, gamma)
+        return mu + prox.prox_laplace(theta - mu, gamma)
     
     def moreau_env_uncentered_laplace(self, theta, mu, alpha):
         prox = self.prox_uncentered_laplace(theta, self.lamda * alpha, mu)

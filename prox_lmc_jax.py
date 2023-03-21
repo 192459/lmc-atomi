@@ -36,9 +36,11 @@ import seaborn as sns
 import scienceplots
 plt.style.use(['science', 'grid'])
 plt.rcParams.update({
-    "axes.titlesize": 16,
-    "font.serif": "Times New Roman"} 
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    } 
     )
+
 
 from scipy.linalg import sqrtm
 from scipy.stats import kde
@@ -56,8 +58,30 @@ from blackjax.types import PyTree
 from optax._src.base import OptState
 
 import proxop
-from prox_jax import *
+import prox_jax
 
+if jax.lib.xla_bridge.get_backend().platform == "cpu":
+    from jax.scipy.linalg import sqrtm
+else:
+    def sqrtm(x):
+        u, s, vh = jnp.linalg.svd(x)
+        return (u * s**.5) @ vh
+
+
+class ProximalLangevinMonteCarlo:
+    def __init__(self, mus, Sigmas, omegas, lamda, alpha, mu, K=1000, seed=0) -> None:
+        super(ProximalLangevinMonteCarlo, self).__init__()
+        self.mus = mus
+        self.Sigmas = Sigmas
+        self.omegas = omegas
+        self.lamda = lamda
+        self.alpha = alpha
+        self.mu = mu
+        self.n = K
+        self.seed = seed
+        self.d = mus[0].shape[0]
+
+        
 
 def multivariate_gaussian(theta, mu, Sigma):
     """Return the multivariate Gaussian distribution on array theta."""
