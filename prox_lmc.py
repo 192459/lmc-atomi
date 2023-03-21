@@ -438,9 +438,9 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z3, eff_K = prox_lmc.mymala(gamma_mymala)
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
-    # M = np.array([[1.0, 0.1], [0.1, 0.5]])    
-    # Q = np.array([[1.0, 0.1], [0.1, 1.0]])
-    M = Q = np.eye(mus[0].shape[0])
+    M = np.array([[1.0, 0.1], [0.1, 0.5]])    
+    Q = np.array([[1.0, 0.1], [0.1, 1.0]])
+    # M = Q = np.eye(mus[0].shape[0])
     Z4 = prox_lmc.ppula(gamma_ppula, M, Q, t)
 
     Z5 = prox_lmc.fbula(gamma_fbula)
