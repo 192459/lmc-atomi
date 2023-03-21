@@ -262,7 +262,7 @@ class CyclicalSGMCMCState(NamedTuple):
 
 
 def cyclical_sgld(grad_estimator_fn, loglikelihood_fn):
-    # Initialize the SgLD step function
+    # Initialize the SGLD step function
     sgld = blackjax.sgld(grad_estimator_fn)
     sgd = optax.sgd(1.)
 

@@ -53,7 +53,7 @@ plt.rcParams.update({
 sns.set(font="Times")
 
 
-class GaussianMixturewithLaplacianPriorSampling:
+class GaussianMixturewithTVPriorSampling:
     def __init__(self, lamda, alpha, positions, sigma) -> None:
         self.lamda = lamda 
         self.alpha = alpha
@@ -503,7 +503,24 @@ class contourSPGLD:
         return np.array(csgld_re_samples)
 
 
+class ULPDA:
+    def __init__(self, lamda, alpha, positions, sigma) -> None:
+        self.lamda = lamda 
+        self.alpha = alpha
+        self.positions = positions
+        self.mu = jnp.array([list(prod) for prod in itertools.product(positions, positions)])
+        self.sigma = sigma * jnp.eye(2)
 
+    def logprob_fn(self, x, *_):
+        return self.lamda * jsp.special.logsumexp(jax.scipy.stats.multivariate_normal.logpdf(x, self.mu, self.sigma))
+
+    def logprior_fn(self, x, *_):
+        return stats.laplace.logpdf(x, scale=self.alpha)
+    
+    def sample_fn(self, rng_key, num_samples):
+        _, sample_key = jax.random.split(rng_key)
+        samples = jax.random.multivariate_normal(sample_key, self.mu, self.sigma, shape=(num_samples, self.mu.shape[0],))
+        return samples
 
 
 
@@ -523,7 +540,7 @@ def main(lamda=1/25, zeta=.75, sz=10, lr=1e-3, temp=1, num_partitions=50, seed=0
     Y = np.linspace(-5, 5, N)
     X, Y = np.meshgrid(X, Y)
     
-    Z = GaussianMixturewithLaplacianPriorSampling(lamda, alpha, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
+    Z = GaussianMixturewithTVPriorSampling(lamda, alpha, positions, sigma).sampling(seed, xmin, ymin, xmax, ymax, nbins)
 
     Z2 = SPGLD(lamda, positions, sigma).sampling(seed, num_training_steps)
 
