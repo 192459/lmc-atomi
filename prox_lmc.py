@@ -426,7 +426,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     # plt.suptitle("True 2D Gaussian Mixture") 
     # plt.show()
     plt.show(block=False)
-    plt.pause(10)
+    plt.pause(5)
     plt.close()
     fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_1_smooth.pdf', dpi=500)
 
@@ -439,7 +439,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     print(f'\nMYMALA acceptance rate: {eff_K / K} ')
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])    
-    Q = np.array([[1.0, 0.1], [0.1, 1.0]])
+    Q = np.array([[1.0, 0.1], [0.1, 1.5]])
     # M = Q = np.eye(mus[0].shape[0])
     Z4 = prox_lmc.ppula(gamma_ppula, M, Q, t)
 
@@ -496,7 +496,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     # axes[1,3].set_title("ULPDA", fontsize=16)
 
     plt.show(block=False)
-    plt.pause(10)
+    plt.pause(5)
     plt.close()
     fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_3.pdf', dpi=500)
 
@@ -537,7 +537,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     # axes[1,3].set_title("ULPDA", fontsize=16)
     
     plt.show(block=False)
-    plt.pause(10)
+    plt.pause(5)
     plt.close()
     fig2.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_2.pdf', dpi=500)  
     
