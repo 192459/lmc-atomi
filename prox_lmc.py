@@ -186,7 +186,7 @@ class ProximalLangevinMonteCarlo:
         w = np.zeros_like(x)
         for _ in range(t):
             u = x - Q @ w
-            w += eta * u - eta * prox_laplace(w / eta + u, gamma / eta)
+            w = w + eta * u - eta * prox_laplace(w / eta + u, gamma / eta)
         return w
 
     def preconditioned_prox_update(self, theta, gamma, Q, t=100):
