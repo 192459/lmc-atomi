@@ -39,7 +39,7 @@ from jax.scipy.stats import multivariate_normal
 from jax import lax
 from jax import random
 from tensorflow_probability.substrates import jax as tfp
-import tensorflow_datasets as tfds
+# import tensorflow_datasets as tfds
 
 import blackjax
 import blackjax.sgmcmc.gradients as gradients
