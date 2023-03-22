@@ -21,10 +21,14 @@ import os
 import itertools
 from fastprogress import progress_bar
 from typing import NamedTuple
+import functools
+import collections
+import contextlib
 import fire
 
 import numpy as np
 from scipy.stats import gaussian_kde
+import pandas as pd
 
 import jax
 from jax import grad, jit
@@ -32,6 +36,10 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 import jax.scipy.stats as stats
 from jax.scipy.stats import multivariate_normal
+from jax import lax
+from jax import random
+from tensorflow_probability.substrates import jax as tfp
+import tensorflow_datasets as tfds
 
 import blackjax
 import blackjax.sgmcmc.gradients as gradients

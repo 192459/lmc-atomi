@@ -38,7 +38,8 @@ import optax
 from blackjax.types import PyTree
 from optax._src.base import OptState
 
-from prox_jax import *
+import prox_jax 
+import prox_tv as ptv
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -245,7 +246,7 @@ class MYSGLD:
         return stats.laplace.logpdf(x, scale=self.alpha)
     
     def grad_Moreau_env(self, x, *_):
-        return (self.gamma - prox_laplace(x, self.gamma * self.alpha)) / self.gamma
+        return (self.gamma - prox_jax.prox_laplace(x, self.gamma * self.alpha)) / self.gamma
 
     def prox_update(self, x, *_):
         return -self.gamma * self.grad_Moreau_env(x, self.lamda, self.alpha)
