@@ -15,7 +15,7 @@
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
 '''
-Usage: python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
+Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
 '''
 
 import os
@@ -24,6 +24,9 @@ import fire
 
 import numpy as np
 from numpy.random import default_rng
+
+import skimage as ski
+from skimage import data, io, filters
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -38,6 +41,7 @@ plt.rcParams.update({
 
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
+from scipy import ndimage, datasets
 
 import prox
 
@@ -55,57 +59,18 @@ class ProximalLangevinMonteCarlo:
         self.seed = seed
         self.d = mus[0].shape[0]
 
-    def multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_det = np.linalg.det(Sigma)
-        Sigma_inv = np.linalg.inv(Sigma)
-        N = np.sqrt((2*np.pi)**self.d * np.abs(Sigma_det))
-        fac = np.einsum('...k,kl,...l->...', theta - mu, Sigma_inv, theta - mu)
-        return np.exp(-fac / 2) / N
-
-    def density_gaussian_mixture(self, theta): 
-        den = [self.omegas[i] * self.multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
-        return sum(den)
-
-    def potential_gaussian_mixture(self, theta): 
-        return -np.log(self.density_gaussian_mixture(theta))
 
     def multivariate_laplacian(self, theta):    
         return (self.alpha/2)**self.d * np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
-    
-    def prox_uncentered_laplace(self, theta, gamma, mu):
-        return mu + prox.prox_laplace(theta - mu, gamma)
-    
+        # return np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
+        
     def moreau_env_uncentered_laplace(self, theta):
-        p = self.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
+        p = prox.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
         return self.alpha * np.linalg.norm(p - self.mu, ord=1, axis=-1) + np.linalg.norm(p - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
     
     def smooth_multivariate_laplacian(self, theta):
         return (self.alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta))
-        # return np.exp(-self.moreau_env_uncentered_laplace(theta))
 
-    def grad_density_multivariate_gaussian(self, theta, mu, Sigma):
-        return self.multivariate_gaussian(theta, mu, Sigma) * np.linalg.inv(Sigma) @ (mu - theta)
-
-    def grad_density_gaussian_mixture(self, theta):
-        grad_den = [self.omegas[i] * self.grad_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
-        return sum(grad_den)
-
-    def grad_potential_gaussian_mixture(self, theta):
-        return -self.grad_density_gaussian_mixture(theta) / self.density_gaussian_mixture(theta)
-
-    def hess_density_multivariate_gaussian(self, theta, mu, Sigma):
-        Sigma_inv = np.linalg.inv(Sigma)
-        return self.multivariate_gaussian(theta, mu, Sigma) * (Sigma_inv @ np.outer(theta - mu, theta - mu) @ Sigma_inv - Sigma_inv)
-
-    def hess_density_gaussian_mixture(self, theta):
-        hess_den = [self.omegas[i] * self.hess_density_multivariate_gaussian(theta, self.mus[i], self.Sigmas[i]) for i in range(len(self.mus))]
-        return sum(hess_den)
-        
-    def hess_potential_gaussian_mixture(self, theta):
-        density = self.density_gaussian_mixture(theta)
-        grad_density = self.grad_density_gaussian_mixture(theta)
-        hess_density = self.hess_density_gaussian_mixture(theta)
-        return np.outer(grad_density, grad_density) / density**2 - hess_density / density
 
     def gd_update(self, theta, gamma): 
         return theta - gamma * self.grad_potential_gaussian_mixture(theta) 
@@ -224,52 +189,6 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta)
 
 
-    ## Bregman--Moreau Unadjusted Mirror-Langevin Algorithm (BMUMLA)
-    def grad_mirror_hyp(self, theta, beta): 
-        return np.arcsinh(theta / beta)
-
-    def grad_conjugate_mirror_hyp(self, theta, beta):
-        return beta * np.sinh(theta)
-
-    def left_bregman_prox_ell_one_hypent(self, theta, beta, gamma):
-        if isinstance(theta, float):
-            if theta > beta * np.sinh(gamma):
-                p = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
-            elif theta < beta * np.sinh(-gamma):
-                p = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
-            else: 
-                p = np.sqrt(theta ** 2 + beta ** 2) - beta
-        else:
-            p = np.array(len(theta))
-            p1 = beta * np.sinh(np.arcsinh(theta / beta) - gamma)
-            p2 = beta * np.sinh(np.arcsinh(theta / beta) + gamma)
-            p3 = np.sqrt(theta ** 2 + beta ** 2) - beta
-            p = np.where(theta > beta * np.sinh(gamma), p1, p3)
-            p = np.where(theta < beta * np.sinh(-gamma), p2, p)
-        return p
-
-    def grad_BM_env(self, theta, beta):
-        return 1/self.lamda * (theta**2 + beta**2)**(-.5) * (theta - self.left_bregman_prox_ell_one_hypent(theta, beta, self.lamda * self.alpha))
-
-    def gd_BM_update(self, theta, gamma):
-        return -gamma * self.grad_potential_gaussian_mixture(theta)
-
-    def prox_BM_update(self, theta, beta, gamma):
-        return -gamma * self.grad_BM_env(theta, beta)
-
-    def lbmumla(self, gamma, beta, sigma):
-        print("\nSampling with LBMUMLA: ")
-        rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.grad_mirror_hyp(theta0, beta) + self.gd_BM_update(theta0, gamma) + self.prox_BM_update(theta0, sigma, gamma) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
-            theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
-            theta.append(theta_new) 
-            theta0 = theta_new
-        return np.array(theta)
-
 
     # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
     def ulpda(self, gamma0, gamma1, tau, D, prox_f, prox_g):
@@ -307,6 +226,8 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
                                 lamda=0.01, alpha=.1, n=5, t=100, 
                                 K=10000, seed=0):
     # # Our 2-dimensional distribution will be over variables X and Y
+
+
     N = 300
     xmin, xmax = -5, 5
     ymin, ymax = -5, 5
