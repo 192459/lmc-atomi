@@ -28,8 +28,10 @@ def prox_conjugate(x, gamma, prox):
 def prox_laplace(x, gamma): 
     return np.sign(x) * np.maximum(np.abs(x) - gamma, 0)
 
+
 def prox_uncentered_laplace(x, gamma, mu):
     return mu + prox_laplace(x - mu, gamma)
+
 
 def prox_gaussian(x, gamma):
     return x / (2*gamma + 1)

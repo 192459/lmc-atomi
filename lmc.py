@@ -97,7 +97,7 @@ class LangevinMonteCarlo:
     def ula(self, gamma):
         print("\nSampling with ULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -121,7 +121,7 @@ class LangevinMonteCarlo:
     def mala(self, gamma):
         print("\nSampling with MALA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -141,7 +141,7 @@ class LangevinMonteCarlo:
     def pula(self, gamma, M):
         print("\nSampling with Preconditioned Langevin Algorithm:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -155,7 +155,7 @@ class LangevinMonteCarlo:
     def ihpula(self, gamma):
         print("\nSampling with Inverse Hessian Preconditioned Unadjusted Langevin Algorithm:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []    
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -182,7 +182,7 @@ class LangevinMonteCarlo:
     def mla(self, gamma, beta):
         print("\nSampling with MLA: ")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -191,32 +191,6 @@ class LangevinMonteCarlo:
             theta.append(theta_new)    
             theta0 = theta_new
         return np.array(theta)
-
-
-    # Cyclical step sizes
-    def cyclical_gd_update(self, theta, gamma): 
-        return theta - gamma * self.grad_potential_gaussian_mixture(theta)
-
-
-    def cyclical_ula(self, gamma):
-        rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.cyclical_gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-
-
-    '''
-    def error(self, theta1s, thetas2):
-        density_2d_gaussian_mixture(theta, mus, Sigmas)
-        np.sum()
-
-        return 
-    '''
 
 
 ## Main function

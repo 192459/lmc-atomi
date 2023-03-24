@@ -115,7 +115,7 @@ class ProximalLangevinMonteCarlo:
     def pgld(self, gamma):
         print("\nSampling with Proximal ULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):        
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -136,7 +136,7 @@ class ProximalLangevinMonteCarlo:
     def myula(self, gamma):
         print("\nSampling with MYULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -161,7 +161,7 @@ class ProximalLangevinMonteCarlo:
     def mymala(self, gamma):
         print("\nSampling with MYMALA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -194,7 +194,7 @@ class ProximalLangevinMonteCarlo:
     def ppula(self, gamma, M, Q, t=100):
         print("\nSampling with PP-ULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -214,7 +214,7 @@ class ProximalLangevinMonteCarlo:
     def fbula(self, gamma):
         print("\nSampling with FBULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -260,7 +260,7 @@ class ProximalLangevinMonteCarlo:
     def lbmumla(self, gamma, beta, sigma):
         print("\nSampling with LBMUMLA: ")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -275,8 +275,8 @@ class ProximalLangevinMonteCarlo:
     def ulpda(self, gamma0, gamma1, tau, D, prox_f, prox_g):
         print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        u0 = tu0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
+        u0 = tu0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -290,15 +290,6 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta)
 
 
-    '''
-    def error(self, thetas1, thetas2):
-        density_2d_gaussian_mixture(theta, mus, Sigmas)
-        np.sum()
-
-        return 
-    '''
-
-
 ## Main function
 def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2, 
                                 gamma_mymala=5e-2, gamma_ppula=5e-2, 
@@ -306,7 +297,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
                                 gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                                 lamda=0.01, alpha=.1, n=5, t=100, 
                                 K=10000, seed=0):
-    # # Our 2-dimensional distribution will be over variables X and Y
+    # Our 2-dimensional distribution will be over variables X and Y
     N = 300
     xmin, xmax = -5, 5
     ymin, ymax = -5, 5

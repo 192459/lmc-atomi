@@ -15,7 +15,7 @@
 # Install libraries: pip install -U numpy matplotlib scipy seaborn fire
 
 '''
-Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_ppula=5e-2 --gamma_fbula=5e-2 --gamma_lbmumla=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
+Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_fbula=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
 '''
 
 import os
@@ -24,9 +24,6 @@ import fire
 
 import numpy as np
 from numpy.random import default_rng
-
-import skimage as ski
-from skimage import data, io, filters
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -41,46 +38,48 @@ plt.rcParams.update({
 
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
-from scipy import ndimage, datasets
+from scipy import ndimage
+import skimage as ski
+from skimage import data, io, filters
+import pylops
 
 import prox
+# import prox_tv as ptv
+import pyproximal
 
 
-class ProximalLangevinMonteCarlo:
-    def __init__(self, mus, Sigmas, omegas, lamda, alpha, mu, K=1000, seed=0) -> None:
-        super(ProximalLangevinMonteCarlo, self).__init__()
-        self.mus = mus
-        self.Sigmas = Sigmas
-        self.omegas = omegas
+class ProximalLangevinMonteCarloDeconvolution:
+    def __init__(self, lamda, sigma, tau, K=10000, seed=0) -> None:
+        super(ProximalLangevinMonteCarloDeconvolution, self).__init__()
         self.lamda = lamda
-        self.alpha = alpha
-        self.mu = mu
+        self.sigma = sigma
+        self.tau = tau
         self.n = K
         self.seed = seed
-        self.d = mus[0].shape[0]
+
+    def total_variation(self, g):
+        nx, ny = g.shape
+        tv_x = pylops.FirstDerivative((ny, nx), axis=0, edge=False, kind="backward")
+        tv_y = pylops.FirstDerivative((ny, nx), axis=1, edge=False, kind="backward")
+        return tv_x, tv_y
 
 
-    def multivariate_laplacian(self, theta):    
-        return (self.alpha/2)**self.d * np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
-        # return np.exp(-self.alpha * np.linalg.norm(theta - self.mu, ord=1, axis=-1))
-        
-    def moreau_env_uncentered_laplace(self, theta):
-        p = prox.prox_uncentered_laplace(theta, self.lamda * self.alpha, self.mu)
-        return self.alpha * np.linalg.norm(p - self.mu, ord=1, axis=-1) + np.linalg.norm(p - theta, ord=2, axis=-1)**2 / (2 * self.lamda)
-    
-    def smooth_multivariate_laplacian(self, theta):
-        return (self.alpha/2)**self.d * np.exp(-self.moreau_env_uncentered_laplace(theta))
+    def posterior(self, x, y, size=5):   
+        U = np.linalg.norm(y - ndimage.uniform_filter(x, size=size))**2 / (2*self.sigma**2)
+        U += self.tau * self.total_variation(x)[0] * x
+        U += self.tau * self.total_variation(x)[1] * x
+        return np.exp(-U)
 
 
-    def gd_update(self, theta, gamma): 
-        return theta - gamma * self.grad_potential_gaussian_mixture(theta) 
+    def gd_update(self, x, y, H, gamma): 
+        return x - gamma * H @ (H @ x - y) / (2*self.sigma**2)
 
 
     ## Proximal Gradient Langevin Dynamics (PGLD)
     def pgld(self, gamma):
         print("\nSampling with Proximal ULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):        
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -101,7 +100,7 @@ class ProximalLangevinMonteCarlo:
     def myula(self, gamma):
         print("\nSampling with MYULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -126,7 +125,7 @@ class ProximalLangevinMonteCarlo:
     def mymala(self, gamma):
         print("\nSampling with MYMALA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -139,36 +138,6 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta), len(theta)
 
 
-    ## Preconditioned Proximal ULA (PP-ULA)
-    def preconditioned_gd_update(self, theta, gamma, M): 
-        return theta - gamma * M @ self.grad_potential_gaussian_mixture(theta)
-
-    def preconditioned_prox(self, x, gamma, Q, t=100): 
-        rho = 1 / np.linalg.norm(Q, ord=2)
-        eps = max(min(1, rho) - 1e-5, 1e-9)
-        eta = rho - eps
-        w = np.zeros_like(x)
-        for _ in range(t):
-            u = x - Q @ w
-            w = w + eta * u - eta * prox.prox_laplace(w / eta + u, gamma / eta)
-        return u
-
-    def preconditioned_prox_update(self, theta, gamma, Q, t=100):
-        return -gamma * np.linalg.inv(Q) @ (theta - self.preconditioned_prox(theta, self.lamda, Q, t)) / self.lamda
-
-    def ppula(self, gamma, M, Q, t=100):
-        print("\nSampling with PP-ULA:")
-        rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.preconditioned_gd_update(theta0, gamma, M) + self.preconditioned_prox_update(theta0, gamma, Q, t) + np.sqrt(2*gamma) * sqrtm(M) @ xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-
-
     ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
     def grad_FB_env(self, theta):
         return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox.prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
@@ -179,7 +148,7 @@ class ProximalLangevinMonteCarlo:
     def fbula(self, gamma):
         print("\nSampling with FBULA:")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -194,8 +163,8 @@ class ProximalLangevinMonteCarlo:
     def ulpda(self, gamma0, gamma1, tau, D, prox_f, prox_g):
         print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
         rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        u0 = tu0 = rng.normal(0, 1, self.d)
+        theta0 = rng.standard_normal(self.d)
+        u0 = tu0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -209,131 +178,36 @@ class ProximalLangevinMonteCarlo:
         return np.array(theta)
 
 
-    '''
-    def error(self, thetas1, thetas2):
-        density_2d_gaussian_mixture(theta, mus, Sigmas)
-        np.sum()
-
-        return 
-    '''
-
-
 ## Main function
-def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2, 
-                                gamma_mymala=5e-2, gamma_ppula=5e-2, 
-                                gamma_fbula=5e-2, gamma_lbmumla=5e-2,
-                                gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
-                                lamda=0.01, alpha=.1, n=5, t=100, 
-                                K=10000, seed=0):
-    # # Our 2-dimensional distribution will be over variables X and Y
+def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, 
+                    gamma_mymala=5e-2, gamma_fbula=5e-2, 
+                    gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
+                    lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
 
+    g = ski.io.imread("fig/einstein.png")/255.0    
+    M, N = g.shape    
+    rng = default_rng(seed)
+    noisy_g = ndimage.uniform_filter(g, size=5) + rng.standard_normal(size=(M, N)) * sigma
 
-    N = 300
-    xmin, xmax = -5, 5
-    ymin, ymax = -5, 5
-    X = np.linspace(xmin, xmax, N)
-    Y = np.linspace(ymin, ymax, N)
-    X, Y = np.meshgrid(X, Y)
-
-
-    # Mean vectors and covariance matrices
-    mu1 = np.array([0., 0.])
-    Sigma1 = np.array([[ 1. , -0.5], [-0.5,  1.]])
-    mu2 = np.array([-2., 3.])
-    Sigma2 = np.array([[0.5, 0.2], [0.2, 0.7]])
-    mu3 = np.array([2., -3.])
-    Sigma3 = np.array([[0.5, 0.1], [0.1, 0.9]])
-    mu4 = np.array([3., 3.])
-    Sigma4 = np.array([[0.8, 0.02], [0.02, 0.3]])
-    mu5 = np.array([-2., -2.])
-    Sigma5 = np.array([[1.2, 0.05], [0.05, 0.8]])
-
-
-    if n == 1:
-        mus = [mu1]
-        Sigmas = [Sigma1]
-    elif n == 2: 
-        mus = [mu1, mu2]
-        Sigmas = [Sigma1, Sigma2]
-    elif n == 3: 
-        mus = [mu1, mu2, mu3]
-        Sigmas = [Sigma1, Sigma2, Sigma3]
-    elif n == 4: 
-        mus = [mu2, mu3, mu4, mu5]
-        Sigmas = [Sigma2, Sigma3, Sigma4, Sigma5]
-    elif n == 5: 
-        mus = [mu1, mu2, mu3, mu4, mu5]
-        Sigmas = [Sigma1, Sigma2, Sigma3, Sigma4, Sigma5]
-
-
-    # location parameter of Laplacian prior
-    mu = np.zeros_like(mus[0])
-
-    # weight vector
-    omegas = np.ones(n) / n
-
-    # The distribution on the variables X, Y packed into pos.
-    pos = np.empty(X.shape + (2,))
-
-    # Pack X and Y into a single 3-dimensional array
-    pos[:, :, 0] = X
-    pos[:, :, 1] = Y
-
-    prox_lmc = ProximalLangevinMonteCarlo(mus, Sigmas, omegas, lamda, alpha, mu, K, seed)  
-    
-    Z = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.multivariate_laplacian(pos)
-    Z_smooth = prox_lmc.density_gaussian_mixture(pos) * prox_lmc.smooth_multivariate_laplacian(pos)
-
-
-    ## Plot of the true Gaussian mixture with Laplacian prior
-    print("\nPlotting the true Gaussian mixture with Laplacian prior...")
-    fig = plt.figure(figsize=(10, 5))
-    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
-
-    ax1.plot_surface(X, Y, Z, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
-    ax1.view_init(45, -70)
-
-    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
-    ax2.contourf(X, Y, Z, zdir='z', offset=0, cmap=cm.viridis)
-    ax2.view_init(90, 270)
-
-    ax2.grid(False)
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-    ax2.set_zticks([])
-
-    # plt.suptitle("True 2D Gaussian Mixture") 
-    # plt.show()
+    # Plot of the original image and the blurred image
+    fig = plt.figure(figsize=(13, 4))
+    plt.gray()  # show the filtered result in grayscale
+    ax1 = fig.add_subplot(121)  # left side
+    ax2 = fig.add_subplot(122)  # right side
+    ax1.imshow(g)
+    ax2.imshow(noisy_g)
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_1.pdf', dpi=500)
 
 
-    print("\nPlotting the Gaussian mixture with smoothed Laplacian prior...")
-    fig = plt.figure(figsize=(10, 5))
-    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
-
-    ax1.plot_surface(X, Y, Z_smooth, rstride=3, cstride=3, linewidth=1, antialiased=True, cmap=cm.viridis)
-    ax1.view_init(45, -70)
-
-    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
-    ax2.contourf(X, Y, Z_smooth, zdir='z', offset=0, cmap=cm.viridis)
-    ax2.view_init(90, 270)
-
-    ax2.grid(False)
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-    ax2.set_zticks([])
-
-    # plt.suptitle("True 2D Gaussian Mixture") 
-    # plt.show()
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    fig.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_1_smooth.pdf', dpi=500)
+    prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
+    
 
 
+
+
+    '''
     Z1 = prox_lmc.pgld(gamma_pgld)
 
     Z2 = prox_lmc.myula(gamma_myula)
@@ -341,22 +215,14 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z3, eff_K = prox_lmc.mymala(gamma_mymala)
     print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
 
-    M = np.array([[1.0, 0.1], [0.1, 0.5]])    
-    Q = np.array([[1.0, 0.1], [0.1, 1.5]])
-    # M = Q = np.eye(mus[0].shape[0])
-    Z4 = prox_lmc.ppula(gamma_ppula, M, Q, t)
 
-    Z5 = prox_lmc.fbula(gamma_fbula)
+    Z4 = prox_lmc.fbula(gamma_fbula)
     
-    # beta = np.array([0.2, 0.8])
-    beta = np.array([0.7, 0.3])
-    sigma = np.array([0.8, 0.2])
-    Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
-    # D = np.eye(mus[0].shape[0])
-    # tau = .5
-    # Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
-
+    D = np.eye(2)
+    tau = .5
+    Z5 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox.prox_gaussian, prox.prox_laplace)
+    
 
     ## Plot of the true Gaussian mixture with 2d histograms of samples
     print("\nConstructing the 2D histograms of samples...")
@@ -443,9 +309,9 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     plt.pause(5)
     plt.close()
     fig2.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_2.pdf', dpi=500)  
-    
+    '''
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
         os.makedirs('fig')
-    fire.Fire(prox_lmc_gaussian_mixture)
+    fire.Fire(prox_lmc_deconv)
