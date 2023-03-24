@@ -42,6 +42,7 @@ from scipy import ndimage
 import skimage as ski
 from skimage import data, io, filters
 import pylops
+import cv2 as cv
 
 import prox
 # import prox_tv as ptv
@@ -64,27 +65,28 @@ class ProximalLangevinMonteCarloDeconvolution:
         return tv_x, tv_y
 
 
-    def posterior(self, x, y, size=5):   
-        U = np.linalg.norm(y - ndimage.uniform_filter(x, size=size))**2 / (2*self.sigma**2)
+    def posterior(self, x, y, H):   
+        U = np.linalg.norm(y - H * x)**2 / (2*self.sigma**2)
         U += self.tau * self.total_variation(x)[0] * x
         U += self.tau * self.total_variation(x)[1] * x
         return np.exp(-U)
 
 
     def gd_update(self, x, y, H, gamma): 
-        return x - gamma * H @ (H @ x - y) / (2*self.sigma**2)
+        return x - gamma * H.adjoint() * (H * x - y) / (2*self.sigma**2)
 
 
     ## Proximal Gradient Langevin Dynamics (PGLD)
-    def pgld(self, gamma):
+    def pgld(self, y, H, gamma):
         print("\nSampling with Proximal ULA:")
+        d = y.shape[0]
         rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(self.d)
+        theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):        
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta0 = prox.prox_laplace(theta0, self.lamda * self.alpha)
-            theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            theta0 = prox.prox_tv(theta0, self.lamda * self.tau)
+            theta_new = self.gd_update(theta0, y, H, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
         return np.array(theta)
@@ -92,19 +94,20 @@ class ProximalLangevinMonteCarloDeconvolution:
 
     ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
     def grad_Moreau_env(self, theta):
-        return (theta - prox.prox_laplace(theta, self.lamda * self.alpha)) / self.lamda
+        return (theta - prox.prox_tv(theta, self.lamda * self.tau)) / self.lamda
 
     def prox_update(self, theta, gamma):
         return -gamma * self.grad_Moreau_env(theta)
 
-    def myula(self, gamma):
+    def myula(self, y, H, gamma):
         print("\nSampling with MYULA:")
+        d = y.shape[0]
         rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(self.d)
+        theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
         return np.array(theta)
@@ -115,21 +118,21 @@ class ProximalLangevinMonteCarloDeconvolution:
         return multivariate_normal(mean=self.gd_update(theta2, gamma) + self.prox_update(theta2, gamma), cov=2*gamma).pdf(theta1)
 
 
-    def prob(self, theta_new, theta_old, gamma):
-        density_ratio = ((self.density_gaussian_mixture(theta_new) * self.multivariate_laplacian(theta_new)) / 
-                        (self.density_gaussian_mixture(theta_old) * self.multivariate_laplacian(theta_old)))
+    def prob(self, theta_new, theta_old, y, H, gamma):
+        density_ratio = self.posterior(theta_new, y, H) / self.posterior(theta_old, y, H)
         q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
         return density_ratio * q_ratio
 
 
-    def mymala(self, gamma):
+    def mymala(self, y, H, gamma):
         print("\nSampling with MYMALA:")
+        d = y.shape[0]
         rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(self.d)
+        theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
+            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
             if rng.random() <= alpha:
@@ -138,38 +141,18 @@ class ProximalLangevinMonteCarloDeconvolution:
         return np.array(theta), len(theta)
 
 
-    ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
-    def grad_FB_env(self, theta):
-        return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox.prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
-
-    def gd_FB_update(self, theta, gamma):
-        return theta - gamma * self.grad_FB_env(theta)
-
-    def fbula(self, gamma):
-        print("\nSampling with FBULA:")
-        rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(self.d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.gd_FB_update(theta0, gamma) + np.sqrt(2*gamma) * xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-
-
-
     # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
-    def ulpda(self, gamma0, gamma1, tau, D, prox_f, prox_g):
+    def ulpda(self, y, H, gamma0, gamma1, tau, prox_f, prox_g):
         print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
+        d = y.shape[0]
         rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(self.d)
-        u0 = tu0 = rng.standard_normal(self.d)
+        theta0 = rng.standard_normal(d)
+        u0 = tu0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = prox_f(theta0 - gamma0 * D.T @ tu0, gamma0) + np.sqrt(2*gamma0) * xi
-            u_new = prox.prox_conjugate(u0 + gamma1 * D @ (2*theta_new - theta0), gamma1, prox_g)
+            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            theta_new = prox_f(theta0 - gamma0 * H.adjoint() * tu0, gamma0) + np.sqrt(2*gamma0) * xi
+            u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*theta_new - theta0), gamma1, prox_g)
             tu_new = u0 + tau * (u_new - u0)
             theta.append(theta_new)    
             theta0 = theta_new
@@ -180,50 +163,72 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 ## Main function
 def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, 
-                    gamma_mymala=5e-2, gamma_fbula=5e-2, 
-                    gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
+                    gamma_mymala=5e-2, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                     lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
 
     g = ski.io.imread("fig/einstein.png")/255.0    
     M, N = g.shape    
     rng = default_rng(seed)
-    noisy_g = ndimage.uniform_filter(g, size=5) + rng.standard_normal(size=(M, N)) * sigma
+    # y5 = cv.boxFilter(g, ddepth=-1, ksize=(5, 5), normalize=False) + rng.standard_normal(size=(M, N)) * sigma
+    # y5 = cv.blur(g, (5, 5)) + rng.standard_normal(size=(M, N)) * sigma
+    # y5 = ndimage.uniform_filter(g, 5) + rng.standard_normal(size=(M, N)) * sigma
+    # y6 = cv.boxFilter(g, ddepth=-1, ksize=(6, 6), normalize=False) + rng.standard_normal(size=(M, N)) * sigma
+    # y6 = cv.blur(g, (6, 6)) + rng.standard_normal(size=(M, N)) * sigma    
+    # y6 = ndimage.uniform_filter(g, 6) + rng.standard_normal(size=(M, N)) * sigma
+    # y7 = cv.boxFilter(g, ddepth=-1, ksize=(7, 7), normalize=False) + rng.standard_normal(size=(M, N)) * sigma
+    # y7 = cv.blur(g, (7, 7)) + rng.standard_normal(size=(M, N)) * sigma
+    # y7 = ndimage.uniform_filter(g, 7) + rng.standard_normal(size=(M, N)) * sigma
+
+    h5 = np.ones((5, 5))
+    h5 /= h5.sum()
+    nh5 = h5.shape
+    H5 = pylops.signalprocessing.Convolve2D((M, N), h=h5, offset=(nh5[0] // 2, nh5[1] // 2))
+    y5 = H5 * g + rng.standard_normal(size=(M, N)) * sigma
+
+    h6 = np.ones((6, 6))
+    h6 /= h6.sum()
+    nh6 = h6.shape
+    H6 = pylops.signalprocessing.Convolve2D((M, N), h=h6, offset=(nh6[0] // 2, nh6[1] // 2))
+    y6 = H6 * g + rng.standard_normal(size=(M, N)) * sigma
+
+    h7 = np.ones((7, 7))
+    h7 /= h7.sum()
+    nh7 = h7.shape
+    H7 = pylops.signalprocessing.Convolve2D((M, N), h=h7, offset=(nh7[0] // 2, nh7[1] // 2))
+    y7 = H7 * g + rng.standard_normal(size=(M, N)) * sigma
+
+    print(np.linalg.norm(ndimage.uniform_filter(g, 5) - H5 * g))
+    print(np.linalg.norm(ndimage.uniform_filter(g, 6) - H6 * g))
+    print(np.linalg.norm(ndimage.uniform_filter(g, 7) - H7 * g))
 
     # Plot of the original image and the blurred image
-    fig = plt.figure(figsize=(13, 4))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
-    ax1 = fig.add_subplot(121)  # left side
-    ax2 = fig.add_subplot(122)  # right side
-    ax1.imshow(g)
-    ax2.imshow(noisy_g)
+    axes[0,0].imshow(g)
+    axes[0,1].imshow(y5)
+    axes[1,0].imshow(y6)
+    axes[1,1].imshow(y7)
+    # axes[1,0].imshow(y7)
+    # axes[1,1].imshow(H5.adjoint() * H5 * g)
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-
+    # plt.show()
 
     prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
+    Z1 = prox_lmc.pgld(y5, H5, gamma_pgld)
 
+    Z2 = prox_lmc.myula(y5, H5, gamma_myula)
 
-
-
-    '''
-    Z1 = prox_lmc.pgld(gamma_pgld)
-
-    Z2 = prox_lmc.myula(gamma_myula)
-
-    Z3, eff_K = prox_lmc.mymala(gamma_mymala)
+    Z3, eff_K = prox_lmc.mymala(y5, H5, gamma_mymala)
     print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
 
-
-    Z4 = prox_lmc.fbula(gamma_fbula)
     
-
-    D = np.eye(2)
     tau = .5
-    Z5 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox.prox_gaussian, prox.prox_laplace)
+    Z5 = prox_lmc.ulpda(y5, H5, gamma0_ulpda, gamma1_ulpda, tau, prox.prox_gaussian, prox.prox_tv)
     
-
+    '''
     ## Plot of the true Gaussian mixture with 2d histograms of samples
     print("\nConstructing the 2D histograms of samples...")
     ran = [[xmin, xmax], [ymin, ymax]]
