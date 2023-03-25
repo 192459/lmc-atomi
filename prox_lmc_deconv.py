@@ -36,6 +36,7 @@ plt.rcParams.update({
     } 
     )
 
+import scipy
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
 from scipy import ndimage
@@ -63,7 +64,41 @@ class ProximalLangevinMonteCarloDeconvolution:
         tv_x = pylops.FirstDerivative((ny, nx), axis=0, edge=False, kind="backward")
         tv_y = pylops.FirstDerivative((ny, nx), axis=1, edge=False, kind="backward")
         return tv_x, tv_y
+    
+    def make_kernel_2D(self, PSF, dims):
+        """
+            PSF is the 2D kernel
+            dims are is the side size of the image in order (r,c) 
+        """
+        d = len(PSF) ## assmuming square PSF (but not necessarily square image)
+        print("kernel dimensions=", dims)
+        N = dims[0]*dims[1]
 
+        ## pre-fill a 2D matrix for the diagonals
+        diags = np.zeros((d*d, N))
+        offsets = np.zeros(d*d)
+        heads = np.zeros(d*d) ## for this a list is OK
+        i = 0
+        for y in range(len(PSF)):
+            for x in range(len(PSF[y])):
+                diags[i,:] += PSF[y,x]
+                heads[i] = PSF[y,x]
+                xdist = d/2 - x 
+                ydist = d/2 - y ## y direction pointing down
+                offsets[i] = (ydist * dims[1] + xdist)
+                i += 1
+        ## create linear operator
+        H = scipy.sparse.dia_matrix((diags,offsets), shape=(N,N))
+        return H
+    
+    def make_blur_matrix(self, img, kernel_size=5):
+        n = kernel_size
+        k2 = np.zeros(shape=(n,n))
+        k2[n/2,n/2] = 1
+        sigma = kernel_size/5.0 ## 2.5 sigma
+        testk = ndimage.uniform_filter(k2, sigma)  ## uniform filter
+        blurmat = self.make_kernel_2D(testk, img.shape)
+        return(blurmat)
 
     def posterior(self, x, y, H):   
         U = np.linalg.norm(y - H * x)**2 / (2*self.sigma**2)
