@@ -19,11 +19,16 @@ import random
 import numpy as np
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
+import pylops
 
 
 def prox_conjugate(x, gamma, prox):
     return x - gamma * prox(x / gamma, 1/gamma)
 
+
+def prox_square_loss(x, y, H, gamma):
+    d = x.shape[0] * x.shape[1]
+    return (pylops.Identity(d) + gamma * H.adjoint() * H).div(x + gamma * H.adjoint() * y)
 
 def prox_laplace(x, gamma): 
     return np.sign(x) * np.maximum(np.abs(x) - gamma, 0)

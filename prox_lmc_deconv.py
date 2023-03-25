@@ -142,7 +142,7 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
     # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
-    def ulpda(self, y, H, gamma0, gamma1, tau, prox_f, prox_g):
+    def ulpda(self, y, H, gamma0, gamma1, theta, prox_f, prox_g):
         print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
         d = y.shape[0]
         rng = default_rng(self.seed)
@@ -153,13 +153,34 @@ class ProximalLangevinMonteCarloDeconvolution:
             xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
             theta_new = prox_f(theta0 - gamma0 * H.adjoint() * tu0, gamma0) + np.sqrt(2*gamma0) * xi
             u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*theta_new - theta0), gamma1, prox_g)
-            tu_new = u0 + tau * (u_new - u0)
+            tu_new = u0 + theta * (u_new - u0)
             theta.append(theta_new)    
             theta0 = theta_new
             u0 = u_new
             tu0 = tu_new
         return np.array(theta)
-
+    
+    # PDHG (Chambolle--Pock)
+    def PDHG(self, y, H, gamma0, gamma1, theta):
+        print("\nOptimizing with Chambolle-Pock (PDHG):")
+        M, N = y.shape
+        rng = default_rng(self.seed)
+        x0 = rng.standard_normal((M, N))
+        u0 = tu0 = rng.standard_normal((M, N))
+        x = []
+        for _ in progress_bar(range(self.n)):
+            x_new = prox.prox_square_loss(x0 - gamma0 * H.adjoint() * tu0, y, H, gamma0)
+            u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*x_new - x0), gamma1, prox.prox_laplace)
+            theta = 1 / np.sqrt(1 + 2 * 0.1 * gamma0)
+            gamma0 *= theta
+            gamma1 /= theta
+            tu_new = u0 + theta * (u_new - u0)
+            # x.append(x_new)
+            x0 = x_new
+            u0 = u_new
+            tu0 = tu_new
+        # return np.array(x)
+        return x_new
 
 ## Main function
 def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, 
@@ -197,9 +218,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     H7 = pylops.signalprocessing.Convolve2D((M, N), h=h7, offset=(nh7[0] // 2, nh7[1] // 2))
     y7 = H7 * g + rng.standard_normal(size=(M, N)) * sigma
 
-    print(np.linalg.norm(ndimage.uniform_filter(g, 5) - H5 * g))
-    print(np.linalg.norm(ndimage.uniform_filter(g, 6) - H6 * g))
-    print(np.linalg.norm(ndimage.uniform_filter(g, 7) - H7 * g))
+    # print(np.linalg.norm(ndimage.uniform_filter(g, 5) - H5 * g))
+    # print(np.linalg.norm(ndimage.uniform_filter(g, 6) - H6 * g))
+    # print(np.linalg.norm(ndimage.uniform_filter(g, 7) - H7 * g))
 
     # Plot of the original image and the blurred image
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -211,23 +232,35 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     # axes[1,0].imshow(y7)
     # axes[1,1].imshow(H5.adjoint() * H5 * g)
     plt.show(block=False)
-    plt.pause(10)
+    plt.pause(5)
     plt.close()
     # plt.show()
 
     prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
-    Z1 = prox_lmc.pgld(y5, H5, gamma_pgld)
+    # x1 = prox_lmc.pgld(y5, H5, gamma_pgld)
 
-    Z2 = prox_lmc.myula(y5, H5, gamma_myula)
+    # x2 = prox_lmc.myula(y5, H5, gamma_myula)
 
-    Z3, eff_K = prox_lmc.mymala(y5, H5, gamma_mymala)
-    print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
+    # x3, eff_K = prox_lmc.mymala(y5, H5, gamma_mymala)
+    # print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
 
     
-    tau = .5
-    Z5 = prox_lmc.ulpda(y5, H5, gamma0_ulpda, gamma1_ulpda, tau, prox.prox_gaussian, prox.prox_tv)
-    
+    # tau = .5
+    # x4 = prox_lmc.ulpda(y5, H5, gamma0_ulpda, gamma1_ulpda, theta, prox.prox_gaussian, prox.prox_tv)
+    theta = 0.5
+    x1 = prox_lmc.PDHG(y5, H5, gamma0_ulpda, gamma1_ulpda, theta)
+
+    fig2, axes = plt.subplots(1, 3, figsize=(12, 8))
+    plt.gray()  # show the filtered result in grayscale
+    axes[0,0].imshow(g)
+    axes[0,1].imshow(y5)
+    axes[0,2].imshow(x1)
+
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+
     '''
     ## Plot of the true Gaussian mixture with 2d histograms of samples
     print("\nConstructing the 2D histograms of samples...")
