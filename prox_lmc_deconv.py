@@ -98,7 +98,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         sigma = kernel_size/5.0 ## 2.5 sigma
         testk = ndimage.uniform_filter(k2, sigma)  ## uniform filter
         blurmat = self.make_kernel_2D(testk, img.shape)
-        return(blurmat)
+        return blurmat
 
     def posterior(self, x, y, H):   
         U = np.linalg.norm(y - H * x)**2 / (2*self.sigma**2)
