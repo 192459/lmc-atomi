@@ -65,40 +65,6 @@ class ProximalLangevinMonteCarloDeconvolution:
         tv_y = pylops.FirstDerivative((ny, nx), axis=1, edge=False, kind="backward")
         return tv_x, tv_y
     
-    def make_kernel_2D(self, PSF, dims):
-        """
-            PSF is the 2D kernel
-            dims are is the side size of the image in order (r,c) 
-        """
-        d = len(PSF) ## assmuming square PSF (but not necessarily square image)
-        print("kernel dimensions=", dims)
-        N = dims[0]*dims[1]
-
-        ## pre-fill a 2D matrix for the diagonals
-        diags = np.zeros((d*d, N))
-        offsets = np.zeros(d*d)
-        heads = np.zeros(d*d) ## for this a list is OK
-        i = 0
-        for y in range(len(PSF)):
-            for x in range(len(PSF[y])):
-                diags[i,:] += PSF[y,x]
-                heads[i] = PSF[y,x]
-                xdist = d/2 - x 
-                ydist = d/2 - y ## y direction pointing down
-                offsets[i] = (ydist * dims[1] + xdist)
-                i += 1
-        ## create linear operator
-        H = scipy.sparse.dia_matrix((diags,offsets), shape=(N,N))
-        return H
-    
-    def make_blur_matrix(self, img, kernel_size=5):
-        n = kernel_size
-        k2 = np.zeros(shape=(n,n))
-        k2[n/2,n/2] = 1
-        sigma = kernel_size/5.0 ## 2.5 sigma
-        testk = ndimage.uniform_filter(k2, sigma)  ## uniform filter
-        blurmat = self.make_kernel_2D(testk, img.shape)
-        return blurmat
 
     def posterior(self, x, y, H):   
         U = np.linalg.norm(y - H * x)**2 / (2*self.sigma**2)
@@ -196,7 +162,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         return np.array(theta)
     
     # PDHG (Chambolle--Pock)
-    def PDHG(self, y, H, gamma0, gamma1, theta):
+    def PDHG(self, y, h, H, gamma0, gamma1, theta):
         print("\nOptimizing with Chambolle-Pock (PDHG):")
         M, N = y.shape
         rng = default_rng(self.seed)
@@ -204,7 +170,8 @@ class ProximalLangevinMonteCarloDeconvolution:
         u0 = tu0 = rng.standard_normal((M, N))
         x = []
         for _ in progress_bar(range(self.n)):
-            x_new = prox.prox_square_loss(x0 - gamma0 * H.adjoint() * tu0, y, H, gamma0)
+            # x_new = prox.prox_square_loss(x0 - gamma0 * H.adjoint() * tu0, y, H, gamma0)
+            x_new = pyproximal.L2Convolve(h, b=y, sigma=gamma0)(x0 - gamma0 * H.adjoint() * tu0)
             u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*x_new - x0), gamma1, prox.prox_laplace)
             theta = 1 / np.sqrt(1 + 2 * 0.1 * gamma0)
             gamma0 *= theta
@@ -222,8 +189,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                     gamma_mymala=5e-2, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                     lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
 
-    g = io.imread("fig/einstein.png")/255.0    
-    M, N = g.shape    
+    g = io.imread("fig/einstein.png")/255.0
+    M, N = g.shape
     rng = default_rng(seed)
     # y5 = cv.boxFilter(g, ddepth=-1, ksize=(5, 5), normalize=False) + rng.standard_normal(size=(M, N)) * sigma
     # y5 = cv.blur(g, (5, 5)) + rng.standard_normal(size=(M, N)) * sigma
@@ -284,7 +251,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     # tau = .5
     # x4 = prox_lmc.ulpda(y5, H5, gamma0_ulpda, gamma1_ulpda, theta, prox.prox_gaussian, prox.prox_tv)
     theta = 0.5
-    x1 = prox_lmc.PDHG(y5, H5, gamma0_ulpda, gamma1_ulpda, theta)
+    x1 = prox_lmc.PDHG(y5, h5, H5, gamma0_ulpda, gamma1_ulpda, theta)
 
     fig2, axes = plt.subplots(1, 3, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
