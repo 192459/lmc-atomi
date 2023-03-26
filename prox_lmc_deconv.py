@@ -222,7 +222,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                     gamma_mymala=5e-2, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                     lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
 
-    g = ski.io.imread("fig/einstein.png")/255.0    
+    g = io.imread("fig/einstein.png")/255.0    
     M, N = g.shape    
     rng = default_rng(seed)
     # y5 = cv.boxFilter(g, ddepth=-1, ksize=(5, 5), normalize=False) + rng.standard_normal(size=(M, N)) * sigma
