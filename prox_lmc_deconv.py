@@ -309,7 +309,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     fig2, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
     axes[0,0].imshow(img)
-    axes[0,1].imshow(y5)
+    axes[0,1].imshow(y7)
     axes[1,0].imshow(iml12_fixed)
     axes[1,1].imshow(iml12_ada)
 
