@@ -161,28 +161,6 @@ class ProximalLangevinMonteCarloDeconvolution:
             tu0 = tu_new
         return np.array(theta)
     
-    # PDHG (Chambolle--Pock)
-    def PDHG(self, y, h, H, gamma0, gamma1, theta):
-        print("\nOptimizing with Chambolle-Pock (PDHG):")
-        M, N = y.shape
-        rng = default_rng(self.seed)
-        x0 = rng.standard_normal((M, N))
-        u0 = tu0 = rng.standard_normal((M, N))
-        x = []
-        for _ in progress_bar(range(self.n)):
-            # x_new = prox.prox_square_loss(x0 - gamma0 * H.adjoint() * tu0, y, H, gamma0)
-            x_new = pyproximal.L2Convolve(h, b=y, sigma=gamma0)(x0 - gamma0 * H.adjoint() * tu0)
-            u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*x_new - x0), gamma1, prox.prox_laplace)
-            theta = 1 / np.sqrt(1 + 2 * 0.1 * gamma0)
-            gamma0 *= theta
-            gamma1 /= theta
-            tu_new = u0 + theta * (u_new - u0)
-            # x.append(x_new)
-            x0 = x_new
-            u0 = u_new
-            tu0 = tu_new
-        # return np.array(x)
-        return x_new
 
 ## Main function
 def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, 
@@ -277,19 +255,6 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                                                                                 err_fixed))
     iml12_fixed = iml12_fixed.reshape(img.shape)
 
-    cost_moreau_env_fixed = []
-    err_moreau_env_fixed = []
-    iml12_moreau_env_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_moreau_env, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2, l1iso,
-                                                                                Gop, cost_moreau_env_fixed,
-                                                                                img.ravel(),
-                                                                                err_moreau_env_fixed))
-    iml12_moreau_env_fixed = iml12_moreau_env_fixed.reshape(img.shape)
-
 
     cost_ada = []
     err_ada = []
@@ -304,6 +269,24 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                                                                                         err_ada))
     iml12_ada = iml12_ada.reshape(img.shape)
 
+
+    cost_moreau_env_fixed = []
+    err_moreau_env_fixed = []
+    iml12_moreau_env_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_moreau_env, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2, l1iso,
+                                                                                Gop, cost_moreau_env_fixed,
+                                                                                img.ravel(),
+                                                                                err_moreau_env_fixed))
+    iml12_moreau_env_fixed = iml12_moreau_env_fixed.reshape(img.shape)
+
+
+    print(np.linalg.norm(iml12_fixed - img))
+    print(np.linalg.norm(iml12_ada - img))
+    print(np.linalg.norm(iml12_moreau_env_fixed - img))
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
