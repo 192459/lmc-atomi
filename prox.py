@@ -20,8 +20,168 @@ import numpy as np
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
 import pylops
-import pyproximal
 
+from scipy.linalg import cho_factor, cho_solve
+from scipy.sparse.linalg import lsqr as sp_lsqr
+from pylops import MatrixMult, Identity
+from pylops.optimization.basic import lsqr
+from pylops.utils.backend import get_array_module, get_module_name
+
+import pyproximal
+from pyproximal.ProxOperator import _check_tau
+from pyproximal import ProxOperator
+
+class L2_moreau_env(ProxOperator):
+    r"""L2 Norm proximal operator.
+
+    The Proximal operator of the :math:`\ell_2` norm minus 
+    :math:`\lambda` times the Moreau envelope of the total variation 
+    is defined as: :math:`f(\mathbf{x}) =
+    \frac{\sigma}{2} ||\mathbf{Op}\mathbf{x} - \mathbf{b}||_2^2 - \lambda g_\gamma(\mathbf{x})`
+    and :math:`f_\alpha(\mathbf{x}) = f(\mathbf{x}) +
+    \alpha \mathbf{q}^T\mathbf{x}`.
+
+    Parameters
+    ----------
+    dims : :obj:`tuple`
+        Number of samples for each dimension
+        (``None`` if only one dimension is available)
+    Op : :obj:`pylops.LinearOperator`, optional
+        Linear operator
+    b : :obj:`numpy.ndarray`, optional
+        Data vector
+    q : :obj:`numpy.ndarray`, optional
+        Dot vector
+    sigma : :obj:`float`, optional
+        Multiplicative coefficient of L2 norm
+    alpha : :obj:`float`, optional
+        Multiplicative coefficient of dot product
+    lamda : :obj:`float`, optional
+        Multiplicative coefficient of Moreau envelope
+    gamma : :obj:`float`, optional
+        Smoothing parameter of Moreau envelope
+    qgrad : :obj:`bool`, optional
+        Add q term to gradient (``True``) or not (``False``)
+    niter : :obj:`int` or :obj:`func`, optional
+        Number of iterations of iterative scheme used to compute the proximal.
+        This can be a constant number or a function that is called passing a
+        counter which keeps track of how many times the ``prox`` method has
+        been invoked before and returns the ``niter`` to be used.
+    rtol : :obj:`float`, optional
+        Relative tolerance for stopping criterion.
+    x0 : :obj:`np.ndarray`, optional
+        Initial vector
+    warm : :obj:`bool`, optional
+        Warm start (``True``) or not (``False``). Uses estimate from previous
+        call of ``prox`` method.
+    densesolver : :obj:`str`, optional
+        Use ``numpy``, ``scipy``, or ``factorize`` when dealing with explicit
+        operators. The former two rely on dense solvers from either library,
+        whilst the last computes a factorization of the matrix to invert and
+        avoids to do so unless the :math:`\tau` or :math:`\sigma` paramets
+        have changed. Choose ``densesolver=None`` when using PyLops versions
+        earlier than v1.18.1 or v2.0.0
+    **kwargs_solver : :obj:`dict`, optional
+        Dictionary containing extra arguments for
+        :py:func:`scipy.sparse.linalg.lsqr` solver when using
+        numpy data (or :py:func:`pylops.optimization.solver.lsqr` and
+        when using cupy data)
+
+    Notes
+    -----
+    The L2 - Moreau envelope proximal operator is defined as:
+
+    .. math::
+
+        prox_{\tau f_\alpha}(\mathbf{x}) =
+        \left(\mathbf{I} + \tau \sigma \mathbf{Op}^T \mathbf{Op} \right)^{-1}
+        \left( \mathbf{x} + \tau \sigma \mathbf{Op}^T \mathbf{b} -
+        \tau \alpha \mathbf{q}\right)
+
+    when both ``Op`` and ``b`` are provided. This formula shows that the
+    proximal operator requires the solution of an inverse problem. If the
+    operator ``Op`` is of kind ``explicit=True``, we can solve this problem
+    directly. On the other hand if ``Op`` is of kind ``explicit=False``, an
+    iterative solver is employed. In this case it is possible to provide a warm
+    start via the ``x0`` input parameter.
+
+    When only ``b`` is provided, ``Op`` is assumed to be an Identity operator
+    and the proximal operator reduces to:
+
+    .. math::
+
+        \prox_{\tau f_\alpha}(\mathbf{x}) =
+        \frac{\mathbf{x} + \tau \sigma \mathbf{b} - \tau \alpha \mathbf{q}}
+        {1 + \tau \sigma}
+
+    If ``b`` is not provided, the proximal operator reduces to:
+
+    .. math::
+
+        \prox_{\tau f_\alpha}(\mathbf{x}) =
+        \frac{\mathbf{x} - \tau \alpha \mathbf{q}}{1 + \tau \sigma}
+
+    Finally, note that the second term in :math:`f_\alpha(\mathbf{x})` is added
+    because this combined expression appears in several problems where Bregman
+    iterations are used alongside a proximal solver.
+
+    """
+    def __init__(self, dims, Op=None, b=None, q=None, sigma=1., alpha=1.,
+                 lamda=1., gamma=.5, qgrad=True, niter=10, rtol=1e-4, 
+                 x0=None, warm=True, densesolver=None, kwargs_solver=None):
+        super().__init__(Op, True)
+        self.dims = dims
+        self.ndim = len(dims)
+        self.b = b
+        self.q = q
+        self.sigma = sigma
+        self.alpha = alpha
+        self.lamda = lamda
+        self.gamma = gamma
+        self.qgrad = qgrad
+        self.niter = niter
+        self.rtol = rtol
+        self.x0 = x0
+        self.warm = warm
+        self.densesolver = densesolver
+        self.count = 0
+        self.kwargs_solver = {} if kwargs_solver is None else kwargs_solver
+
+        self.L2 = pyproximal.L2(Op, b, sigma, alpha, qgrad, niter, x0, 
+                                warm, densesolver, kwargs_solver)
+        self.isotropic_tv = pyproximal.TV(dims, 1., niter, rtol)
+
+
+    def __call__(self, x):
+        moreau_prox = self.isotropic_tv.prox(x, self.gamma)
+        moreau_env = self.isotropic_tv.__call__(moreau_prox)
+        return self.L2.__call__(x) - self.lamda * moreau_env
+    
+    def _increment_count(func):
+        """Increment counter
+        """
+        def wrapped(self, *args, **kwargs):
+            self.count += 1
+            return func(self, *args, **kwargs)
+        return wrapped
+
+    @_increment_count
+    @_check_tau
+    def prox(self, x, tau):
+        # define current number of iterations
+        if isinstance(self.niter, int):
+            niter = self.niter
+        else:
+            niter = self.niter(self.count)
+
+        # solve proximal optimization
+        x += tau * self.lamda / self.gamma * (x - self.isotropic_tv.prox(x, self.gamma))
+        x = self.L2.prox(x, tau)
+        return x
+    
+    def grad(self, x):
+        return self.L2.grad(x) - self.lamda / self.gamma * (x - self.isotropic_tv(x, self.gamma))
+    
 
 def prox_conjugate(x, gamma, prox):
     return x - gamma * prox(x / gamma, 1/gamma)
