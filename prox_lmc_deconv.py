@@ -274,22 +274,19 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                                                                                 err_fixed))
     iml12_fixed = iml12_fixed.reshape(img.shape)
 
-    cost_ada = []
-    err_ada = []
-    iml12_ada, steps = \
-        pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
-                                                            tau=tau0, mu=mu0,
-                                                            x0=np.zeros_like(img.ravel()),
-                                                            niter=K//2, show=True, tol=0.05,
-                                                            callback=lambda x: callback(x, l2, l1iso,
-                                                                                        Gop, cost_ada,
-                                                                                        img.ravel(),
-                                                                                        err_ada))
-    iml12_ada = iml12_ada.reshape(img.shape)
+    # cost_ada = []
+    # err_ada = []
+    # iml12_ada, steps = \
+    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
+    #                                                         tau=tau0, mu=mu0,
+    #                                                         x0=np.zeros_like(img.ravel()),
+    #                                                         niter=K//2, show=True, tol=0.05,
+    #                                                         callback=lambda x: callback(x, l2, l1iso,
+    #                                                                                     Gop, cost_ada,
+    #                                                                                     img.ravel(),
+    #                                                                                     err_ada))
+    # iml12_ada = iml12_ada.reshape(img.shape)
 
-    print(np.linalg.norm(iml12_fixed - img))
-    print(np.linalg.norm(iml12_ada - img))
-    
 
     prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
