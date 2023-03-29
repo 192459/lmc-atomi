@@ -15,8 +15,10 @@
 import os
 import itertools
 import random
+import time
 
 import numpy as np
+from numpy.random import default_rng
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
 import pylops
@@ -30,6 +32,7 @@ from pylops.utils.backend import get_array_module, get_module_name
 import pyproximal
 from pyproximal.ProxOperator import _check_tau
 from pyproximal import ProxOperator
+
 
 class L2_moreau_env(ProxOperator):
     r"""L2 Norm proximal operator.
@@ -147,15 +150,35 @@ class L2_moreau_env(ProxOperator):
         self.count = 0
         self.kwargs_solver = {} if kwargs_solver is None else kwargs_solver
 
-        self.L2 = pyproximal.L2(Op, b, sigma, alpha, qgrad, niter, x0, 
-                                warm, densesolver, kwargs_solver)
+        # when using factorize, store the first tau*sigma=0 so that the
+        # first time it will be recomputed (as tau cannot be 0)
+        if self.densesolver == 'factorize':
+            self.tausigma = 0
+
+        # create data term
+        if self.Op is not None and self.b is not None:
+            self.OpTb = self.sigma * self.Op.H @ self.b
+            # create A.T A upfront for explicit operators
+            if self.Op.explicit:
+                self.ATA = np.conj(self.Op.A.T) @ self.Op.A
+
+        # self.L2 = pyproximal.L2(Op, b, sigma, alpha, qgrad, niter, x0, 
+        #                         warm, densesolver, kwargs_solver)
         self.isotropic_tv = pyproximal.TV(dims, 1., niter, rtol)
 
 
     def __call__(self, x):
         moreau_prox = self.isotropic_tv.prox(x, self.gamma)
         moreau_env = self.isotropic_tv.__call__(moreau_prox)
-        return self.L2.__call__(x) - self.lamda * moreau_env
+        if self.Op is not None and self.b is not None:
+            f = (self.sigma / 2.) * (np.linalg.norm(self.Op * x - self.b) ** 2)
+        elif self.b is not None:
+            f = (self.sigma / 2.) * (np.linalg.norm(x - self.b) ** 2)
+        else:
+            f = (self.sigma / 2.) * (np.linalg.norm(x) ** 2)
+        if self.q is not None:
+            f += self.alpha * np.dot(self.q, x)
+        return f - self.lamda * moreau_env
     
     def _increment_count(func):
         """Increment counter
@@ -176,12 +199,242 @@ class L2_moreau_env(ProxOperator):
 
         # solve proximal optimization
         x += tau * self.lamda / self.gamma * (x - self.isotropic_tv.prox(x, self.gamma))
-        x = self.L2.prox(x, tau)
+        if self.Op is not None and self.b is not None:
+            y = x + tau * self.OpTb
+            if self.q is not None:
+                y -= tau * self.alpha * self.q
+            if self.Op.explicit:
+                if self.densesolver != 'factorize':
+                    Op1 = MatrixMult(np.eye(self.Op.shape[1]) +
+                                     tau * self.sigma * self.ATA)
+                    if self.densesolver is None:
+                        # to allow backward compatibility with PyLops versions earlier
+                        # than v1.18.1 and v2.0.0
+                        x = Op1.div(y)
+                    else:
+                        x = Op1.div(y, densesolver=self.densesolver)
+                else:
+                    if self.tausigma != tau * self.sigma:
+                        # recompute factorization
+                        self.tausigma = tau * self.sigma
+                        ATA = np.eye(self.Op.shape[1]) + \
+                              self.tausigma * self.ATA
+                        self.cl = cho_factor(ATA)
+                    x = cho_solve(self.cl, y)
+            else:
+                Op1 = Identity(self.Op.shape[1], dtype=self.Op.dtype) + \
+                      float(tau * self.sigma) * (self.Op.H * self.Op)
+                if get_module_name(get_array_module(x)) == 'numpy':
+                    x = sp_lsqr(Op1, y, iter_lim=niter, x0=self.x0,
+                                **self.kwargs_solver)[0]
+                else:
+                    x = lsqr(Op1, y, niter=niter, x0=self.x0,
+                             **self.kwargs_solver)[0].ravel()
+            if self.warm:
+                self.x0 = x
+        elif self.b is not None:
+            num = x + tau * self.sigma * self.b
+            if self.q is not None:
+                num -= tau * self.alpha * self.q
+            x = num / (1. + tau * self.sigma)
+        else:
+            num = x
+            if self.q is not None:
+                num -= tau * self.alpha * self.q
+            x = num / (1. + tau * self.sigma)
         return x
+
     
     def grad(self, x):
-        return self.L2.grad(x) - self.lamda / self.gamma * (x - self.isotropic_tv(x, self.gamma))
+        if self.Op is not None and self.b is not None:
+            g = self.sigma * self.Op.H @ (self.Op @ x - self.b)
+        elif self.b is not None:
+            g = self.sigma * (x - self.b)
+        else:
+            g = self.sigma * x
+        if self.q is not None and self.qgrad:
+            g += self.alpha * self.q
+        return g - self.lamda / self.gamma * (x - self.isotropic_tv.prox(x, self.gamma))
     
+
+
+def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
+                                 theta=1., niter=10, seed=0, gfirst=True, callback=None, 
+                                 callbacky=False, returny=False, show=False):
+    r"""Unadjusted Langevin Primal-Dual algorithm (ULPDA)
+
+    Solves the following (possibly) nonlinear minimization problem using
+    the general version of the first-order primal-dual algorithm of [1]_:
+
+    .. math::
+
+        \min_{\mathbf{x} \in X} g(\mathbf{Ax}) + f(\mathbf{x}) +
+        \mathbf{z}^T \mathbf{x}
+
+    where :math:`\mathbf{A}` is a linear operator, :math:`f`
+    and :math:`g` can be any convex functions that have a known proximal
+    operator.
+
+    This functional is effectively minimized by solving its equivalent
+    primal-dual problem (primal in :math:`f`, dual in :math:`g`):
+
+    .. math::
+
+        \min_{\mathbf{x} \in X} \max_{\mathbf{y} \in Y}
+        \mathbf{y}^T(\mathbf{Ax}) + \mathbf{z}^T \mathbf{x} +
+        f(\mathbf{x}) - g^*(\mathbf{y})
+
+    where :math:`\mathbf{y}` is the so-called dual variable.
+
+    Parameters
+    ----------
+    proxf : :obj:`pyproximal.ProxOperator`
+        Proximal operator of f function
+    proxg : :obj:`pyproximal.ProxOperator`
+        Proximal operator of g function
+    A : :obj:`pylops.LinearOperator`
+        Linear operator of g
+    x0 : :obj:`numpy.ndarray`
+        Initial vector
+    tau : :obj:`float` or :obj:`np.ndarray`
+        Stepsize of subgradient of :math:`f`. This can be constant 
+        or function of iterations (in the latter cases provided as np.ndarray)
+    mu : :obj:`float` or :obj:`np.ndarray`
+        Stepsize of subgradient of :math:`g^*`. This can be constant 
+        or function of iterations (in the latter cases provided as np.ndarray)
+    z0 : :obj:`numpy.ndarray`
+        Initial auxiliary vector
+    z : :obj:`numpy.ndarray`, optional
+        Additional vector
+    theta : :obj:`float`
+        Scalar between 0 and 1 that defines the update of the
+        :math:`\bar{\mathbf{x}}` variable - note that ``theta=0`` is a
+        special case that represents the semi-implicit classical Arrow-Hurwicz
+        algorithm
+    niter : :obj:`int`, optional
+        Number of iterations of iterative scheme
+    gfirst : :obj:`bool`, optional
+        Apply Proximal of operator ``g`` first (``True``) or Proximal of
+        operator ``f`` first (``False``)
+    callback : :obj:`callable`, optional
+        Function with signature (``callback(x)``) to call after each iteration
+        where ``x`` is the current model vector
+    callbacky : :obj:`bool`, optional
+        Modify callback signature to (``callback(x, y)``) when ``callbacky=True``
+    returny : :obj:`bool`, optional
+        Return also ``y``
+    show : :obj:`bool`, optional
+        Display iterations log
+
+    Returns
+    -------
+    x : :obj:`numpy.ndarray`
+        Inverted model
+
+    Notes
+    -----
+    The Primal-dual algorithm can be expressed by the following recursion
+    (``gfirst=True``):
+
+    .. math::
+
+        \mathbf{y}^{k+1} = \prox_{\mu g^*}(\mathbf{y}^{k} +
+        \mu \mathbf{A}\bar{\mathbf{x}}^{k})\\
+        \mathbf{x}^{k+1} = \prox_{\tau f}(\mathbf{x}^{k} -
+        \tau (\mathbf{A}^H \mathbf{y}^{k+1} + \mathbf{z})) \\
+        \bar{\mathbf{x}}^{k+1} = \mathbf{x}^{k+1} +
+        \theta (\mathbf{x}^{k+1} - \mathbf{x}^k)
+
+    where :math:`\tau \mu \lambda_{max}(\mathbf{A}^H\mathbf{A}) < 1`.
+
+    Alternatively for ``gfirst=False`` the scheme becomes:
+
+    .. math::
+
+        \mathbf{x}^{k+1} = \prox_{\tau f}(\mathbf{x}^{k} -
+        \tau (\mathbf{A}^H \mathbf{y}^{k} + \mathbf{z})) \\
+        \bar{\mathbf{x}}^{k+1} = \mathbf{x}^{k+1} +
+        \theta (\mathbf{x}^{k+1} - \mathbf{x}^k) \\
+        \mathbf{y}^{k+1} = \prox_{\mu g^*}(\mathbf{y}^{k} +
+        \mu \mathbf{A}\bar{\mathbf{x}}^{k+1})
+
+    .. [1] A., Chambolle, and T., Pock, "A first-order primal-dual algorithm for
+        convex problems with applications to imaging", Journal of Mathematical
+        Imaging and Vision, 40, 8pp. 120-145. 2011.
+
+    """
+    ncp = get_array_module(x0)
+
+    # check if tau and mu are scalars or arrays
+    fixedtau = fixedmu = False
+    if isinstance(tau, (int, float)):
+        tau = tau * ncp.ones(niter, dtype=x0.dtype)
+        fixedtau = True
+    if isinstance(mu, (int, float)):
+        mu = mu * ncp.ones(niter, dtype=x0.dtype)
+        fixedmu = True
+
+    if show:
+        tstart = time.time()
+        print('Primal-dual: min_x f(Ax) + x^T z + g(x)\n'
+              '---------------------------------------------------------\n'
+              'Proximal operator (f): %s\n'
+              'Proximal operator (g): %s\n'
+              'Linear operator (A): %s\n'
+              'Additional vector (z): %s\n'
+              'tau = %s\t\tmu = %s\ntheta = %.2f\t\tniter = %d\n' %
+              (type(proxf), type(proxg), type(A),
+               None if z is None else 'vector', str(tau[0]) if fixedtau else 'Variable',
+               str(mu[0]) if fixedmu else 'Variable', theta, niter))
+        head = '   Itn       x[0]          f           g          z^x       J = f + g + z^x'
+        print(head)
+
+    x = x0.copy()
+    xhat = x.copy()
+    y = y0.copy() if y0 is not None else ncp.zeros(A.shape[0], dtype=x.dtype)
+    rng = default_rng(seed)
+    for iiter in range(niter):
+        xi = rng.multivariate_normal(np.zeros(x.size), np.identity(x.size), size=x.shape)
+        xold = x.copy()
+        if gfirst:
+            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+            ATy = A.rmatvec(y)
+            if z is not None:
+                ATy += z
+            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
+            xhat = x + theta * (x - xold)
+        else:
+            ATy = A.rmatvec(y)
+            if z is not None:
+                ATy += z
+            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
+            xhat = x + theta * (x - xold)
+            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+
+        # run callback
+        if callback is not None:
+            if callbacky:
+                callback(x, y)
+            else:
+                callback(x)
+        if show:
+            if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
+                pf, pg = proxf(x), proxg(A.matvec(x))
+                pf = 0. if type(pf) == bool else pf
+                pg = 0. if type(pg) == bool else pg
+                zx = 0. if z is None else np.dot(z, x)
+                msg = '%6g  %12.5e  %10.3e  %10.3e  %10.3e      %10.3e' % \
+                      (iiter + 1, x[0], pf, pg, zx, pf + pg + zx)
+                print(msg)
+    if show:
+        print('\nTotal time (s) = %.2f' % (time.time() - tstart))
+        print('---------------------------------------------------------\n')
+    if not returny:
+        return x
+    else:
+        return x, y
+
+
 
 def prox_conjugate(x, gamma, prox):
     return x - gamma * prox(x / gamma, 1/gamma)

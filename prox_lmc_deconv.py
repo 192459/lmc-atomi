@@ -248,8 +248,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     L = 8. / sampling ** 2 # maxeig(Gop^H Gop)
 
     # L2 data term
-    # l2 = pyproximal.L2(Op=H5, b=y5.ravel(), sigma=1/sigma**2, niter=50, warm=True)
-    l2 = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y5.ravel(), sigma=1/sigma**2, lamda=tau, gamma=.5, niter=50, warm=True)
+    l2 = pyproximal.L2(Op=H5, b=y5.ravel(), sigma=1/sigma**2, niter=50, warm=True)
+    l2_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y5.ravel(), sigma=1/sigma**2, lamda=tau, gamma=.5, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -275,9 +275,23 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                                                                                 err_fixed))
     iml12_fixed = iml12_fixed.reshape(img.shape)
 
+    cost_moreau_env_fixed = []
+    err_moreau_env_fixed = []
+    iml12_moreau_env_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_moreau_env, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2, l1iso,
+                                                                                Gop, cost_moreau_env_fixed,
+                                                                                img.ravel(),
+                                                                                err_moreau_env_fixed))
+    iml12_moreau_env_fixed = iml12_moreau_env_fixed.reshape(img.shape)
+
+
     cost_ada = []
     err_ada = []
-    iml12_ada, steps = \
+    iml12_ada, _ = \
         pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
                                                             tau=tau0, mu=mu0,
                                                             x0=np.zeros_like(img.ravel()),
@@ -289,7 +303,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     iml12_ada = iml12_ada.reshape(img.shape)
 
 
-    prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
+    # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
     # x1 = prox_lmc.pgld(y5, H5, gamma_pgld)
 
@@ -304,12 +318,13 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     # theta = 0.5
     # x1 = prox_lmc.PDHG(y5, h5, H5, gamma0_ulpda, gamma1_ulpda, theta)
 
-    fig2, axes = plt.subplots(2, 2, figsize=(12, 8))
+    fig2, axes = plt.subplots(2, 3, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
     axes[0,0].imshow(img)
-    axes[0,1].imshow(y7)
+    axes[0,1].imshow(y5)
     axes[1,0].imshow(iml12_fixed)
     axes[1,1].imshow(iml12_ada)
+    axes[1,0].imshow(iml12_moreau_env_fixed)
 
     plt.show()
     # plt.show(block=False)
