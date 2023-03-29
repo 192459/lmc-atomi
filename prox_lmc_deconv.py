@@ -85,7 +85,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):        
-            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
             theta0 = prox.prox_tv(theta0, self.lamda * self.tau)
             theta_new = self.gd_update(theta0, y, H, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
@@ -107,7 +107,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
             theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -132,7 +132,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         theta0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
             theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
@@ -151,7 +151,7 @@ class ProximalLangevinMonteCarloDeconvolution:
         u0 = tu0 = rng.standard_normal(d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.eye(d))
+            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
             theta_new = prox_f(theta0 - gamma0 * H.adjoint() * tu0, gamma0) + np.sqrt(2*gamma0) * xi
             u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*theta_new - theta0), gamma1, prox_g)
             tu_new = u0 + theta * (u_new - u0)
@@ -248,7 +248,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     L = 8. / sampling ** 2 # maxeig(Gop^H Gop)
 
     # L2 data term
-    l2 = pyproximal.L2(Op=H7, b=y7.ravel(), niter=50, warm=True)
+    l2 = pyproximal.L2(Op=H7, b=y7.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -274,18 +274,18 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
                                                                                 err_fixed))
     iml12_fixed = iml12_fixed.reshape(img.shape)
 
-    # cost_ada = []
-    # err_ada = []
-    # iml12_ada, steps = \
-    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
-    #                                                         tau=tau0, mu=mu0,
-    #                                                         x0=np.zeros_like(img.ravel()),
-    #                                                         niter=K//2, show=True, tol=0.05,
-    #                                                         callback=lambda x: callback(x, l2, l1iso,
-    #                                                                                     Gop, cost_ada,
-    #                                                                                     img.ravel(),
-    #                                                                                     err_ada))
-    # iml12_ada = iml12_ada.reshape(img.shape)
+    cost_ada = []
+    err_ada = []
+    iml12_ada, steps = \
+        pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
+                                                            tau=tau0, mu=mu0,
+                                                            x0=np.zeros_like(img.ravel()),
+                                                            niter=K//2, show=True, tol=0.05,
+                                                            callback=lambda x: callback(x, l2, l1iso,
+                                                                                        Gop, cost_ada,
+                                                                                        img.ravel(),
+                                                                                        err_ada))
+    iml12_ada = iml12_ada.reshape(img.shape)
 
 
     prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  

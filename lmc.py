@@ -100,7 +100,7 @@ class LangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -124,7 +124,7 @@ class LangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
@@ -144,7 +144,7 @@ class LangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.preconditioned_gd_update(theta0, gamma, M) + np.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -158,11 +158,11 @@ class LangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []    
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             hess = self.hess_potential_gaussian_mixture(theta0)
             if len(self.mus) > 1:
                 e = np.linalg.eigvals(hess)
-                M = hess + (np.abs(min(e)) + 0.05) * np.eye(self.d)
+                M = hess + (np.abs(min(e)) + 0.05) * np.identity(self.d)
                 M = np.linalg.inv(M)
             else:
                 M = np.linalg.inv(hess)
@@ -185,7 +185,7 @@ class LangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.grad_mirror_hyp(theta0, beta) - gamma * self.grad_potential_gaussian_mixture(theta0) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
             theta.append(theta_new)    

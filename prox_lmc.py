@@ -118,7 +118,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):        
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta0 = prox.prox_laplace(theta0, self.lamda * self.alpha)
             theta_new = self.gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
@@ -139,7 +139,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -164,7 +164,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.gd_update(theta0, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             p = self.prob(theta_new, theta0, gamma)
             alpha = min(1, p)
@@ -197,7 +197,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.preconditioned_gd_update(theta0, gamma, M) + self.preconditioned_prox_update(theta0, gamma, Q, t) + np.sqrt(2*gamma) * sqrtm(M) @ xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -206,7 +206,7 @@ class ProximalLangevinMonteCarlo:
 
     ## Forward-Backward Unadjusted Langevin Algorithm (FBULA)
     def grad_FB_env(self, theta):
-        return (np.eye(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox.prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
+        return (np.identity(theta.shape[0]) - self.lamda * self.hess_potential_gaussian_mixture(theta)) @ (theta - prox.prox_laplace(self.gd_update(theta, self.lamda), self.lamda * self.alpha)) / self.lamda
 
     def gd_FB_update(self, theta, gamma):
         return theta - gamma * self.grad_FB_env(theta)
@@ -217,7 +217,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.gd_FB_update(theta0, gamma) + np.sqrt(2*gamma) * xi
             theta.append(theta_new)    
             theta0 = theta_new
@@ -263,7 +263,7 @@ class ProximalLangevinMonteCarlo:
         theta0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = self.grad_mirror_hyp(theta0, beta) + self.gd_BM_update(theta0, gamma) + self.prox_BM_update(theta0, sigma, gamma) + np.sqrt(2*gamma) * (theta0**2 + beta**2)**(-.25) * xi
             theta_new = self.grad_conjugate_mirror_hyp(theta_new, beta)
             theta.append(theta_new) 
@@ -279,7 +279,7 @@ class ProximalLangevinMonteCarlo:
         u0 = tu0 = rng.standard_normal(self.d)
         theta = []
         for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+            xi = rng.multivariate_normal(np.zeros(self.d), np.identity(self.d))
             theta_new = prox_f(theta0 - gamma0 * D.T @ tu0, gamma0) + np.sqrt(2*gamma0) * xi
             u_new = prox.prox_conjugate(u0 + gamma1 * D @ (2*theta_new - theta0), gamma1, prox_g)
             tu_new = u0 + tau * (u_new - u0)
@@ -413,7 +413,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
 
     M = np.array([[1.0, 0.1], [0.1, 0.5]])    
     Q = np.array([[1.0, 0.1], [0.1, 1.5]])
-    # M = Q = np.eye(mus[0].shape[0])
+    # M = Q = np.identity(mus[0].shape[0])
     Z4 = prox_lmc.ppula(gamma_ppula, M, Q, t)
 
     Z5 = prox_lmc.fbula(gamma_fbula)
@@ -423,7 +423,7 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     sigma = np.array([0.8, 0.2])
     Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
-    # D = np.eye(mus[0].shape[0])
+    # D = np.identity(mus[0].shape[0])
     # tau = .5
     # Z7 = prox_lmc.ulpda(gamma0_ulpda, gamma1_ulpda, tau, D, prox_gaussian, prox_laplace)
 
