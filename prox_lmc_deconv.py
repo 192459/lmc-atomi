@@ -249,6 +249,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
 
     # L2 data term
     l2 = pyproximal.L2(Op=H5, b=y5.ravel(), sigma=1/sigma**2, niter=50, warm=True)
+
+    #L2 data term - Moreau envelope of isotropic TV
     l2_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y5.ravel(), sigma=1/sigma**2, lamda=tau, gamma=.5, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
