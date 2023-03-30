@@ -33,10 +33,6 @@ plt.style.use(['science'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
     "font.serif": ["Times"],  # specify font here
-    "text.usetex": True,
-    'text.latex.preview': True, # Gives correct legend alignment.
-    'mathtext.default': 'regular',
-    'text.latex.preamble': [r"""\usepackage{bm}"""],
     } 
     )
 
@@ -315,7 +311,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     axes[0,0].set_title("Original image", fontsize=16)
 
     axes[0,1].imshow(y5)
-    axes[0,1].set_title(r"Blurred image $\bm{H}\bm{x}+\bm{w}$", fontsize=16)
+    axes[0,1].set_title("Blurred image", fontsize=16)
 
     axes[1,0].imshow(iml12_fixed)
     axes[1,0].set_title("PDHG", fontsize=16)
