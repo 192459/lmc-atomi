@@ -242,18 +242,18 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     iml12_fixed = iml12_fixed.reshape(img.shape)
 
 
-    cost_ada = []
-    err_ada = []
-    iml12_ada, _ = \
-        pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
-                                                            tau=tau0, mu=mu0,
-                                                            x0=np.zeros_like(img.ravel()),
-                                                            niter=K//2, show=True, tol=0.05,
-                                                            callback=lambda x: callback(x, l2, l1iso,
-                                                                                        Gop, cost_ada,
-                                                                                        img.ravel(),
-                                                                                        err_ada))
-    iml12_ada = iml12_ada.reshape(img.shape)
+    # cost_ada = []
+    # err_ada = []
+    # iml12_ada, _ = \
+    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
+    #                                                         tau=tau0, mu=mu0,
+    #                                                         x0=np.zeros_like(img.ravel()),
+    #                                                         niter=K//2, show=True, tol=0.05,
+    #                                                         callback=lambda x: callback(x, l2, l1iso,
+    #                                                                                     Gop, cost_ada,
+    #                                                                                     img.ravel(),
+    #                                                                                     err_ada))
+    # iml12_ada = iml12_ada.reshape(img.shape)
 
 
     cost_moreau_env_fixed = []
@@ -270,23 +270,23 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     iml12_moreau_env_fixed = iml12_moreau_env_fixed.reshape(img.shape)
 
 
-    cost_moreau_env_ada = []
-    err_moreau_env_ada = []
-    iml12_moreau_env_ada, _ = \
-        pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_moreau_env, l1iso, Gop,
-                                                            tau=tau0, mu=mu0,
-                                                            x0=np.zeros_like(img.ravel()),
-                                                            niter=K//2, show=True, tol=0.05,
-                                                            callback=lambda x: callback(x, l2, l1iso,
-                                                                                        Gop, cost_moreau_env_ada,
-                                                                                        img.ravel(),
-                                                                                        err_moreau_env_ada))
-    iml12_moreau_env_ada = iml12_moreau_env_ada.reshape(img.shape)
+    # cost_moreau_env_ada = []
+    # err_moreau_env_ada = []
+    # iml12_moreau_env_ada, _ = \
+    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_moreau_env, l1iso, Gop,
+    #                                                         tau=tau0, mu=mu0,
+    #                                                         x0=np.zeros_like(img.ravel()),
+    #                                                         niter=K//2, show=True, tol=0.05,
+    #                                                         callback=lambda x: callback(x, l2, l1iso,
+    #                                                                                     Gop, cost_moreau_env_ada,
+    #                                                                                     img.ravel(),
+    #                                                                                     err_moreau_env_ada))
+    # iml12_moreau_env_ada = iml12_moreau_env_ada.reshape(img.shape)
 
     print(20 * np.log10(np.linalg.norm(iml12_fixed - img) / np.linalg.norm(img)))
-    print(20 * np.log10(np.linalg.norm(iml12_ada - img) / np.linalg.norm(img)))
+    # print(20 * np.log10(np.linalg.norm(iml12_ada - img) / np.linalg.norm(img)))
     print(20 * np.log10(np.linalg.norm(iml12_moreau_env_fixed - img) / np.linalg.norm(img)))
-    print(20 * np.log10(np.linalg.norm(iml12_moreau_env_ada - img) / np.linalg.norm(img)))
+    # print(20 * np.log10(np.linalg.norm(iml12_moreau_env_ada - img) / np.linalg.norm(img)))
 
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
@@ -304,7 +304,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # theta = 0.5
     # x1 = prox_lmc.PDHG(y5, h5, H5, gamma0_ulpda, gamma1_ulpda, theta)
 
-    fig2, axes = plt.subplots(2, 3, figsize=(12, 8))
+    fig2, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
     axes[0,0].imshow(img)
     axes[0,0].set_title("Original image", fontsize=16)
@@ -312,17 +312,17 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     axes[0,1].imshow(y5)
     axes[0,1].set_title("Blurred image $Hx+w$", fontsize=16)
 
-    axes[0,2].imshow(iml12_fixed)
-    axes[0,2].set_title("PDHG", fontsize=16)
+    axes[1,0].imshow(iml12_fixed)
+    axes[1,0].set_title("PDHG", fontsize=16)
 
-    axes[1,0].imshow(iml12_ada)
-    axes[1,0].set_title("Adaptive PDHG", fontsize=16)
+    # axes[1,0].imshow(iml12_ada)
+    # axes[1,0].set_title("Adaptive PDHG", fontsize=16)
 
     axes[1,1].imshow(iml12_moreau_env_fixed)
     axes[1,1].set_title("PDHG with Nonconvex TV", fontsize=16)
 
-    axes[1,2].imshow(iml12_moreau_env_ada)
-    axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
+    # axes[1,2].imshow(iml12_moreau_env_ada)
+    # axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
 
     plt.show()
     # plt.show(block=False)
