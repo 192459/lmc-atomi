@@ -162,8 +162,8 @@ class ProximalLangevinMonteCarloDeconvolution:
     
 
 ## Main function
-def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, 
-                    gamma_mymala=5e-2, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
+def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2, 
+                    gamma_pdhg=5e-1, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
                     lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
 
     # img = data.camera()
@@ -215,7 +215,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2,
     l2 = pyproximal.L2(Op=H5, b=y5.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     #L2 data term - Moreau envelope of isotropic TV
-    l2_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y5.ravel(), sigma=1/sigma**2, lamda=tau, gamma=.5, niter=50, warm=True)
+    l2_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y5.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
