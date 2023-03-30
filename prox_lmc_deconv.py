@@ -307,12 +307,22 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     fig2, axes = plt.subplots(2, 3, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
     axes[0,0].imshow(img)
-    axes[0,1].imshow(y5)
-    axes[0,2].imshow(iml12_fixed)
-    axes[1,0].imshow(iml12_ada)
-    axes[1,1].imshow(iml12_moreau_env_fixed)
-    axes[1,2].imshow(iml12_moreau_env_ada)
+    axes[0,0].set_title("Original image", fontsize=16)
 
+    axes[0,1].imshow(y5)
+    axes[0,1].set_title("Blurred image $Hx+w$", fontsize=16)
+
+    axes[0,2].imshow(iml12_fixed)
+    axes[0,2].set_title("PDHG", fontsize=16)
+
+    axes[1,0].imshow(iml12_ada)
+    axes[1,0].set_title("Adaptive PDHG", fontsize=16)
+
+    axes[1,1].imshow(iml12_moreau_env_fixed)
+    axes[1,1].set_title("PDHG with Nonconvex TV", fontsize=16)
+
+    axes[1,2].imshow(iml12_moreau_env_ada)
+    axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
 
     plt.show()
     # plt.show(block=False)
