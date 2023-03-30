@@ -283,10 +283,11 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     #                                                                                     err_moreau_env_ada))
     # iml12_moreau_env_ada = iml12_moreau_env_ada.reshape(img.shape)
 
-    print(20 * np.log10(np.linalg.norm(iml12_fixed - img) / np.linalg.norm(img)))
-    # print(20 * np.log10(np.linalg.norm(iml12_ada - img) / np.linalg.norm(img)))
-    print(20 * np.log10(np.linalg.norm(iml12_moreau_env_fixed - img) / np.linalg.norm(img)))
-    # print(20 * np.log10(np.linalg.norm(iml12_moreau_env_ada - img) / np.linalg.norm(img)))
+    snr = lambda img_re, img: 20 * np.log10(np.linalg.norm(img_re - img) / np.linalg.norm(img))
+    print(snr(iml12_fixed, img))
+    # print(snr(iml12_ada, img))
+    print(snr(iml12_moreau_env_fixed, img))
+    # print(snr(iml12_moreau_env_ada, img))
 
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
