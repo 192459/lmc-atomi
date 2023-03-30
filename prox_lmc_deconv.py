@@ -284,9 +284,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # iml12_moreau_env_ada = iml12_moreau_env_ada.reshape(img.shape)
 
     snr = lambda img_re, img: 20 * np.log10(np.linalg.norm(img) / np.linalg.norm(img_re - img))
-    print(snr(iml12_fixed, img))
+    print(f"SNR of PDHG reconstructed image with TV regularization: {snr(iml12_fixed, img)}")
     # print(snr(iml12_ada, img))
-    print(snr(iml12_moreau_env_fixed, img))
+    print(f"SNR of PDHG reconstructed image with nonconvex TV regularization: {snr(iml12_moreau_env_fixed, img)}")
     # print(snr(iml12_moreau_env_ada, img))
 
 
