@@ -263,7 +263,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2, l1iso,
+                                                    callback=lambda x: callback(x, l2_moreau_env, l1iso,
                                                                                 Gop, cost_moreau_env_fixed,
                                                                                 img.ravel(),
                                                                                 err_moreau_env_fixed))
@@ -289,6 +289,19 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     print(f"SNR of PDHG reconstructed image with nonconvex TV regularization: {snr(iml12_moreau_env_fixed, img)}")
     # print(snr(iml12_moreau_env_ada, img))
 
+
+    cost_moreau_env_fixed_samples = []
+    err_moreau_env_fixed_samples = []
+    iml12_moreau_env_fixed_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_moreau_env, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_moreau_env, l1iso,
+                                                                                Gop, cost_moreau_env_fixed_samples,
+                                                                                img.ravel(),
+                                                                                err_moreau_env_fixed_samples))
+    iml12_moreau_env_fixed_samples = iml12_moreau_env_fixed_samples.reshape(img.shape)
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
