@@ -376,7 +376,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
     if show:
         tstart = time.time()
-        print('Primal-dual: min_x f(Ax) + x^T z + g(x)\n'
+        print('Unadjusted Langevin primal-dual: U(x) = f(Ax) + x^T z + g(x)\n'
               '---------------------------------------------------------\n'
               'Proximal operator (f): %s\n'
               'Proximal operator (g): %s\n'
