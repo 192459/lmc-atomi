@@ -19,12 +19,13 @@ import time
 
 import numpy as np
 from numpy.random import default_rng
+import scipy
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize_scalar
-import pylops
-
 from scipy.linalg import cho_factor, cho_solve
 from scipy.sparse.linalg import lsqr as sp_lsqr
+
+import pylops
 from pylops import MatrixMult, Identity
 from pylops.optimization.basic import lsqr
 from pylops.utils.backend import get_array_module, get_module_name
@@ -394,7 +395,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
     y = y0.copy() if y0 is not None else ncp.zeros(A.shape[0], dtype=x.dtype)
     rng = default_rng(seed)
     for iiter in range(niter):
-        xi = rng.multivariate_normal(np.zeros(x.size), np.identity(x.size), size=x.shape)
+        xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
         xold = x.copy()
         if gfirst:
             y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
