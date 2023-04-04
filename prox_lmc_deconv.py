@@ -312,10 +312,10 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # axes[1,2].imshow(iml12_moreau_env_ada)
     # axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
 
-    plt.show()
-    # plt.show(block=False)
-    # plt.pause(10)
-    # plt.close()
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
 
 
     
