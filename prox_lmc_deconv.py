@@ -15,6 +15,8 @@
 # Install libraries: 
 # pip install -U numpy matplotlib scipy seaborn fire scikit-image pylops pyproximal
 
+# https://pyproximal.readthedocs.io/en/stable/tutorials/brainmri.html
+
 '''
 Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_fbula=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
 '''
