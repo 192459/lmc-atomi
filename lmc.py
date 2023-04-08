@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install libraries: pip install -U numpy matplotlib scipy seaborn fire fastprogress
+# Install libraries: pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots
 
 '''
 Usage: 
