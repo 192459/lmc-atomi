@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Install libraries: 
-# pip install -U numpy matplotlib scipy seaborn fire scikit-image pylops pyproximal
+# pip install -U numpy matplotlib scipy seaborn fire fastprogress scikit-image pylops pyproximal
 
 # https://pyproximal.readthedocs.io/en/stable/tutorials/brainmri.html
 
