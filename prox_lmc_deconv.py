@@ -162,7 +162,10 @@ class ProximalLangevinMonteCarloDeconvolution:
             u0 = u_new
             tu0 = tu_new
         return np.array(theta)
-    
+
+def BayesFactor(samples: np.array):
+    samples 
+    return samples
 
 ## Main function
 def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2, 
