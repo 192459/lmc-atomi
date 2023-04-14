@@ -435,9 +435,9 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         print('\nTotal time (s) = %.2f' % (time.time() - tstart))
         print('---------------------------------------------------------\n')
     if not returny:
-        return x_samples
+        return np.array(x_samples)
     else:
-        return x_samples, y_samples
+        return np.array(x_samples), np.array(y_samples)
 
 
 
