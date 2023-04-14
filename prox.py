@@ -393,6 +393,8 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
     x = x0.copy()
     xhat = x.copy()
     y = y0.copy() if y0 is not None else ncp.zeros(A.shape[0], dtype=x.dtype)
+    x_samples = [x]
+    y_samples = [y]
     rng = default_rng(seed)
     for iiter in range(niter):
         xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
@@ -411,6 +413,8 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
             x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
             xhat = x + theta * (x - xold)
             y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+        x_samples.append(x)
+        y_samples.append(y)
 
         # run callback
         if callback is not None:
@@ -431,9 +435,9 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         print('\nTotal time (s) = %.2f' % (time.time() - tstart))
         print('---------------------------------------------------------\n')
     if not returny:
-        return x
+        return x_samples
     else:
-        return x, y
+        return x_samples, y_samples
 
 
 
