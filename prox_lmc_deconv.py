@@ -163,9 +163,15 @@ class ProximalLangevinMonteCarloDeconvolution:
             tu0 = tu_new
         return np.array(theta)
 
-def BayesFactor(samples: np.array):
-    samples 
-    return samples
+
+def truncHarmonicMean(samples):
+
+    return np.sum()
+
+
+def BayesFactor(samples1, samples2):
+    samples1 
+    return samples1
 
 ## Main function
 def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2, 
