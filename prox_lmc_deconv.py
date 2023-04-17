@@ -335,7 +335,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                                                                                 Gop, cost_moreau_env_fixed_samples,
                                                                                 img.ravel(),
                                                                                 err_moreau_env_fixed_samples))
-    iml12_moreau_env_fixed_samples = iml12_moreau_env_fixed_samples.reshape(img.shape)
+    # print(iml12_moreau_env_fixed_samples.shape)
+    iml12_moreau_env_fixed_samples = iml12_moreau_env_fixed_samples.reshape((K, *img.shape))
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
