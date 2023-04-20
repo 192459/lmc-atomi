@@ -165,8 +165,11 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 def truncHarmonicMean(samples, y):
-
-    return np.sum()
+    ind = np.zeros(samples.shape[0])
+    for i in range(len(samples)):
+        if samples:
+            
+    return (ind / ).sum()
 
 
 def BayesFactor(samples1, samples2, y):
