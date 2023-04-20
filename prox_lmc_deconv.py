@@ -246,6 +246,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     tau0 = 0.95 / np.sqrt(L)
     mu0 = 0.95 / np.sqrt(L)
 
+    U_cvx = lambda x: l2(x) + l1iso(x)
+    U_ncvx = lambda x: l2_moreau_env(x) + l1iso(x)
+
     cost_fixed = []
     err_fixed = []
     iml12_fixed = \
