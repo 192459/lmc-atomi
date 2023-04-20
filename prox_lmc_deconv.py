@@ -168,8 +168,10 @@ def truncHarmonicMean(samples, y):
     ind = np.zeros(samples.shape[0])
     for i in range(len(samples)):
         if samples:
-            
-    return (ind / ).sum()
+            pass
+    ind = np.count_nonzero()
+    joint = np.zeros(samples.shape[0])
+    return (ind / joint).sum()
 
 
 def BayesFactor(samples1, samples2, y):
