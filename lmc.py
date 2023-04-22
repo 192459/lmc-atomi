@@ -287,6 +287,11 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     beta = np.array([0.7, 0.3])
     Z6 = lmc.mla(gamma_mla, beta)
 
+    Z2 = Z2[~np.isnan(Z2).any(axis=1), :]
+    Z3 = Z3[~np.isnan(Z3).any(axis=1), :]
+    Z4 = Z4[~np.isnan(Z4).any(axis=1), :]
+    Z5 = Z5[~np.isnan(Z5).any(axis=1), :]
+    
 
     ## Plot of the true Gaussian mixture with 2d histograms of samples
     print("\nConstructing the 2D histograms of samples...")

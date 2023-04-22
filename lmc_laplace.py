@@ -340,7 +340,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.close()
     fig.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_1_smooth.pdf', dpi=500)
 
-    Z2 = lmc_laplacian.ula(gamma_ula)
+    Z2 = lmc_laplacian.ula(gamma_ula)    
 
     Z3, eff_K = lmc_laplacian.mala(gamma_mala)
     print(f'\nMALA percentage of effective samples: {eff_K / K} ')
@@ -353,6 +353,12 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     # beta = np.array([0.2, 0.8])
     beta = np.array([0.7, 0.3])
     Z6 = lmc_laplacian.mla(gamma_mla, beta)
+
+    Z2 = Z2[~np.isnan(Z2).any(axis=1), :]
+    Z3 = Z3[~np.isnan(Z3).any(axis=1), :]
+    Z4 = Z4[~np.isnan(Z4).any(axis=1), :]
+    # Z5 = Z5[~np.isnan(Z5).any(axis=1), :]
+    Z6 = Z6[~np.isnan(Z6).any(axis=1), :]
 
 
     ## Plot of the true Laplacian mixture with 2d histograms of samples

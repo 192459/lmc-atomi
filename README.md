@@ -9,11 +9,17 @@
 
 ## Mixtures of Laplacians
 ```bash
-    python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=1 --K=50000 --seed=0
-    python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=2 --K=50000 --seed=0
-    python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=3 --K=50000 --seed=0
-    python lmc_laplace.py --gamma_ula=1.2e-1 --gamma_mala=1.2e-1 --gamma_pula=1.2e-1 --gamma_mla=1.2e-1 --lamda=1e0 --alpha=5e-1 --n=4 --K=50000 --seed=0
-    python lmc_laplace.py --gamma_ula=8e-2 --gamma_mala=8e-2 --gamma_pula=8e-2 --gamma_mla=8e-2 --lamda=5e-1 --alpha=5e-1 --n=5 --K=80000 --seed=0
+    python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_mla=5e-2 --lamda=1e-1 --alpha=5e-1 --n=5 --K=50000
+    python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_mla=5e-2 --lamda=5e-1 --alpha=5e-1 --n=5 --K=50000
+    python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_mla=5e-2 --lamda=1e0 --alpha=5e-1 --n=5 --K=50000
+
+    python lmc_laplace.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_mla=1e-1 --lamda=1e0 --alpha=5e-1 --n=1 --K=50000
+    python lmc_laplace.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_mla=1e-1 --lamda=1e0 --alpha=5e-1 --n=2 --K=50000
+    python lmc_laplace.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_mla=1e-1 --lamda=1e0 --alpha=5e-1 --n=3 --K=50000
+    python lmc_laplace.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_mla=1e-1 --lamda=1e0 --alpha=5e-1 --n=4 --K=50000
+    python lmc_laplace.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_mla=1e-1 --lamda=1e0 --alpha=5e-1 --n=5 --K=50000
+
+    python lmc_laplace.py --gamma_ula=8e-2 --gamma_mala=8e-2 --gamma_pula=8e-2 --gamma_mla=8e-2 --lamda=5e-1 --alpha=5e-1 --n=5 --K=80000
 ```
 
 
