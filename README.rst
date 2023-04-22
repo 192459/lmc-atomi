@@ -27,4 +27,4 @@ Mixtures of Gaussians with Laplacian Priors
 Imaging Inverse Problems
 ===========
 .. code-block:: bash
-    
+    python prox_lmc_deconv.py --K=10 --tau=0.3 --gamma_pdhg=20.
