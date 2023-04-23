@@ -76,7 +76,7 @@ def ProxNestedSamplingMYMALA(X0, LikeliL, proxH, proxB, params, options):
     # Generate initialisation
     j = 0
     for ii in tqdm(range(200), desc="ProxNest || Initialise"):
-        # P-ULA -- MARKOV CHAIN generating initialisation
+        # MYULA -- MARKOV CHAIN generating initialisation
         Xcur = drift(Xcur, delta, lamb, tau_0) + np.sqrt(delta) * np.random.randn(
             Xcur.shape[0], Xcur.shape[1]
         )
@@ -87,7 +87,7 @@ def ProxNestedSamplingMYMALA(X0, LikeliL, proxH, proxB, params, options):
         desc="ProxNest || Populate",
     ):
 
-        # P-ULA -- MARKOV CHAIN generating live samples
+        # MYULA -- MARKOV CHAIN generating live samples
         Xcur = driftIniN(Xcur, delta, lamb) + np.sqrt(delta) * np.random.randn(
             Xcur.shape[0], Xcur.shape[1]
         )
@@ -287,7 +287,7 @@ def ProxNestedSamplingPDMALA(X0, LikeliL, proxH, proxB, params, options):
     # Generate initialisation
     j = 0
     for ii in tqdm(range(200), desc="ProxNest || Initialise"):
-        # P-ULA -- MARKOV CHAIN generating initialisation
+        # ULPDA -- MARKOV CHAIN generating initialisation
         Xcur = drift(Xcur, delta, lamb, tau_0) + np.sqrt(delta) * np.random.randn(
             Xcur.shape[0], Xcur.shape[1]
         )
@@ -298,7 +298,7 @@ def ProxNestedSamplingPDMALA(X0, LikeliL, proxH, proxB, params, options):
         desc="ProxNest || Populate",
     ):
 
-        # P-ULA -- MARKOV CHAIN generating live samples
+        # ULPDA -- MARKOV CHAIN generating live samples
         Xcur = driftIniN(Xcur, delta, lamb) + np.sqrt(delta) * np.random.randn(
             Xcur.shape[0], Xcur.shape[1]
         )
