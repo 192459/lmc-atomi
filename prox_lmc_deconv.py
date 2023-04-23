@@ -361,6 +361,31 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # print(iml12_moreau_env_fixed_samples.shape)
     iml12_moreau_env_fixed_samples = iml12_moreau_env_fixed_samples.reshape((K, *img.shape))
 
+    fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
+    plt.gray()  # show the filtered result in grayscale
+    axes[0,0].imshow(img)
+    axes[0,0].set_title("Original image", fontsize=16)
+
+    axes[0,1].imshow(iml12_moreau_env_fixed_samples[-1:])
+    axes[0,1].set_title("Last image in samples", fontsize=16)
+
+    axes[1,0].imshow(iml12_moreau_env_fixed_samples.mean(axis=0))
+    axes[1,0].set_title("Mean of samples", fontsize=16)
+
+    # axes[1,0].imshow(iml12_ada)
+    # axes[1,0].set_title("Adaptive PDHG", fontsize=16)
+
+    axes[1,1].imshow(iml12_moreau_env_fixed)
+    axes[1,1].set_title("PDHG with Nonconvex TV", fontsize=16)
+
+    # axes[1,2].imshow(iml12_moreau_env_ada)
+    # axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
+
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
     # x1 = prox_lmc.pgld(y5, H5, gamma_pgld)
