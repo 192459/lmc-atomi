@@ -2,7 +2,7 @@
 
 ## Install Python Libraries
 ```bash
-pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal
+pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal ProxNest
 ```
 
 
