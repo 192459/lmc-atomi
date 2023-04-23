@@ -424,13 +424,6 @@ def prox_lmc_gaussian_mixture(gamma_pgld=5e-2, gamma_myula=5e-2,
     Z6 = prox_lmc.lbmumla(gamma_lbmumla, beta, sigma)
 
 
-    Z2 = Z2[~np.isnan(Z2).any(axis=1), :]
-    Z3 = Z3[~np.isnan(Z3).any(axis=1), :]
-    Z4 = Z4[~np.isnan(Z4).any(axis=1), :]
-    Z5 = Z5[~np.isnan(Z5).any(axis=1), :]
-    Z6 = Z6[~np.isnan(Z6).any(axis=1), :]
-    
-
     ## Plot of the true Gaussian mixture with 2d histograms of samples
     print("\nConstructing the 2D histograms of samples...")
     ran = [[xmin, xmax], [ymin, ymax]]
