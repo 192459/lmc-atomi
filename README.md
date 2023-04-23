@@ -36,7 +36,7 @@ python prox_lmc.py --gamma_pgld=8e-2 --gamma_myula=8e-2 --gamma_mymala=8e-2 --ga
 ```
 
 
-## Imaging Inverse Problems
+## Bayesian Imaging Inverse Problems
 ```bash
 python prox_lmc_deconv.py --K=10 --tau=0.3 --gamma_pdhg=20.
 ```
