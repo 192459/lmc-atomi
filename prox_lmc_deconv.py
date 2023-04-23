@@ -364,7 +364,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     axes[0,0].imshow(img)
     axes[0,0].set_title("Original image", fontsize=16)
 
-    axes[0,1].imshow(iml12_moreau_env_fixed_samples[-1:])
+    axes[0,1].imshow(iml12_moreau_env_fixed_samples[-1])
     axes[0,1].set_title("Last image in samples", fontsize=16)
 
     axes[1,0].imshow(iml12_moreau_env_fixed_samples.mean(axis=0))

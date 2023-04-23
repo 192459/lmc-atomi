@@ -101,7 +101,33 @@ def proxnest_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     plt.close()
     # plt.show()
 
+    # Parameter dictionary associated with optimisation problem of resampling from the prior subject to the likelihood iso-ball
+    params = utils.create_parameters_dict(
+            y = y,                    # Measurements i.e. data
+            Phi = phi,                  # Forward model
+        epsilon = 1e-3,                 # Radius of L2-ball of likelihood 
+        tight = False,                # Is Phi a tight frame or not?
+            nu = 1,                    # Bound on the squared-norm of Phi
+            tol = 1e-10,                # Convergence tolerance of algorithm
+        max_iter = 200,                  # Maximum number of iterations
+        verbose = 0,                    # Verbosity level
+            u = 0,                    # Initial vector for the dual problem
+            pos = True,                 # Positivity flag
+        reality = True                  # Reality flag
+    )
 
+    # Options dictionary associated with the overall sampling algorithm
+    options = utils.create_options_dict(
+        samplesL = 1e2,                  # Number of live samples
+        samplesD = 1e3,                  # Number of discarded samples 
+        thinning = 1e1,                  # Thinning factor (to mitigate correlations)
+        delta = 1e-8,                 # Discretisation stepsize
+            burn = 1e1,                  # Number of burn in samples
+        sigma = sigma                 # Noise standard deviation of degraded image
+    )
+
+
+    
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
