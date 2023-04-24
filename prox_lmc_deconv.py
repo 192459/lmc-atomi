@@ -228,6 +228,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     plt.pause(5)
     plt.close()
     # plt.show()
+    fig.savefig(f'./fig/fig_prox_lmc_deconv_{K}_1.pdf', dpi=500)  
 
 
     # Gradient operator
@@ -342,7 +343,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-
+    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{K}_2.pdf', dpi=500)  
 
     
     cost_moreau_env_fixed_samples = []
@@ -383,6 +384,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
+    fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)  
 
     # prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
     
