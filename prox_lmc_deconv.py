@@ -211,11 +211,10 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # axes[1,1].imshow(y7)
     # axes[1,0].imshow(y7)
     # axes[1,1].imshow(H5.adjoint() * H5 * g)
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    # plt.show()
-    fig.savefig(f'./fig/fig_prox_lmc_deconv_1.pdf', dpi=500)  
+    # plt.show(block=False)
+    # plt.pause(5)
+    # plt.close()
+    # fig.savefig(f'./fig/fig_prox_lmc_deconv_1.pdf', dpi=500)  
 
 
     # Gradient operator
@@ -428,18 +427,18 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     iml12_5_samples = iml12_5_samples.reshape((K, *img.shape))
     
 
-    cost_5_moreau_env_samples = []
-    err_5_moreau_env_samples = []
-    iml12_5_moreau_env_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_5_moreau_env, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2_5_moreau_env, l1iso,
-                                                                                Gop, cost_5_moreau_env_samples,
-                                                                                img.ravel(),
-                                                                                err_5_moreau_env_samples))
-    iml12_5_moreau_env_samples = iml12_5_moreau_env_samples.reshape((K, *img.shape))
+    # cost_5_moreau_env_samples = []
+    # err_5_moreau_env_samples = []
+    # iml12_5_moreau_env_samples = \
+    #     prox.UnadjustedLangevinPrimalDual(l2_5_moreau_env, l1iso, Gop,
+    #                                                 tau=tau0, mu=mu0, theta=1.,
+    #                                                 x0=np.zeros_like(img.ravel()),
+    #                                                 gfirst=False, niter=K, show=True,
+    #                                                 callback=lambda x: callback(x, l2_5_moreau_env, l1iso,
+    #                                                                             Gop, cost_5_moreau_env_samples,
+    #                                                                             img.ravel(),
+    #                                                                             err_5_moreau_env_samples))
+    # iml12_5_moreau_env_samples = iml12_5_moreau_env_samples.reshape((K, *img.shape))
 
 
     fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -450,40 +449,45 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     axes[0,1].imshow(iml12_5_samples.mean(axis=0))
     axes[0,1].set_title("Mean of samples", fontsize=16)
 
-    axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
-    axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
+    # axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
+    # axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
 
-    axes[1,1].imshow(iml12_5_moreau_env_samples.mean(axis=0))
-    axes[1,1].set_title("Mean of samples (Nonconvex TV)", fontsize=16)
+    # axes[1,1].imshow(iml12_5_moreau_env_samples.mean(axis=0))
+    # axes[1,1].set_title("Mean of samples (Nonconvex TV)", fontsize=16)
 
 
     # plt.show()
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
+    # plt.show(block=False)
+    # plt.pause(5)
+    # plt.close()
+    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
 
 
-    U_cvx = lambda x, H: pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x) + l1iso(x)
-    U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(x)
+    U_cvx = lambda x, H: pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
+    U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
 
     alpha = 0.8
-    eta_5 = eta_6 = eta_7 = 0.1
+    eta_5 = 2e6
+    eta_6 = 1e10
+    eta_7 = 1e10
 
-    iml12_5_samples_filtered = np.zeros(K)
-    for k in range(K):
-        print(iml12_5_samples[k].shape)
-        # print(U_cvx(iml12_5_samples[k].ravel(), H5) <= eta_5)
-        # iml12_5_samples_filtered[k] = U_cvx(iml12_5_samples[k].ravel(), H5) <= eta_5
-    # print(np.compress(iml12_5_samples_filtered, iml12_5_samples, axis=0))
+    
+    
+
+    def integral(samples, U, H, eta):
+        samples_U = np.zeros(samples.shape[0])    
+        samples_ind = np.zeros(samples.shape[0])
+        for k in range(samples.shape[0]):
+            samples_U[k] = U(samples[k].ravel(), H)
+            samples_ind[k] = samples_U[k] <= eta
+        samples_filtered = np.compress(samples_ind, samples, axis=0)
+        samples_filtered_U = np.zeros_like(samples_filtered)
+        for k in range(samples_filtered.shape[0]):
+            samples_filtered_U[k] = U(samples_filtered[k].ravel(), H)
+        return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
 
 
-    def integral(samples, U):
-
-        return 
-
-
-    # print(np.sum(iml12_5_samples[U_cvx(iml12_5_samples, H5) <= eta_5]))
+    print(integral(iml12_5_samples, U_cvx, H5, eta_5))
     
     
     def truncHarmonicMean(samples, y):
