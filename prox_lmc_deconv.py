@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Install libraries: 
-# pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal
+# pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal arviz
 
 '''
 Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_fbula=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
@@ -50,10 +50,7 @@ from skimage.metrics import structural_similarity as ssim
 import pylops
 import pyproximal
 
-import ProxNest.utils as utils
-import ProxNest.sampling as sampling
-import ProxNest.optimisations as optimisations
-import ProxNest.operators as operators
+import arviz as az
 
 import prox
 
@@ -489,6 +486,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
     print(integral(iml12_5_samples, U_cvx, H5, eta_5))
     
+
+    hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
+    print("95% HPD region threshold:", hpd_threshold)
     
     def truncHarmonicMean(samples, y):
         ind = np.zeros(samples.shape[0])
