@@ -464,40 +464,24 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
 
 
-    def truncHarmonicMean(samples, U, Hs, alpha=0.8):
-        samples_U = np.zeros((samples.shape[0], len(Hs)))    
-        samples_ind = np.zeros(samples.shape[0])
-        for k in range(samples.shape[0]):
-            for h in range(len(Hs)):
-                samples_U[k, h] = U(samples[k], Hs[h])
-        eta = np.zeros(len(Hs))
-        for h in range(len(Hs)):
-            eta[h] = np.quantile(samples_U[:, h], 1 - alpha) # convert eta to truncation factor
-        for k in range(samples.shape[0]):
-            samples_ind[k] = np.any(np.less_equal(samples_U[k,:], eta))
-        samples_filtered = np.compress(samples_ind, samples, axis=0)
-        samples_filtered_U = np.zeros((samples_filtered.shape[0], len(Hs)))
-        for k in range(samples_filtered.shape[0]):
-            for h in range(len(Hs)):
-                samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
-
-        marginal_likelihoods = 1 / np.sum(1 / np.exp(-samples_filtered_U - (-samples_U).max()), axis=0)
+    def truncated_harmonic_mean_estimator(samples, U, Hs, alpha=0.8):
+        neg_log_posteriors = np.array([[U(sample, H) for H in Hs] for sample in samples])
+        eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)
+        # samples_ind = np.zeros(samples.shape[0])
+        # for k in range(samples.shape[0]):
+        #     samples_ind[k] = neg_log_posteriors[k,:] <= np.max(eta)
+        # samples_filtered = np.compress(samples_ind, samples, axis=0)
+        # samples_filtered_U = np.zeros((samples_filtered.shape[0], len(Hs)))
+        # for k in range(samples_filtered.shape[0]):
+        #     for h in range(len(Hs)):
+        #         samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
+        log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors)
+        weights = np.exp(log_weights)
+        truncated_weights = np.where(neg_log_posteriors <= np.max(eta), weights, 0)
+        # print(truncated_weights.shape)
+        marginal_likelihoods = 1 / np.mean(1 / truncated_weights, axis=0)
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
         return marginal_likelihoods
-
-
-    print(truncHarmonicMean(iml12_5_samples, U_cvx, [H5, H6, H7]))
-    
-
-    def truncated_harmonic_mean_estimator(samples, U, Hs, alpha=0.8):
-        log_posteriors = -np.array([[U(sample, H) for sample in samples] for H in Hs])
-
-        log_weights = log_posteriors - np.max(log_posteriors)
-        weights = np.exp(log_weights)
-        truncated_weights = np.where(weights >= truncation_factor, weights, 0)
-
-        marginal_likelihood = 1 / np.mean(1 / truncated_weights)
-        return marginal_likelihood
 
     print(truncated_harmonic_mean_estimator(iml12_5_samples, U_cvx, [H5, H6, H7]))
 
@@ -505,15 +489,15 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # print("95% HPD region threshold:", hpd_threshold)
     
 
-    def BayesFactor(samples, U, Hs, alpha=0.8):
-        marginal_likelihoods = truncHarmonicMean(samples, U, Hs, alpha)
+    def bayes_factor(samples, U, Hs, alpha=0.8):
+        marginal_likelihoods = truncated_harmonic_mean_estimator(samples, U, Hs, alpha)
         res = []
         for i in range(len(Hs)):
             for j in range(i + 1, len(Hs)):
                 res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
         return res
     
-    
+    print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
 
 
 
