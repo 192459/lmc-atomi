@@ -463,47 +463,43 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     U_cvx = lambda x, H: pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
     U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
 
-    alpha = 0.8
-    eta_5 = 2e6
-    eta_6 = 1e10
-    eta_7 = 1e10
 
-    
-    
-
-    def integral(samples, U, H, eta):
-        samples_U = np.zeros(samples.shape[0])    
+    def truncHarmonicMean(samples, U, Hs, alpha=0.8):
+        samples_U = np.zeros((samples.shape[0], len(Hs)))    
         samples_ind = np.zeros(samples.shape[0])
         for k in range(samples.shape[0]):
-            samples_U[k] = U(samples[k], H)
-            samples_ind[k] = samples_U[k] <= eta
+            for h in range(len(Hs)):
+                samples_U[k, h] = U(samples[k], Hs[h])
+        eta = np.zeros(len(Hs))
+        for h in range(len(Hs)):
+            eta[h] = np.quantile(samples_U[:, h], 1 - alpha)
+        for k in range(samples.shape[0]):
+            samples_ind[k] = np.any(np.less_equal(samples_U[k,:], eta))
         samples_filtered = np.compress(samples_ind, samples, axis=0)
-        samples_filtered_U = np.zeros_like(samples_filtered)
+        samples_filtered_U = np.zeros((samples_filtered.shape[0], len(Hs)))
         for k in range(samples_filtered.shape[0]):
-            samples_filtered_U[k] = U(samples_filtered[k], H)
-        return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
+            for h in range(len(Hs)):
+                samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
+
+        marginal_likelihoods = 1 / np.mean(1 / np.exp(-samples_filtered_U - (-samples_U).max()), axis=0)
+        # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
+        return marginal_likelihoods
 
 
-    print(integral(iml12_5_samples, U_cvx, H5, eta_5))
+    print(truncHarmonicMean(iml12_5_samples, U_cvx, [H5, H6, H7]))
     
 
-    hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
-    print("95% HPD region threshold:", hpd_threshold)
+    # hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
+    # print("95% HPD region threshold:", hpd_threshold)
     
-    def truncHarmonicMean(samples, y):
-        ind = np.zeros(samples.shape[0])
-        for i in range(len(samples)):
-            if samples:
-                pass
-        ind = np.count_nonzero()
-        joint = np.zeros(samples.shape[0])
-        return (ind / joint).sum()
 
-
-    def BayesFactor(samples1, samples2, y):
-        posterior1 = truncHarmonicMean(samples1, y)
-        posterior2 = truncHarmonicMean(samples2, y)
-        return posterior1 / posterior2
+    def BayesFactor(samples, U, Hs, alpha=0.8):
+        marginal_likelihoods = truncHarmonicMean(samples, U, Hs, alpha)
+        res = []
+        for i in range(len(Hs)):
+            for j in range(i + 1, len(Hs)):
+                res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
+        return res
     
     
 
