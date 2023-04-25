@@ -245,6 +245,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     mu0 = 0.95 / np.sqrt(L)
 
 
+    '''
     ## Compute MAP estimators using PDHG
     cost_5_fixed = []
     err_5_fixed = []
@@ -404,7 +405,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{K}_2.pdf', dpi=500)  
+    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{K}_2.pdf', dpi=500) 
+    '''
 
 
     # Sampling using MYULA and UPDLA
