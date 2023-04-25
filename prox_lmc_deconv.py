@@ -205,8 +205,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # Plot of the original image and the blurred image
     fig, axes = plt.subplots(1, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
-    axes[0,0].imshow(img)
-    axes[0,1].imshow(y)
+    axes[0].imshow(img)
+    axes[1].imshow(y)
     # axes[1,0].imshow(y6)
     # axes[1,1].imshow(y7)
     # axes[1,0].imshow(y7)
@@ -428,6 +428,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     iml12_5_fixed_samples = iml12_5_fixed_samples.reshape((K, *img.shape))
     
 
+    '''
     cost_5_moreau_env_fixed_samples = []
     err_5_moreau_env_fixed_samples = []
     iml12_5_moreau_env_fixed_samples = \
@@ -440,6 +441,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                                                                                 img.ravel(),
                                                                                 err_5_moreau_env_fixed_samples))
     iml12_5_moreau_env_fixed_samples = iml12_5_moreau_env_fixed_samples.reshape((K, *img.shape))
+    '''
 
 
     fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -451,20 +453,13 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     axes[0,1].imshow(iml12_5_fixed_samples.mean(axis=0))
     axes[0,1].set_title("Mean of samples", fontsize=16)
 
-    axes[0,1].imshow(iml12_5_moreau_env_fixed_samples[-1])
-    axes[0,1].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
+    # axes[1,0].imshow(iml12_5_moreau_env_fixed_samples[-1])
+    # axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
 
-    axes[1,0].imshow(iml12_5_moreau_env_fixed_samples.mean(axis=0))
-    axes[1,0].set_title("Mean of samples (Nonconvex TV)", fontsize=16)
+    # axes[1,1].imshow(iml12_5_moreau_env_fixed_samples.mean(axis=0))
+    # axes[1,1].set_title("Mean of samples (Nonconvex TV)", fontsize=16)
 
-    # axes[1,0].imshow(iml12_ada)
-    # axes[1,0].set_title("Adaptive PDHG", fontsize=16)
 
-    axes[1,1].imshow(iml12_5_moreau_env_fixed)
-    axes[1,1].set_title("PDHG with Nonconvex TV", fontsize=16)
-
-    # axes[1,2].imshow(iml12_moreau_env_ada)
-    # axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
 
     # plt.show()
     plt.show(block=False)
@@ -476,6 +471,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     U_cvx = lambda x, H: pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x) + l1iso(x)
     U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(x)
 
+    alpha = 0.8
+    eta_5 = eta_6 = eta_7 = 0.1
+    
     
     def truncHarmonicMean(samples, y):
         ind = np.zeros(samples.shape[0])
