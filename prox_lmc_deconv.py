@@ -466,7 +466,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
     def truncated_harmonic_mean_estimator(samples, U, Hs, alpha=0.8):
         neg_log_posteriors = np.array([[U(sample, H) for H in Hs] for sample in samples])
-        eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)
+        eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
         # samples_ind = np.zeros(samples.shape[0])
         # for k in range(samples.shape[0]):
         #     samples_ind[k] = neg_log_posteriors[k,:] <= np.max(eta)
@@ -475,8 +475,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
         # for k in range(samples_filtered.shape[0]):
         #     for h in range(len(Hs)):
         #         samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
-        log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors)
+        log_weights = -neg_log_posteriors - (-neg_log_posteriors).max(axis=0)
         weights = np.exp(log_weights)
+        print(log_weights)
         truncated_weights = np.where(neg_log_posteriors <= np.max(eta), weights, 0)
         # print(truncated_weights.shape)
         marginal_likelihoods = 1 / np.mean(1 / truncated_weights, axis=0)
@@ -497,7 +498,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                 res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
         return res
     
-    print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
+    # print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
 
 
 
