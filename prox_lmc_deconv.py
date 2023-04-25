@@ -421,7 +421,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(),
                                                                                 err_5_samples))
-    iml12_5_samples = iml12_5_samples.reshape((K, *img.shape))
+    # iml12_5_samples = iml12_5_samples.reshape((K, *img.shape))
     
 
     # cost_5_moreau_env_samples = []
@@ -440,10 +440,10 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
     fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale    
-    axes[0,0].imshow(iml12_5_samples[-1])
+    axes[0,0].imshow(iml12_5_samples[-1].reshape(img.shape))
     axes[0,0].set_title("Last image in samples", fontsize=16)
 
-    axes[0,1].imshow(iml12_5_samples.mean(axis=0))
+    axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
     axes[0,1].set_title("Mean of samples", fontsize=16)
 
     # axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
@@ -475,12 +475,12 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
         samples_U = np.zeros(samples.shape[0])    
         samples_ind = np.zeros(samples.shape[0])
         for k in range(samples.shape[0]):
-            samples_U[k] = U(samples[k].ravel(), H)
+            samples_U[k] = U(samples[k], H)
             samples_ind[k] = samples_U[k] <= eta
         samples_filtered = np.compress(samples_ind, samples, axis=0)
         samples_filtered_U = np.zeros_like(samples_filtered)
         for k in range(samples_filtered.shape[0]):
-            samples_filtered_U[k] = U(samples_filtered[k].ravel(), H)
+            samples_filtered_U[k] = U(samples_filtered[k], H)
         return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
 
 
