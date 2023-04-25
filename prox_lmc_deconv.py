@@ -406,10 +406,6 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
 
     # Sampling using MYULA and UPDLA
-    cost_5_myula = []
-    err_5_myula = []
-
-
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -503,20 +499,15 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
 
     '''
-    prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)  
-    
-    x1 = prox_lmc.pgld(y5, H5, gamma_pgld)
+    prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)      
 
-    x2 = prox_lmc.myula(y5, H5, gamma_myula)
+    myula_samples = prox_lmc.myula(y, H5, gamma_myula)
 
-    x3, eff_K = prox_lmc.mymala(y5, H5, gamma_mymala)
+    x3, eff_K = prox_lmc.mymala(y, H5, gamma_mymala)
     print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
 
     
-    tau = .5
-    x4 = prox_lmc.ulpda(y5, H5, gamma0_ulpda, gamma1_ulpda, theta, prox.prox_gaussian, prox.prox_tv)
-    theta = 0.5
-    x1 = prox_lmc.PDHG(y5, h5, H5, gamma0_ulpda, gamma1_ulpda, theta)
+
     '''
 
 
