@@ -34,6 +34,7 @@ plt.style.use(['science'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
     "font.serif": ["Times"],  # specify font here
+    "text.usetex": True,
     } 
     )
 
@@ -405,7 +406,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     '''
 
 
-    # Sampling using MYULA and UPDLA
+    # Sampling using UPDLA and MYULA
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -433,14 +434,46 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     #                                                                             err_5_moreau_env_samples))
     # iml12_5_moreau_env_samples = iml12_5_moreau_env_samples.reshape((K, *img.shape))
 
+    cost_6_samples = []
+    err_6_samples = []
+    iml12_6_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_6, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_6, l1iso,
+                                                                                Gop, cost_6_samples,
+                                                                                img.ravel(),
+                                                                                err_6_samples))
+    
+    cost_7_samples = []
+    err_7_samples = []
+    iml12_7_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_7, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_7, l1iso,
+                                                                                Gop, cost_7_samples,
+                                                                                img.ravel(),
+                                                                                err_7_samples))
 
     fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale    
-    axes[0,0].imshow(iml12_5_samples[-1].reshape(img.shape))
-    axes[0,0].set_title("Last image in samples", fontsize=16)
+    axes[0,0].imshow(y)
+    axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-    axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    axes[0,1].set_title("Mean of samples", fontsize=16)
+    axes[0,1].imshow(iml12_5_samples[-1].reshape(img.shape))
+    axes[0,1].set_title(r"Last image in samples ($\mathcal{M}_1$)", fontsize=16)
+
+    # axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
+    # axes[0,1].set_title("Mean of samples", fontsize=16)
+
+    axes[1,0].imshow(iml12_6_samples[-1].reshape(img.shape))
+    axes[1,0].set_title(r"Last image in samples ($\mathcal{M}_2$)", fontsize=16)
+
+    axes[1,1].imshow(iml12_7_samples[-1].reshape(img.shape))
+    axes[1,1].set_title(r"Last image in samples ($\mathcal{M}_3$)", fontsize=16)
 
     # axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
     # axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
@@ -450,9 +483,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
 
 
     # plt.show()
-    # plt.show(block=False)
-    # plt.pause(5)
-    # plt.close()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
     # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
 
 
@@ -460,8 +493,8 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
 
 
-    def truncated_harmonic_mean_estimator(samples, U, Hs, alpha=0.8):
-        neg_log_posteriors = np.array([[U(sample, H) for H in Hs] for sample in samples])
+    def truncated_harmonic_mean_estimator(samples_all, U, alpha=0.8):
+        neg_log_posteriors = np.array([[U(sample, H5) for sample in samples] for samples in samples_all])
         eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
         # samples_ind = np.zeros(samples.shape[0])
         # for k in range(samples.shape[0]):
@@ -471,16 +504,18 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
         # for k in range(samples_filtered.shape[0]):
         #     for h in range(len(Hs)):
         #         samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
-        log_weights = -neg_log_posteriors - (-neg_log_posteriors).max(axis=0)
-        weights = np.exp(log_weights)
+        log_weights = -neg_log_posteriors
+        # print(log_weights.max(axis=0))  
+        weights = np.exp(log_weights - log_weights.max(axis=0))
         # print(log_weights)
         truncated_weights = np.where(neg_log_posteriors <= np.max(eta), 1 / weights, 0)
+        # print(truncated_weights)
         # print(truncated_weights.shape)
         marginal_likelihoods = 1 / np.mean(truncated_weights, axis=0)
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
         return marginal_likelihoods
 
-    print(truncated_harmonic_mean_estimator(iml12_5_samples, U_cvx, [H5, H6, H7]))
+    # print(truncated_harmonic_mean_estimator([iml12_5_samples, iml12_6_samples, iml12_7_samples], U_cvx, [H5, H6, H7]))
 
     # hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
     # print("95% HPD region threshold:", hpd_threshold)
@@ -494,7 +529,7 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                 res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
         return res
     
-    print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
+    # print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
 
 
 
