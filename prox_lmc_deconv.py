@@ -474,9 +474,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
         log_weights = -neg_log_posteriors - (-neg_log_posteriors).max(axis=0)
         weights = np.exp(log_weights)
         # print(log_weights)
-        truncated_weights = np.where(neg_log_posteriors <= np.max(eta), weights, 0)
+        truncated_weights = np.where(neg_log_posteriors <= np.max(eta), 1 / weights, 0)
         # print(truncated_weights.shape)
-        marginal_likelihoods = 1 / np.mean(1 / truncated_weights, axis=0)
+        marginal_likelihoods = 1 / np.mean(truncated_weights, axis=0)
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
         return marginal_likelihoods
 
