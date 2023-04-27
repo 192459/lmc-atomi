@@ -353,22 +353,26 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
 
 
     # Generate samples using ULPDA or MYULA
-    if alg == 'ULPDA':
-        lmc_alg = prox.UnadjustedLangevinPrimalDual
-    elif alg == 'MYULA':
-        lmc_alg = prox.MoreauYosidaUnadjustedLangevin
-
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_5, l1iso, Gop,
+        prox.UnadjustedLangevinPrimalDual(l2_5, l1iso, Gop, 
+                                                    tau=tau0, mu=mu0, theta=1., 
+                                                    x0=np.zeros_like(img.ravel()), 
+                                                    gfirst=False, niter=N, show=True, 
+                                                    callback=lambda x: callback(x, l2_5, l1iso, 
+                                                                                Gop, cost_5_samples,
+                                                                                img.ravel(), 
+                                                                                err_5_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_5, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5, l1iso,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(),
-                                                                                err_5_samples))    
+                                                                                err_5_samples))
+        
 
     cost_6_samples = []
     err_6_samples = []
@@ -380,12 +384,29 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_6, l1iso,
                                                                                 Gop, cost_6_samples,
                                                                                 img.ravel(),
+                                                                                err_6_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_6, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_6, l1iso,
+                                                                                Gop, cost_6_samples,
+                                                                                img.ravel(),
                                                                                 err_6_samples))
+    
 
     cost_7_samples = []
     err_7_samples = []
     iml12_7_samples = \
         prox.UnadjustedLangevinPrimalDual(l2_7, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_7, l1iso,
+                                                                                Gop, cost_7_samples,
+                                                                                img.ravel(),
+                                                                                err_7_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_7, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True,
@@ -406,6 +427,14 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_5_mc, l1iso,
                                                                                 Gop, cost_5_mc_samples,
                                                                                 img.ravel(),
+                                                                                err_5_mc_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_5_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_5_mc, l1iso,
+                                                                                Gop, cost_5_mc_samples,
+                                                                                img.ravel(),
                                                                                 err_5_mc_samples))
     
     cost_6_mc_samples = []
@@ -418,12 +447,28 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_6_mc, l1iso,
                                                                                 Gop, cost_6_mc_samples,
                                                                                 img.ravel(),
+                                                                                err_6_mc_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_6_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_6_mc, l1iso,
+                                                                                Gop, cost_6_mc_samples,
+                                                                                img.ravel(),
                                                                                 err_6_mc_samples))
         
     cost_7_mc_samples = []
     err_7_mc_samples = []
     iml12_7_mc_samples = \
         prox.UnadjustedLangevinPrimalDual(l2_7_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_7_mc, l1iso,
+                                                                                Gop, cost_7_mc_samples,
+                                                                                img.ravel(),
+                                                                                err_7_mc_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_7_mc, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True,
@@ -444,12 +489,28 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_5_me, l1iso,
                                                                                 Gop, cost_5_me_samples,
                                                                                 img.ravel(),
+                                                                                err_5_me_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_5_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()), 
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
+                                                                                Gop, cost_5_me_samples,
+                                                                                img.ravel(),
                                                                                 err_5_me_samples))
     
     cost_6_me_samples = []
     err_6_me_samples = []
     iml12_6_me_samples = \
         prox.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
+                                                                                Gop, cost_6_me_samples,
+                                                                                img.ravel(),
+                                                                                err_6_me_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_6_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True,
@@ -468,45 +529,53 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_7_me, l1iso,
                                                                                 Gop, cost_7_me_samples,
                                                                                 img.ravel(),
+                                                                                err_7_me_samples)) if alg == 'ULPDA' else \
+        prox.MoreauYosidaUnadjustedLangevin(l2_7_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
+                                                                                Gop, cost_7_me_samples,
+                                                                                img.ravel(),
                                                                                 err_7_me_samples))
     
 
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
-    print(f"SNR of ULPDA posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"SNR of ULPDA posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"SNR of ULPDA posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"SNR of ULPDA posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    # print(f"SNR of {alg} posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"SNR of {alg} posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"SNR of {alg} posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
-    print(f"PSNR of ULPDA posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    # print(f"PSNR of {alg} posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"PSNR of {alg} posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"PSNR of {alg} posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
-    print(f"MSE of ULPDA posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"MSE of ULPDA posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"MSE of ULPDA posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"MSE of ULPDA posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    # print(f"MSE of {alg} posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"MSE of {alg} posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"MSE of {alg} posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
     # Plot the results
-    fig3, axes = plt.subplots(2, 5, figsize=(12, 8))
+    fig3, axes = plt.subplots(2, 5, figsize=(20, 8))
     plt.gray()  # show the filtered result in grayscale
     # axes[0,0].imshow(img)
     # axes[0,0].set_title("True image", fontsize=16)
@@ -566,9 +635,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
 
 
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-                                          iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                                          iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                                          alpha=0.8):
+                                        iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                                        iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
+                                        alpha=0.8):
         neg_log_posteriors_5 = np.array([U_tv(sample, H5) for sample in iml12_5_samples])
         neg_log_posteriors_6 = np.array([U_tv(sample, H6) for sample in iml12_6_samples])
         neg_log_posteriors_7 = np.array([U_tv(sample, H7) for sample in iml12_7_samples])
@@ -602,7 +671,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
         return marginal_likelihoods
 
-    # print(truncated_harmonic_mean_estimator([iml12_5_samples, iml12_6_samples, iml12_7_samples], U_cvx, [H5, H6, H7]))
+    print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                    iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
 
     # hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
     # print("95% HPD region threshold:", hpd_threshold)
@@ -631,14 +702,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)      
 
     myula_samples = prox_lmc.myula(y, H5, gamma_myula)
-
-    x3, eff_K = prox_lmc.mymala(y, H5, gamma_mymala)
-    print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
-    
-
     '''
-
-
     
 
 if __name__ == '__main__':
