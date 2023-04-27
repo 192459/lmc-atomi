@@ -467,25 +467,36 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
 
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
     print(f"SNR of ULPDA posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with TV (M3): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with TV (M5): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    # print(f"SNR of ULPDA posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"SNR of ULPDA posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"SNR of ULPDA posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+
 
     print(f"PSNR of ULPDA posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M2): {snr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (M3): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M4): {snr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (M5): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with ME-TV (M6): {snr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"PSNR of ULPDA posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+
 
     print(f"MSE of ULPDA posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M2): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with TV (M3): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M4): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with TV (M5): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    # print(f"MSE of ULPDA posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"MSE of ULPDA posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"MSE of ULPDA posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
     # Plot the results
@@ -523,8 +534,15 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
 
 
-    U_cvx = lambda x, H: pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
-    U_ncvx = lambda x, H: prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x) + l1iso(Gop.matvec(x))
+    def U_cvx(x, H): 
+        neg_log_likelihood = pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x)
+        neg_log_prior = l1iso(Gop.matvec(x))
+        return neg_log_likelihood + neg_log_prior
+    
+    def U_ncvx(x, H): 
+        neg_log_likelihood = prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x)
+        neg_log_prior = l1iso(Gop.matvec(x))
+        return neg_log_likelihood + neg_log_prior
 
 
     def truncated_harmonic_mean_estimator(samples_all, U, alpha=0.8):
