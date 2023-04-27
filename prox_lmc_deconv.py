@@ -196,10 +196,15 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     l2_6 = pyproximal.L2(Op=H6, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
-    #L2 data term - Moreau envelope of isotropic TV
+    # L2 data term - Moreau envelope of isotropic TV
     l2_5_me = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+
+    # L2 data term - Moreau envelope of isotropic TV
+    l2_5_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -420,6 +425,45 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 img.ravel(),
                                                                                 err_7_me_samples))
 
+
+    '''
+    cost_5_mc_samples = []
+    err_5_mc_samples = []
+    iml12_5_mc_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_5_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_5_mc, l1iso,
+                                                                                Gop, cost_5_mc_samples,
+                                                                                img.ravel(),
+                                                                                err_5_mc_samples))
+    
+    cost_6_mc_samples = []
+    err_6_mc_samples = []
+    iml12_6_mc_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_6_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_6_mc, l1iso,
+                                                                                Gop, cost_6_mc_samples,
+                                                                                img.ravel(),
+                                                                                err_6_mc_samples))
+        
+    cost_7_mc_samples = []
+    err_7_mc_samples = []
+    iml12_7_mc_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_7_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_7_mc, l1iso,
+                                                                                Gop, cost_7_mc_samples,
+                                                                                img.ravel(),
+                                                                                err_7_mc_samples))
+    '''
+    
     
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
     print(f"SNR of ULPDA posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
