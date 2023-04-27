@@ -138,12 +138,12 @@ class ProximalLangevinMonteCarloDeconvolution:
 ## Main function
 def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1, 
                     gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, lamda=0.01, 
-                    snr=50., tau=0.03, N=10000, img='camera', seed=0):
+                    snr=50., tau=0.03, N=10000, image='camera', alg='ULPDA', seed=0):
 
     # Choose the test image
-    if img == 'einstein':
+    if image == 'einstein':
         img = io.imread("fig/einstein.png")
-    elif img == 'camera':
+    elif image == 'camera':
         img = data.camera()
         
     ny, nx = img.shape
@@ -183,7 +183,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    # fig.savefig(f'./fig/fig_prox_lmc_deconv_1.pdf', dpi=500)  
+    # fig.savefig(f'./fig/fig_prox_lmc_deconv_{image}_1.pdf', dpi=500)  
 
 
     # Gradient operator
@@ -348,11 +348,16 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     plt.show(block=False)
     plt.pause(5)
     plt.close()
-    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{K}_2.pdf', dpi=500) 
+    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{K}_2.pdf', dpi=500) 
     '''
 
 
-    # Generate samples using UPDLA and MYULA
+    # Generate samples using ULPDA or MYULA
+    if alg == 'ULPDA':
+        lmc_alg = prox.UnadjustedLangevinPrimalDual
+    elif alg == 'MYULA':
+        lmc_alg = prox.MoreauYosidaUnadjustedLangevin
+
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -388,42 +393,6 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 Gop, cost_7_samples,
                                                                                 img.ravel(),
                                                                                 err_7_samples))
-    
-    cost_5_me_samples = []
-    err_5_me_samples = []
-    iml12_5_me_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_5_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
-                                                                                Gop, cost_5_me_samples,
-                                                                                img.ravel(),
-                                                                                err_5_me_samples))
-    
-    cost_6_me_samples = []
-    err_6_me_samples = []
-    iml12_6_me_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
-                                                                                Gop, cost_6_me_samples,
-                                                                                img.ravel(),
-                                                                                err_6_me_samples))
-        
-    cost_7_me_samples = []
-    err_7_me_samples = []
-    iml12_7_me_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_7_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
-                                                                                Gop, cost_7_me_samples,
-                                                                                img.ravel(),
-                                                                                err_7_me_samples))
 
 
     '''
@@ -463,6 +432,43 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 img.ravel(),
                                                                                 err_7_mc_samples))
     '''
+
+
+    cost_5_me_samples = []
+    err_5_me_samples = []
+    iml12_5_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_5_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
+                                                                                Gop, cost_5_me_samples,
+                                                                                img.ravel(),
+                                                                                err_5_me_samples))
+    
+    cost_6_me_samples = []
+    err_6_me_samples = []
+    iml12_6_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
+                                                                                Gop, cost_6_me_samples,
+                                                                                img.ravel(),
+                                                                                err_6_me_samples))
+        
+    cost_7_me_samples = []
+    err_7_me_samples = []
+    iml12_7_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_7_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
+                                                                                Gop, cost_7_me_samples,
+                                                                                img.ravel(),
+                                                                                err_7_me_samples))
     
 
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
@@ -500,53 +506,82 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
 
 
     # Plot the results
-    fig3, axes = plt.subplots(2, 4, figsize=(12, 8))
+    fig3, axes = plt.subplots(2, 5, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
-    axes[0,0].imshow(img)
-    axes[0,0].set_title("True image", fontsize=16)
+    # axes[0,0].imshow(img)
+    # axes[0,0].set_title("True image", fontsize=16)
 
-    axes[0,1].imshow(y)
-    axes[0,1].set_title("Blurred and noisy image", fontsize=16)
+    axes[0,0].imshow(y)
+    axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-    axes[0,2].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    axes[0,2].set_title(r"Posterior mean image ($\mathcal{M}_1$)", fontsize=16)
+    axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
+    axes[0,1].set_title(r"Posterior mean image ($\mathcal{M}_1$)", fontsize=16)
+
+    # axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
+    # axes[0,2].set_title(r"Posterior mean image ($\mathcal{M}_2$)", fontsize=16)
 
     axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
-    axes[0,3].set_title(r"Posterior mean image ($\mathcal{M}_2$)", fontsize=16)
+    axes[0,3].set_title(r"Posterior mean image ($\mathcal{M}_3$)", fontsize=16)
 
-    axes[1,0].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
-    axes[1,0].set_title(r"Posterior mean image ($\mathcal{M}_3$)", fontsize=16)
+    axes[0,4].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
+    axes[0,4].set_title(r"Posterior mean image ($\mathcal{M}_4$)", fontsize=16)
+
+    # axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
+    # axes[1,0].set_title(r"Posterior mean image ($\mathcal{M}_5$)", fontsize=16)
 
     axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,1].set_title(r"Posterior mean image ($\mathcal{M}_4$)", fontsize=16)
+    axes[1,1].set_title(r"Posterior mean image ($\mathcal{M}_6$)", fontsize=16)
 
     axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
-    axes[1,2].set_title(r"Posterior mean image ($\mathcal{M}_5$)", fontsize=16)
+    axes[1,2].set_title(r"Posterior mean image ($\mathcal{M}_7$)", fontsize=16)
 
-    axes[1,3].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,3].set_title(r"Posterior mean image ($\mathcal{M}_6$)", fontsize=16)
+    # axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
+    # axes[1,3].set_title(r"Posterior mean image ($\mathcal{M}_8$)", fontsize=16)
+
+    axes[1,4].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
+    axes[1,4].set_title(r"Posterior mean image ($\mathcal{M}_9$)", fontsize=16)
 
 
     plt.show()
     # plt.show(block=False)
     # plt.pause(10)
     # plt.close()
-    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
+    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{K}_3.pdf', dpi=500)
 
 
-    def U_cvx(x, H): 
+    def U_tv(x, H): 
         neg_log_likelihood = pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x)
         neg_log_prior = l1iso(Gop.matvec(x))
         return neg_log_likelihood + neg_log_prior
     
-    def U_ncvx(x, H): 
+    def U_mc(x, H): 
+        neg_log_likelihood = prox.L2_minimax_concave(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x)
+        neg_log_prior = l1iso(Gop.matvec(x))
+        return neg_log_likelihood + neg_log_prior
+
+    def U_me(x, H): 
         neg_log_likelihood = prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x)
         neg_log_prior = l1iso(Gop.matvec(x))
         return neg_log_likelihood + neg_log_prior
 
 
-    def truncated_harmonic_mean_estimator(samples_all, U, alpha=0.8):
-        neg_log_posteriors = np.array([[U(sample, H5) for sample in samples] for samples in samples_all])
+    def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                                          iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                                          iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
+                                          alpha=0.8):
+        neg_log_posteriors_5 = np.array([U_tv(sample, H5) for sample in iml12_5_samples])
+        neg_log_posteriors_6 = np.array([U_tv(sample, H6) for sample in iml12_6_samples])
+        neg_log_posteriors_7 = np.array([U_tv(sample, H7) for sample in iml12_7_samples])
+        neg_log_posteriors_5_mc = np.array([U_mc(sample, H5) for sample in iml12_5_mc_samples])
+        neg_log_posteriors_6_mc = np.array([U_mc(sample, H6) for sample in iml12_6_mc_samples])
+        neg_log_posteriors_7_mc = np.array([U_mc(sample, H7) for sample in iml12_7_mc_samples])
+        neg_log_posteriors_5_me = np.array([U_me(sample, H5) for sample in iml12_5_me_samples])
+        neg_log_posteriors_6_me = np.array([U_me(sample, H6) for sample in iml12_6_me_samples])
+        neg_log_posteriors_7_me = np.array([U_me(sample, H7) for sample in iml12_7_me_samples])
+        neg_log_posteriors = np.concatenate((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
+                                                neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
+                                                neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me), axis=1)
+
         eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
         # samples_ind = np.zeros(samples.shape[0])
         # for k in range(samples.shape[0]):
@@ -573,15 +608,22 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     # print("95% HPD region threshold:", hpd_threshold)
     
 
-    def bayes_factor(samples, U, Hs, alpha=0.8):
-        marginal_likelihoods = truncated_harmonic_mean_estimator(samples, U, Hs, alpha)
+    def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                    iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, alpha=0.8):
+        marginal_likelihoods = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                                        iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                                        iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
+                                        alpha)
         res = []
-        for i in range(len(Hs)):
-            for j in range(i + 1, len(Hs)):
+        for i in range(marginal_likelihoods.shape[0]):
+            for j in range(i + 1, marginal_likelihoods.shape[0]):
                 res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
         return res
     
-    # print(bayes_factor(iml12_5_samples, U_cvx, [H5, H6, H7]))
+    # print(bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+    #                 iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+    #                 iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
 
 
 
@@ -592,99 +634,12 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
 
     x3, eff_K = prox_lmc.mymala(y, H5, gamma_mymala)
     print(f'\nMYMALA percentage of effective samples: {eff_K / K}')
-
     
 
     '''
 
 
-    '''
-    ## Plot of the true Gaussian mixture with 2d histograms of samples
-    print("\nConstructing the 2D histograms of samples...")
-    ran = [[xmin, xmax], [ymin, ymax]]
-    fig3, axes = plt.subplots(2, 4, figsize=(17, 8))
-
-    # axes[0,0].hist2d(Z[:, 0], Z[:, 1], bins=100, density=True)
-    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density", fontsize=16)
-
-    axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
-    axes[0,1].set_title("Smoothed density", fontsize=16)
-
-    axes[0,2].hist2d(Z1[:,0], Z1[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,1])
-    axes[0,2].set_title("PGLD", fontsize=16)
-
-    axes[0,3].hist2d(Z2[:,0], Z2[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,3].set_title("MYULA", fontsize=16)
-
-    axes[1,0].hist2d(Z3[:,0], Z3[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
-    axes[1,0].set_title("MYMALA", fontsize=16)
-
-    axes[1,1].hist2d(Z4[:,0], Z4[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,1].set_title("PP-ULA", fontsize=16)
-
-    axes[1,2].hist2d(Z5[:,0], Z5[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,2].set_title("FBULA", fontsize=16)
-
-    axes[1,3].hist2d(Z6[:,0], Z6[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,3].set_title("LBMUMLA", fontsize=16)
-
-    # axes[1,3].hist2d(Z7[:,0], Z7[:,1], bins=100, range=ran, cmap=cm.viridis)
-    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    # axes[1,3].set_title("ULPDA", fontsize=16)
-
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    fig3.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_3.pdf', dpi=500)
-
     
-    ## Plot of the true Gaussian mixture with KDE of samples
-    print("\nConstructing the KDEs of samples...")
-    # fig2, axes = plt.subplots(2, 3, figsize=(13, 8))
-    fig2, axes = plt.subplots(2, 4, figsize=(17, 8))
-    # fig2.suptitle("True density and KDEs of samples") 
-
-    sns.set(font='serif', rc={'figure.figsize':(3.25, 3.5)})
-
-    axes[0,0].contourf(X, Y, Z, cmap=cm.viridis)
-    axes[0,0].set_title("True density", fontsize=16)
-
-    axes[0,1].contourf(X, Y, Z_smooth, cmap=cm.viridis)
-    axes[0,1].set_title("Smoothed density", fontsize=16)
-
-    sns.kdeplot(x=Z1[:,0], y=Z1[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,2])
-    axes[0,2].set_title("PGLD", fontsize=16)
-
-    sns.kdeplot(x=Z2[:,0], y=Z2[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[0,3])
-    axes[0,3].set_title("MYULA", fontsize=16)
-
-    sns.kdeplot(x=Z3[:,0], y=Z3[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,0])
-    axes[1,0].set_title("MYMALA", fontsize=16)
-
-    sns.kdeplot(x=Z4[:,0], y=Z4[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
-    axes[1,1].set_title("PP-ULA", fontsize=16)
-
-    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
-    axes[1,2].set_title("FBULA", fontsize=16)
-
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    axes[1,3].set_title("LBMUMLA", fontsize=16)
-
-    # sns.kdeplot(x=Z7[:,0], y=Z7[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,3])
-    # axes[1,3].set_title("ULPDA", fontsize=16)
-    
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    fig2.savefig(f'./fig/fig_prox_n{n}_gamma{gamma_pgld}_lambda{lamda}_{K}_2.pdf', dpi=500)  
-    '''
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
