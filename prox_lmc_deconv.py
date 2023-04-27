@@ -700,7 +700,6 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
         neg_log_posteriors = np.concatenate((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
                                                 neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
                                                 neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me), axis=1)
-
         eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
         # samples_ind = np.zeros(samples.shape[0])
         # for k in range(samples.shape[0]):
