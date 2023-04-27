@@ -662,9 +662,8 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
 
 # todo: modify
-def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
-                                 theta=1., niter=10, seed=0, gfirst=True, callback=None, 
-                                 callbacky=False, returny=False, show=False):
+def MoreauYosidaUnadjustedLangevin(proxf, proxg, x0, tau, mu, theta=1., 
+                                niter=10, seed=0, callback=None, show=False):
     r"""Moreau--Yosida Unadjusted Langevin algorithm (MYULA)
 
     Samples from the target distribution with the following potential using
@@ -674,19 +673,9 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
 
         g(\mathbf{x}) + f(\mathbf{x})
 
-    where :math:`\mathbf{A}` is a linear operator, :math:`f`
-    and :math:`g` can be any convex functions that have a known proximal
-    operator.
-
-    This functional is effectively minimized by solving its equivalent
-    primal-dual problem (primal in :math:`f`, dual in :math:`g`):
-
-    .. math::
-
-        \max_{\mathbf{y} \in Y} \mathbf{y}^T(\mathbf{Ax}) 
-        + \mathbf{z}^T \mathbf{x} + f(\mathbf{x}) - g^*(\mathbf{y})
-
-    where :math:`\mathbf{y}` is the so-called dual variable.
+    where :math:`f` can be any convex function that have a know gradient and 
+    :math:`g` can be any convex function that have a known proximal operator.
+    
 
     Parameters
     ----------
@@ -694,8 +683,6 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
         Proximal operator of f function
     proxg : :obj:`pyproximal.ProxOperator`
         Proximal operator of g function
-    A : :obj:`pylops.LinearOperator`
-        Linear operator of g
     x0 : :obj:`numpy.ndarray`
         Initial vector
     tau : :obj:`float` or :obj:`np.ndarray`
@@ -704,10 +691,6 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
     mu : :obj:`float` or :obj:`np.ndarray`
         Stepsize of subgradient of :math:`g^*`. This can be constant 
         or function of iterations (in the latter cases provided as np.ndarray)
-    z0 : :obj:`numpy.ndarray`
-        Initial auxiliary vector
-    z : :obj:`numpy.ndarray`, optional
-        Additional vector
     theta : :obj:`float`
         Scalar between 0 and 1 that defines the update of the
         :math:`\bar{\mathbf{x}}` variable - note that ``theta=0`` is a
@@ -715,16 +698,9 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
         algorithm
     niter : :obj:`int`, optional
         Number of iterations of iterative scheme
-    gfirst : :obj:`bool`, optional
-        Apply Proximal of operator ``g`` first (``True``) or Proximal of
-        operator ``f`` first (``False``)
     callback : :obj:`callable`, optional
         Function with signature (``callback(x)``) to call after each iteration
         where ``x`` is the current model vector
-    callbacky : :obj:`bool`, optional
-        Modify callback signature to (``callback(x, y)``) when ``callbacky=True``
-    returny : :obj:`bool`, optional
-        Return also ``y``
     show : :obj:`bool`, optional
         Display iterations log
 
@@ -735,8 +711,7 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
 
     Notes
     -----
-    The Primal-dual algorithm can be expressed by the following recursion
-    (``gfirst=True``):
+    MYULA can be expressed by the following recursion:
 
     .. math::
 
@@ -749,18 +724,8 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
 
     where :math:`\tau \mu \lambda_{max}(\mathbf{A}^H\mathbf{A}) < 1`.
 
-    Alternatively for ``gfirst=False`` the scheme becomes:
 
-    .. math::
-
-        \mathbf{x}^{k+1} = \prox_{\tau f}(\mathbf{x}^{k} -
-        \tau (\mathbf{A}^H \mathbf{y}^{k} + \mathbf{z})) \\
-        \bar{\mathbf{x}}^{k+1} = \mathbf{x}^{k+1} +
-        \theta (\mathbf{x}^{k+1} - \mathbf{x}^k) \\
-        \mathbf{y}^{k+1} = \prox_{\mu g^*}(\mathbf{y}^{k} +
-        \mu \mathbf{A}\bar{\mathbf{x}}^{k+1})
-
-    .. [1] A., Chambolle, and T., Pock, "A first-order primal-dual algorithm for
+    .. [2] A., Chambolle, and T., Pock, "A first-order primal-dual algorithm for
         convex problems with applications to imaging", Journal of Mathematical
         Imaging and Vision, 40, 8pp. 120-145. 2011.
 
@@ -778,67 +743,44 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None
 
     if show:
         tstart = time.time()
-        print('Unadjusted Langevin primal-dual: U(x) = f(Ax) + x^T z + g(x)\n'
+        print('Moreau--Yosida Unadjusted Langevin: U(x) = f(x) + g(x)\n'
               '---------------------------------------------------------\n'
               'Proximal operator (f): %s\n'
               'Proximal operator (g): %s\n'
-              'Linear operator (A): %s\n'
-              'Additional vector (z): %s\n'
               'tau = %s\t\tmu = %s\ntheta = %.2f\t\tniter = %d\n' %
-              (type(proxf), type(proxg), type(A),
-               None if z is None else 'vector', str(tau[0]) if fixedtau else 'Variable',
+              (type(proxf), type(proxg),
+               str(tau[0]) if fixedtau else 'Variable',
                str(mu[0]) if fixedmu else 'Variable', theta, niter))
         head = '   Itn       x[0]          f           g          z^x       J = f + g + z^x'
         print(head)
 
     x = x0.copy()
     xhat = x.copy()
-    y = y0.copy() if y0 is not None else ncp.zeros(A.shape[0], dtype=x.dtype)
     x_samples = []
-    y_samples = []
     rng = default_rng(seed)
     for iiter in range(niter):
         xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
         xold = x.copy()
-        if gfirst:
-            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
-            ATy = A.rmatvec(y)
-            if z is not None:
-                ATy += z
-            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
-            xhat = x + theta * (x - xold)
-        else:
-            ATy = A.rmatvec(y)
-            if z is not None:
-                ATy += z
-            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
-            xhat = x + theta * (x - xold)
-            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+        y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+        x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
+        xhat = x + theta * (x - xold)        
         x_samples.append(x)
-        y_samples.append(y)
 
         # run callback
         if callback is not None:
-            if callbacky:
-                callback(x, y)
-            else:
-                callback(x)
+            callback(x)
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
-                pf, pg = proxf(x), proxg(A.matvec(x))
+                pf, pg = proxf(x), proxg(x)
                 pf = 0. if type(pf) == bool else pf
                 pg = 0. if type(pg) == bool else pg
-                zx = 0. if z is None else np.dot(z, x)
-                msg = '%6g  %12.5e  %10.3e  %10.3e  %10.3e      %10.3e' % \
-                      (iiter + 1, x[0], pf, pg, zx, pf + pg + zx)
+                msg = '%6g  %12.5e  %10.3e %10.3e      ' % \
+                      (iiter + 1, x[0], pf, pg, pf + pg)
                 print(msg)
     if show:
         print('\nTotal time (s) = %.2f' % (time.time() - tstart))
         print('---------------------------------------------------------\n')
-    if not returny:
-        return np.array(x_samples)
-    else:
-        return np.array(x_samples), np.array(y_samples)
+    return np.array(x_samples)    
 
 
 

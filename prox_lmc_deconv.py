@@ -200,8 +200,11 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
-    # L1 regularization (isotropic TV)
+    # L1 regularization (isotropic TV) for primal-dual
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
+
+    # Isotropic TV
+    tv = pyproximal.TV(dims=img.shape, sigma=tau)
 
     # Primal-dual
     def callback(x, f, g, K, cost, xtrue, err):
@@ -361,11 +364,11 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
 
     fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
     plt.gray()  # show the filtered result in grayscale
-    # axes[0,0].imshow(img)
-    # axes[0,0].set_title("Ground truth", fontsize=16)
+    axes[0,0].imshow(img)
+    axes[0,0].set_title("Ground truth", fontsize=16)
 
-    axes[0,0].imshow(y)
-    axes[0,0].set_title("Blurred and noisy image", fontsize=16)
+    # axes[0,0].imshow(y)
+    # axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
     axes[0,1].imshow(iml12_5_fixed)
     axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
@@ -414,11 +417,10 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(), 
                                                                                 err_5_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_5, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
+        prox.MoreauYosidaUnadjustedLangevin(l2_5, tv, tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_5, l1iso,
+                                                    niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_5, tv,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(),
                                                                                 err_5_samples))
@@ -634,31 +636,31 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
     axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    axes[0,1].set_title(r"Posterior mean image ($\mathcal{M}_1$)", fontsize=16)
+    axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
 
     # axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[0,2].set_title(r"Posterior mean image ($\mathcal{M}_2$)", fontsize=16)
+    # axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
 
     axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
-    axes[0,3].set_title(r"Posterior mean image ($\mathcal{M}_3$)", fontsize=16)
+    axes[0,3].set_title(r"$\mathcal{M}_3$", fontsize=16)
 
     axes[0,4].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
-    axes[0,4].set_title(r"Posterior mean image ($\mathcal{M}_4$)", fontsize=16)
+    axes[0,4].set_title(r"$\mathcal{M}_4$", fontsize=16)
 
     # axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[1,0].set_title(r"Posterior mean image ($\mathcal{M}_5$)", fontsize=16)
+    # axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
 
     axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,1].set_title(r"Posterior mean image ($\mathcal{M}_6$)", fontsize=16)
+    axes[1,1].set_title(r"$\mathcal{M}_6$", fontsize=16)
 
     axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
-    axes[1,2].set_title(r"Posterior mean image ($\mathcal{M}_7$)", fontsize=16)
+    axes[1,2].set_title(r"$\mathcal{M}_7$", fontsize=16)
 
     # axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[1,3].set_title(r"Posterior mean image ($\mathcal{M}_8$)", fontsize=16)
+    # axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
 
     axes[1,4].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,4].set_title(r"Posterior mean image ($\mathcal{M}_9$)", fontsize=16)
+    axes[1,4].set_title(r"$\mathcal{M}_9$", fontsize=16)
 
 
     plt.show()
