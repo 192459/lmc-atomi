@@ -662,7 +662,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
 
 # todo: modify
-def MoreauYosidaLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
+def MoreauYosidaUnadjustedLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
                                  theta=1., niter=10, seed=0, gfirst=True, callback=None, 
                                  callbacky=False, returny=False, show=False):
     r"""Moreau--Yosida Unadjusted Langevin algorithm (MYULA)
