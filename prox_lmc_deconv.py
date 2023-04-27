@@ -46,7 +46,7 @@ from scipy import ndimage
 import skimage as ski
 from skimage import data, io, filters
 from skimage.metrics import peak_signal_noise_ratio as psnr
-from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import mean_squared_error as mse
 
 import pylops
 import pyproximal
@@ -55,6 +55,9 @@ import arviz as az
 
 import prox
 
+
+def signal_noise_ratio(image_true, image_test): 
+    return 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
 
 class ProximalLangevinMonteCarloDeconvolution:
     def __init__(self, lamda, sigma, tau, K=10000, seed=0) -> None:
@@ -83,25 +86,9 @@ class ProximalLangevinMonteCarloDeconvolution:
         return x - gamma * H.adjoint() * (H * x - y) / (2*self.sigma**2)
 
 
-    ## Proximal Gradient Langevin Dynamics (PGLD)
-    def pgld(self, y, H, gamma):
-        print("\nSampling with Proximal ULA:")
-        d = y.shape[0]
-        rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(d)
-        theta = []
-        for _ in progress_bar(range(self.n)):        
-            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
-            theta0 = prox.prox_tv(theta0, self.lamda * self.tau)
-            theta_new = self.gd_update(theta0, y, H, gamma) + np.sqrt(2*gamma) * xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-    
-
     ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
     def grad_Moreau_env(self, theta):
-        return (theta - prox.prox_tv(theta, self.lamda * self.tau)) / self.lamda
+        return (theta - pyproximal.TV(dims=theta.shape, sigma=self.lamda * self.tau)(theta)) / self.lamda
 
     def prox_update(self, theta, gamma):
         return -gamma * self.grad_Moreau_env(theta)
@@ -146,27 +133,6 @@ class ProximalLangevinMonteCarloDeconvolution:
                 theta.append(theta_new) 
                 theta0 = theta_new
         return np.array(theta), len(theta)
-
-
-    # Unadjusted Langevin Primal-Dual Algorithm (ULPDA)
-    def ulpda(self, y, H, gamma0, gamma1, theta, prox_f, prox_g):
-        print("\nSampling with Unadjusted Langevin Primal-Dual Algorithm (ULPDA):")
-        d = y.shape[0]
-        rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(d)
-        u0 = tu0 = rng.standard_normal(d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
-            theta_new = prox_f(theta0 - gamma0 * H.adjoint() * tu0, gamma0) + np.sqrt(2*gamma0) * xi
-            u_new = prox.prox_conjugate(u0 + gamma1 * H * (2*theta_new - theta0), gamma1, prox_g)
-            tu_new = u0 + theta * (u_new - u0)
-            theta.append(theta_new)    
-            theta0 = theta_new
-            u0 = u_new
-            tu0 = tu_new
-        return np.array(theta)
-
 
 
 ## Main function
@@ -231,9 +197,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     #L2 data term - Moreau envelope of isotropic TV
-    l2_5_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_moreau_env = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_5_me = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -291,93 +257,61 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     iml12_7_fixed = iml12_7_fixed.reshape(img.shape)
 
 
-    # cost_ada = []
-    # err_ada = []
-    # iml12_ada, _ = \
-    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2, l1iso, Gop,
-    #                                                         tau=tau0, mu=mu0,
-    #                                                         x0=np.zeros_like(img.ravel()),
-    #                                                         niter=K//2, show=True, tol=0.05,
-    #                                                         callback=lambda x: callback(x, l2, l1iso,
-    #                                                                                     Gop, cost_ada,
-    #                                                                                     img.ravel(),
-    #                                                                                     err_ada))
-    # iml12_ada = iml12_ada.reshape(img.shape)
-
-
-    cost_5_moreau_env_fixed = []
-    err_5_moreau_env_fixed = []
-    iml12_5_moreau_env_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_5_moreau_env, l1iso, Gop,
+    cost_5_me_fixed = []
+    err_5_me_fixed = []
+    iml12_5_me_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_5_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2_5_moreau_env, l1iso,
-                                                                                Gop, cost_5_moreau_env_fixed,
+                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
+                                                                                Gop, cost_5_me_fixed,
                                                                                 img.ravel(),
-                                                                                err_5_moreau_env_fixed))
-    iml12_5_moreau_env_fixed = iml12_5_moreau_env_fixed.reshape(img.shape)
+                                                                                err_5_me_fixed))
+    iml12_5_me_fixed = iml12_5_me_fixed.reshape(img.shape)
 
 
-    cost_6_moreau_env_fixed = []
-    err_6_moreau_env_fixed = []
-    iml12_6_moreau_env_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_6_moreau_env, l1iso, Gop,
+    cost_6_me_fixed = []
+    err_6_me_fixed = []
+    iml12_6_me_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_6_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2_6_moreau_env, l1iso,
-                                                                                Gop, cost_6_moreau_env_fixed,
+                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
+                                                                                Gop, cost_6_me_fixed,
                                                                                 img.ravel(),
-                                                                                err_6_moreau_env_fixed))
-    iml12_6_moreau_env_fixed = iml12_6_moreau_env_fixed.reshape(img.shape)
+                                                                                err_6_me_fixed))
+    iml12_6_me_fixed = iml12_6_me_fixed.reshape(img.shape)
 
 
-    cost_7_moreau_env_fixed = []
-    err_7_moreau_env_fixed = []
-    iml12_7_moreau_env_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_7_moreau_env, l1iso, Gop,
+    cost_7_me_fixed = []
+    err_7_me_fixed = []
+    iml12_7_me_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_7_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=K, show=True,
-                                                    callback=lambda x: callback(x, l2_7_moreau_env, l1iso,
-                                                                                Gop, cost_7_moreau_env_fixed,
+                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
+                                                                                Gop, cost_7_me_fixed,
                                                                                 img.ravel(),
-                                                                                err_7_moreau_env_fixed))
-    iml12_7_moreau_env_fixed = iml12_7_moreau_env_fixed.reshape(img.shape)
+                                                                                err_7_me_fixed))
+    iml12_7_me_fixed = iml12_7_me_fixed.reshape(img.shape)
 
 
-    # cost_moreau_env_ada = []
-    # err_moreau_env_ada = []
-    # iml12_moreau_env_ada, _ = \
-    #     pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_moreau_env, l1iso, Gop,
-    #                                                         tau=tau0, mu=mu0,
-    #                                                         x0=np.zeros_like(img.ravel()),
-    #                                                         niter=K//2, show=True, tol=0.05,
-    #                                                         callback=lambda x: callback(x, l2, l1iso,
-    #                                                                                     Gop, cost_moreau_env_ada,
-    #                                                                                     img.ravel(),
-    #                                                                                     err_moreau_env_ada))
-    # iml12_moreau_env_ada = iml12_moreau_env_ada.reshape(img.shape)
+    print(f"SNR of PDHG reconstructed image with TV (M1): {snr(img, iml12_5_fixed)}")
+    print(f"SNR of PDHG reconstructed image with nonconvex TV (M2): {snr(img, iml12_5_moreau_env_fixed)}")
+    print(f"SNR of PDHG reconstructed image with TV (M3): {snr(img, iml12_6_fixed)}")
+    print(f"SNR of PDHG reconstructed image with nonconvex TV (M4): {snr(img, iml12_6_moreau_env_fixed)}")
+    print(f"SNR of PDHG reconstructed image with TV (M5): {snr(img, iml12_7_fixed)}")
+    print(f"SNR of PDHG reconstructed image with nonconvex TV (M6): {snr(img, iml12_7_moreau_env_fixed)}")
 
-    snr = lambda image_true, image_test: 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
-    print(f"SNR of PDHG reconstructed image with TV regularization (H5): {snr(img, iml12_5_fixed)}")
-    # print(f"SNR of PDHG reconstructed image with TV regularization: {snr(img, iml12_5_ada)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H5): {snr(img, iml12_5_moreau_env_fixed)}")
-    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization: {snr(img, iml12_5_moreau_env_ada)}")
-    print(f"SNR of PDHG reconstructed image with TV regularization (H6): {snr(img, iml12_6_fixed)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H6): {snr(img, iml12_6_moreau_env_fixed)}")
-    print(f"SNR of PDHG reconstructed image with TV regularization (H7): {snr(img, iml12_7_fixed)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H7): {snr(img, iml12_7_moreau_env_fixed)}")
-
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H5): {psnr(img, iml12_5_fixed)}")
-    # print(f"PSNR of PDHG reconstructed image with TV regularization: {psnr(img, iml12_5_ada)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H5): {psnr(img, iml12_5_moreau_env_fixed)}")
-    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization: {psnr(img, iml12_5_moreau_env_ada)}")
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H6): {psnr(img, iml12_6_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H6): {psnr(img, iml12_6_moreau_env_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H7): {psnr(img, iml12_7_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H7): {psnr(img, iml12_7_moreau_env_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with TV (M1): {psnr(img, iml12_5_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M2): {psnr(img, iml12_5_moreau_env_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with TV (M3): {psnr(img, iml12_6_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M4): {psnr(img, iml12_6_moreau_env_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with TV (M5): {psnr(img, iml12_7_fixed)}")
+    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M6): {psnr(img, iml12_7_moreau_env_fixed)}")
 
     fig2, axes = plt.subplots(2, 4, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale
@@ -388,28 +322,22 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     axes[0,1].set_title("Blurred and noisy image", fontsize=16)
 
     axes[0,2].imshow(iml12_5_fixed)
-    axes[0,2].set_title(r"PDHG for $\\mathcal{M}_1$", fontsize=16)
-
-    # axes[1,0].imshow(iml12_ada)
-    # axes[1,0].set_title("Adaptive PDHG", fontsize=16)
+    axes[0,2].set_title(r"PDHG ($\mathcal{M}_1$)", fontsize=16)
 
     axes[0,3].imshow(iml12_5_moreau_env_fixed)
-    axes[0,3].set_title(r"PDHG with Nonconvex TV for $\\mathcal{M}_1$", fontsize=16)
-
-    # axes[1,2].imshow(iml12_moreau_env_ada)
-    # axes[1,2].set_title("Adaptive PDHG with Nonconvex TV", fontsize=16)
+    axes[0,3].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_1$)", fontsize=16)
 
     axes[1,0].imshow(iml12_6_fixed)
-    axes[1,0].set_title(r"PDHG for $\\mathcal{M}_2$", fontsize=16)
+    axes[1,0].set_title(r"PDHG ($\mathcal{M}_2$)", fontsize=16)
 
     axes[1,1].imshow(iml12_6_moreau_env_fixed)
-    axes[1,1].set_title(r"PDHG with Nonconvex TV for $\\mathcal{M}_2$", fontsize=16)
+    axes[1,1].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_2$)", fontsize=16)
 
     axes[1,2].imshow(iml12_7_fixed)
-    axes[1,2].set_title(r"PDHG for $\\mathcal{M}_3$", fontsize=16)
+    axes[1,2].set_title(r"PDHG ($\mathcal{M}_3$)", fontsize=16)
 
     axes[1,3].imshow(iml12_7_moreau_env_fixed)
-    axes[1,3].set_title(r"PDHG with Nonconvex TV for $\\mathcal{M}_3$", fontsize=16)
+    axes[1,3].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_3$)", fontsize=16)
 
     # plt.show()
     plt.show(block=False)
@@ -419,7 +347,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     '''
 
 
-    # Sampling using UPDLA and MYULA
+    # Generate samples using UPDLA and MYULA
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -430,22 +358,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                     callback=lambda x: callback(x, l2_5, l1iso,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(),
-                                                                                err_5_samples))
-    # iml12_5_samples = iml12_5_samples.reshape((K, *img.shape))
-    
-
-    # cost_5_moreau_env_samples = []
-    # err_5_moreau_env_samples = []
-    # iml12_5_moreau_env_samples = \
-    #     prox.UnadjustedLangevinPrimalDual(l2_5_moreau_env, l1iso, Gop,
-    #                                                 tau=tau0, mu=mu0, theta=1.,
-    #                                                 x0=np.zeros_like(img.ravel()),
-    #                                                 gfirst=False, niter=K, show=True,
-    #                                                 callback=lambda x: callback(x, l2_5_moreau_env, l1iso,
-    #                                                                             Gop, cost_5_moreau_env_samples,
-    #                                                                             img.ravel(),
-    #                                                                             err_5_moreau_env_samples))
-    # iml12_5_moreau_env_samples = iml12_5_moreau_env_samples.reshape((K, *img.shape))
+                                                                                err_5_samples))    
 
     cost_6_samples = []
     err_6_samples = []
@@ -458,7 +371,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 Gop, cost_6_samples,
                                                                                 img.ravel(),
                                                                                 err_6_samples))
-    
+
     cost_7_samples = []
     err_7_samples = []
     iml12_7_samples = \
@@ -470,57 +383,99 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 Gop, cost_7_samples,
                                                                                 img.ravel(),
                                                                                 err_7_samples))
+    
+    cost_5_me_samples = []
+    err_5_me_samples = []
+    iml12_5_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_5_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
+                                                                                Gop, cost_5_me_samples,
+                                                                                img.ravel(),
+                                                                                err_5_me_samples))
+    
+    cost_6_me_samples = []
+    err_6_me_samples = []
+    iml12_6_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
+                                                                                Gop, cost_6_me_samples,
+                                                                                img.ravel(),
+                                                                                err_6_me_samples))
+        
+    cost_7_me_samples = []
+    err_7_me_samples = []
+    iml12_7_me_samples = \
+        prox.UnadjustedLangevinPrimalDual(l2_7_me, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=K, show=True,
+                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
+                                                                                Gop, cost_7_me_samples,
+                                                                                img.ravel(),
+                                                                                err_7_me_samples))
 
-    signal_noise_ratio = lambda image_true, image_test: 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
-    print(f"SNR of PDHG reconstructed image with TV regularization (H5): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H5): {signal_noise_ratio(img.ravel(), iml12_5_moreau_env_samples.mean(axis=0))}")
-    print(f"SNR of PDHG reconstructed image with TV regularization (H6): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H6): {signal_noise_ratio(img.ravel(), iml12_6_moreau_env_samples.mean(axis=0))}")
-    print(f"SNR of PDHG reconstructed image with TV regularization (H7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H7): {signal_noise_ratio(img.ravel(), iml12_7_moreau_env_samples.mean(axis=0))}")
+    
+    # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
+    print(f"SNR of ULPDA posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with TV (M3): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with TV (M5): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M6): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
-    print(img.ravel().dtype, iml12_5_samples.mean(axis=0).dtype)
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H5): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H5): {snr(img.ravel(), iml12_5_moreau_env_samples.mean(axis=0))}")
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H6): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H6): {snr(img.ravel(), iml12_6_moreau_env_samples.mean(axis=0))}")
-    print(f"PSNR of PDHG reconstructed image with TV regularization (H7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H7): {snr(img.ravel(), iml12_7_moreau_env_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (H5): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H5): {snr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (H6): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H6): {snr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (H7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H7): {snr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
-    fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
-    plt.gray()  # show the filtered result in grayscale    
-    axes[0,0].imshow(y)
-    axes[0,0].set_title("Blurred and noisy image", fontsize=16)
+    print(f"MSE of ULPDA posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M2): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with TV (M3): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M4): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with TV (M5): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M6): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
-    # axes[0,1].imshow(iml12_5_samples[-1].reshape(img.shape))
-    # axes[0,1].set_title(r"Last image in samples ($\mathcal{M}_1$)", fontsize=16)
 
-    axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    axes[0,1].set_title(r"Posterior mean of samples ($\mathcal{M}_1$)", fontsize=16)
+    # Plot the results
+    fig3, axes = plt.subplots(2, 4, figsize=(12, 8))
+    plt.gray()  # show the filtered result in grayscale
+    axes[0,0].imshow(img)
+    axes[0,0].set_title("True image", fontsize=16)
 
-    # axes[1,0].imshow(iml12_6_samples[-1].reshape(img.shape))
-    # axes[1,0].set_title(r"Last image in samples ($\mathcal{M}_2$)", fontsize=16)
+    axes[0,1].imshow(y)
+    axes[0,1].set_title("Blurred and noisy image", fontsize=16)
+
+    axes[0,2].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
+    axes[0,2].set_title(r"Posterior mean image ($\mathcal{M}_1$)", fontsize=16)
+
+    axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
+    axes[0,3].set_title(r"Posterior mean image ($\mathcal{M}_2$)", fontsize=16)
 
     axes[1,0].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
-    axes[1,0].set_title(r"Posterior mean of samples ($\mathcal{M}_2$)", fontsize=16)
+    axes[1,0].set_title(r"Posterior mean image ($\mathcal{M}_3$)", fontsize=16)
 
-    # axes[1,1].imshow(iml12_7_samples[-1].reshape(img.shape))
-    # axes[1,1].set_title(r"Last image in samples ($\mathcal{M}_3$)", fontsize=16)
+    axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
+    axes[1,1].set_title(r"Posterior mean image ($\mathcal{M}_4$)", fontsize=16)
 
-    axes[1,1].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
-    axes[1,1].set_title(r"Posterior mean of samples ($\mathcal{M}_3$)", fontsize=16)
+    axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
+    axes[1,2].set_title(r"Posterior mean image ($\mathcal{M}_5$)", fontsize=16)
 
-    # axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
-    # axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
-
-    # axes[1,1].imshow(iml12_5_moreau_env_samples.mean(axis=0))
-    # axes[1,1].set_title("Mean of samples (Nonconvex TV)", fontsize=16)
+    axes[1,3].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
+    axes[1,3].set_title(r"Posterior mean image ($\mathcal{M}_6$)", fontsize=16)
 
 
-    # plt.show()
-    plt.show(block=False)
-    plt.pause(10)
-    plt.close()
+    plt.show()
+    # plt.show(block=False)
+    # plt.pause(10)
+    # plt.close()
     # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{K}_3.pdf', dpi=500)
 
 
