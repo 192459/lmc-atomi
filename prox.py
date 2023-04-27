@@ -661,19 +661,18 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         return np.array(x_samples), np.array(y_samples)
 
 
+# todo: modify
 def MoreauYosidaLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
                                  theta=1., niter=10, seed=0, gfirst=True, callback=None, 
                                  callbacky=False, returny=False, show=False):
-    r"""Moreau--Yosida Unadjusted Langevin algorithm (MYULA) or 
-        Moreau--Yosida Metropolis-adjusted Langevin algorithm (MYMALA)
+    r"""Moreau--Yosida Unadjusted Langevin algorithm (MYULA)
 
-    Solves the following (possibly) nonlinear minimization problem using
-    the general version of the first-order primal-dual algorithm of [1]_:
+    Samples from the target distribution with the following potential using
+    the general version of the first-order primal-dual algorithm of [2]_:
 
     .. math::
 
-        \min_{\mathbf{x} \in X} g(\mathbf{Ax}) + f(\mathbf{x}) +
-        \mathbf{z}^T \mathbf{x}
+        g(\mathbf{x}) + f(\mathbf{x})
 
     where :math:`\mathbf{A}` is a linear operator, :math:`f`
     and :math:`g` can be any convex functions that have a known proximal
@@ -684,9 +683,8 @@ def MoreauYosidaLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
     .. math::
 
-        \min_{\mathbf{x} \in X} \max_{\mathbf{y} \in Y}
-        \mathbf{y}^T(\mathbf{Ax}) + \mathbf{z}^T \mathbf{x} +
-        f(\mathbf{x}) - g^*(\mathbf{y})
+        \max_{\mathbf{y} \in Y} \mathbf{y}^T(\mathbf{Ax}) 
+        + \mathbf{z}^T \mathbf{x} + f(\mathbf{x}) - g^*(\mathbf{y})
 
     where :math:`\mathbf{y}` is the so-called dual variable.
 
@@ -767,9 +765,80 @@ def MoreauYosidaLangevin(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         Imaging and Vision, 40, 8pp. 120-145. 2011.
 
     """
+    ncp = get_array_module(x0)
 
+    # check if tau and mu are scalars or arrays
+    fixedtau = fixedmu = False
+    if isinstance(tau, (int, float)):
+        tau = tau * ncp.ones(niter, dtype=x0.dtype)
+        fixedtau = True
+    if isinstance(mu, (int, float)):
+        mu = mu * ncp.ones(niter, dtype=x0.dtype)
+        fixedmu = True
 
-    return 
+    if show:
+        tstart = time.time()
+        print('Unadjusted Langevin primal-dual: U(x) = f(Ax) + x^T z + g(x)\n'
+              '---------------------------------------------------------\n'
+              'Proximal operator (f): %s\n'
+              'Proximal operator (g): %s\n'
+              'Linear operator (A): %s\n'
+              'Additional vector (z): %s\n'
+              'tau = %s\t\tmu = %s\ntheta = %.2f\t\tniter = %d\n' %
+              (type(proxf), type(proxg), type(A),
+               None if z is None else 'vector', str(tau[0]) if fixedtau else 'Variable',
+               str(mu[0]) if fixedmu else 'Variable', theta, niter))
+        head = '   Itn       x[0]          f           g          z^x       J = f + g + z^x'
+        print(head)
+
+    x = x0.copy()
+    xhat = x.copy()
+    y = y0.copy() if y0 is not None else ncp.zeros(A.shape[0], dtype=x.dtype)
+    x_samples = []
+    y_samples = []
+    rng = default_rng(seed)
+    for iiter in range(niter):
+        xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
+        xold = x.copy()
+        if gfirst:
+            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+            ATy = A.rmatvec(y)
+            if z is not None:
+                ATy += z
+            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
+            xhat = x + theta * (x - xold)
+        else:
+            ATy = A.rmatvec(y)
+            if z is not None:
+                ATy += z
+            x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
+            xhat = x + theta * (x - xold)
+            y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
+        x_samples.append(x)
+        y_samples.append(y)
+
+        # run callback
+        if callback is not None:
+            if callbacky:
+                callback(x, y)
+            else:
+                callback(x)
+        if show:
+            if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
+                pf, pg = proxf(x), proxg(A.matvec(x))
+                pf = 0. if type(pf) == bool else pf
+                pg = 0. if type(pg) == bool else pg
+                zx = 0. if z is None else np.dot(z, x)
+                msg = '%6g  %12.5e  %10.3e  %10.3e  %10.3e      %10.3e' % \
+                      (iiter + 1, x[0], pf, pg, zx, pf + pg + zx)
+                print(msg)
+    if show:
+        print('\nTotal time (s) = %.2f' % (time.time() - tstart))
+        print('---------------------------------------------------------\n')
+    if not returny:
+        return np.array(x_samples)
+    else:
+        return np.array(x_samples), np.array(y_samples)
 
 
 

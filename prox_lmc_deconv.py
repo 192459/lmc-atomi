@@ -60,12 +60,12 @@ def signal_noise_ratio(image_true, image_test):
     return 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
 
 class ProximalLangevinMonteCarloDeconvolution:
-    def __init__(self, lamda, sigma, tau, K=10000, seed=0) -> None:
+    def __init__(self, lamda, sigma, tau, N=10000, seed=0) -> None:
         super(ProximalLangevinMonteCarloDeconvolution, self).__init__()
         self.lamda = lamda
         self.sigma = sigma
         self.tau = tau
-        self.n = K
+        self.n = N
         self.seed = seed
 
     def total_variation(self, g):
@@ -138,7 +138,7 @@ class ProximalLangevinMonteCarloDeconvolution:
 ## Main function
 def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1, 
                     gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, lamda=0.01, 
-                    snr=50., tau=0.03, K=10000, img='camera', seed=0):
+                    snr=50., tau=0.03, N=10000, img='camera', seed=0):
 
     # Choose the test image
     if img == 'einstein':
@@ -226,7 +226,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_5, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5, l1iso,
                                                                                 Gop, cost_5_fixed,
                                                                                 img.ravel(),
@@ -240,7 +240,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_6, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_6, l1iso,
                                                                                 Gop, cost_6_fixed,
                                                                                 img.ravel(),
@@ -254,7 +254,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_7, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_7, l1iso,
                                                                                 Gop, cost_7_fixed,
                                                                                 img.ravel(),
@@ -268,7 +268,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_5_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5_me, l1iso,
                                                                                 Gop, cost_5_me_fixed,
                                                                                 img.ravel(),
@@ -282,7 +282,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_6_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_6_me, l1iso,
                                                                                 Gop, cost_6_me_fixed,
                                                                                 img.ravel(),
@@ -296,7 +296,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         pyproximal.optimization.primaldual.PrimalDual(l2_7_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_7_me, l1iso,
                                                                                 Gop, cost_7_me_fixed,
                                                                                 img.ravel(),
@@ -359,7 +359,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_5, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5, l1iso,
                                                                                 Gop, cost_5_samples,
                                                                                 img.ravel(),
@@ -371,7 +371,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_6, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_6, l1iso,
                                                                                 Gop, cost_6_samples,
                                                                                 img.ravel(),
@@ -383,7 +383,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_7, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_7, l1iso,
                                                                                 Gop, cost_7_samples,
                                                                                 img.ravel(),
@@ -395,7 +395,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_5_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5_me, l1iso,
                                                                                 Gop, cost_5_me_samples,
                                                                                 img.ravel(),
@@ -407,7 +407,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_6_me, l1iso,
                                                                                 Gop, cost_6_me_samples,
                                                                                 img.ravel(),
@@ -419,7 +419,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_7_me, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_7_me, l1iso,
                                                                                 Gop, cost_7_me_samples,
                                                                                 img.ravel(),
@@ -433,7 +433,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_5_mc, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_5_mc, l1iso,
                                                                                 Gop, cost_5_mc_samples,
                                                                                 img.ravel(),
@@ -445,7 +445,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_6_mc, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_6_mc, l1iso,
                                                                                 Gop, cost_6_mc_samples,
                                                                                 img.ravel(),
@@ -457,35 +457,35 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         prox.UnadjustedLangevinPrimalDual(l2_7_mc, l1iso, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=K, show=True,
+                                                    gfirst=False, niter=N, show=True,
                                                     callback=lambda x: callback(x, l2_7_mc, l1iso,
                                                                                 Gop, cost_7_mc_samples,
                                                                                 img.ravel(),
                                                                                 err_7_mc_samples))
     '''
     
-    
+
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
     print(f"SNR of ULPDA posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
     print(f"SNR of ULPDA posterior mean image with TV (M3): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
     print(f"SNR of ULPDA posterior mean image with TV (M5): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"SNR of ULPDA posterior mean image with nonconvex TV (M6): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"SNR of ULPDA posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
-    print(f"PSNR of ULPDA posterior mean image with TV (H5): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H5): {snr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (H6): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H6): {snr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with TV (H7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"PSNR of ULPDA posterior mean image with nonconvex TV (H7): {snr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M2): {snr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (M3): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M4): {snr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with TV (M5): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    print(f"PSNR of ULPDA posterior mean image with ME-TV (M6): {snr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
     print(f"MSE of ULPDA posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M2): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M2): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
     print(f"MSE of ULPDA posterior mean image with TV (M3): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M4): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M4): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
     print(f"MSE of ULPDA posterior mean image with TV (M5): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    print(f"MSE of ULPDA posterior mean image with nonconvex TV (M6): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+    print(f"MSE of ULPDA posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
     # Plot the results
