@@ -136,8 +136,7 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1, 
-                    gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, lamda=0.01, 
+def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, 
                     snr=50., tau=0.03, N=10000, image='camera', alg='ULPDA', seed=0):
 
     # Choose the test image
@@ -176,14 +175,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     plt.gray()  # show the filtered result in grayscale
     axes[0].imshow(img)
     axes[1].imshow(y)
-    # axes[1,0].imshow(y6)
-    # axes[1,1].imshow(y7)
-    # axes[1,0].imshow(y7)
-    # axes[1,1].imshow(H5.adjoint() * H5 * g)
     plt.show(block=False)
     plt.pause(5)
-    plt.close()
-    # fig.savefig(f'./fig/fig_prox_lmc_deconv_{image}_1.pdf', dpi=500)  
+    plt.close() 
 
 
     # Gradient operator
@@ -197,14 +191,14 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
-    l2_5_me = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-
-    # L2 data term - Moreau envelope of isotropic TV
     l2_5_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_6_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_7_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+
+    # L2 data term - Moreau envelope of isotropic TV
+    l2_5_me = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L1 regularization (isotropic TV)
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -262,6 +256,48 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     iml12_7_fixed = iml12_7_fixed.reshape(img.shape)
 
 
+    cost_5_mc_fixed = []
+    err_5_mc_fixed = []
+    iml12_5_mc_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_5_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_5_mc, l1iso,
+                                                                                Gop, cost_5_mc_fixed,
+                                                                                img.ravel(),
+                                                                                err_5_mc_fixed))
+    iml12_5_mc_fixed = iml12_5_mc_fixed.reshape(img.shape)
+
+
+    cost_6_mc_fixed = []
+    err_6_mc_fixed = []
+    iml12_6_mc_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_6_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_6_mc, l1iso,
+                                                                                Gop, cost_6_mc_fixed,
+                                                                                img.ravel(),
+                                                                                err_6_mc_fixed))
+    iml12_6_mc_fixed = iml12_6_mc_fixed.reshape(img.shape)
+
+
+    cost_7_mc_fixed = []
+    err_7_mc_fixed = []
+    iml12_7_mc_fixed = \
+        pyproximal.optimization.primaldual.PrimalDual(l2_7_mc, l1iso, Gop,
+                                                    tau=tau0, mu=mu0, theta=1.,
+                                                    x0=np.zeros_like(img.ravel()),
+                                                    gfirst=False, niter=N, show=True,
+                                                    callback=lambda x: callback(x, l2_7_mc, l1iso,
+                                                                                Gop, cost_7_mc_fixed,
+                                                                                img.ravel(),
+                                                                                err_7_mc_fixed))
+    iml12_7_mc_fixed = iml12_7_mc_fixed.reshape(img.shape)
+
+
     cost_5_me_fixed = []
     err_5_me_fixed = []
     iml12_5_me_fixed = \
@@ -303,46 +339,60 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
                                                                                 err_7_me_fixed))
     iml12_7_me_fixed = iml12_7_me_fixed.reshape(img.shape)
 
+    print(f"SNR of PDHG MAP image with TV (M1): {signal_noise_ratio(img, iml12_5_fixed)}")
+    print(f"SNR of PDHG MAP image with MC-TV (M2): {signal_noise_ratio(img, iml12_5_mc_fixed)}")
+    print(f"SNR of PDHG MAP image with ME-TV (M3): {signal_noise_ratio(img, iml12_5_me_fixed)}")
+    print(f"SNR of PDHG MAP image with TV (M4): {signal_noise_ratio(img, iml12_6_fixed)}")
+    print(f"SNR of PDHG MAP image with MC-TV (M5): {signal_noise_ratio(img, iml12_6_mc_fixed)}")
+    print(f"SNR of PDHG MAP image with ME-TV (M6): {signal_noise_ratio(img, iml12_6_me_fixed)}")
+    print(f"SNR of PDHG MAP image with TV (M7): {signal_noise_ratio(img, iml12_7_fixed)}")
+    print(f"SNR of PDHG MAP image with MC-TV (M8): {signal_noise_ratio(img, iml12_7_mc_fixed)}")
+    print(f"SNR of PDHG MAP image with ME-TV (M9): {signal_noise_ratio(img, iml12_7_me_fixed)}")
 
-    print(f"SNR of PDHG reconstructed image with TV (M1): {snr(img, iml12_5_fixed)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV (M2): {snr(img, iml12_5_moreau_env_fixed)}")
-    print(f"SNR of PDHG reconstructed image with TV (M3): {snr(img, iml12_6_fixed)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV (M4): {snr(img, iml12_6_moreau_env_fixed)}")
-    print(f"SNR of PDHG reconstructed image with TV (M5): {snr(img, iml12_7_fixed)}")
-    print(f"SNR of PDHG reconstructed image with nonconvex TV (M6): {snr(img, iml12_7_moreau_env_fixed)}")
+    print(f"PSNR of PDHG MAP image with TV (M1): {psnr(img, iml12_5_fixed)}")
+    print(f"PSNR of PDHG MAP image with MC-TV (M2): {psnr(img, iml12_5_mc_fixed)}")
+    print(f"PSNR of PDHG MAP image with ME-TV (M3): {psnr(img, iml12_5_me_fixed)}")
+    print(f"PSNR of PDHG MAP image with TV (M4): {psnr(img, iml12_6_fixed)}")
+    print(f"PSNR of PDHG MAP image with MC-TV (M5): {psnr(img, iml12_6_mc_fixed)}")
+    print(f"PSNR of PDHG MAP image with ME-TV (M6): {psnr(img, iml12_6_me_fixed)}")
+    print(f"PSNR of PDHG MAP image with TV (M7): {psnr(img, iml12_7_fixed)}")
+    print(f"PSNR of PDHG MAP image with MC-TV (M8): {psnr(img, iml12_7_mc_fixed)}")
+    print(f"PSNR of PDHG MAP image with ME-TV (M9): {psnr(img, iml12_7_me_fixed)}")
 
-    print(f"PSNR of PDHG reconstructed image with TV (M1): {psnr(img, iml12_5_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M2): {psnr(img, iml12_5_moreau_env_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with TV (M3): {psnr(img, iml12_6_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M4): {psnr(img, iml12_6_moreau_env_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with TV (M5): {psnr(img, iml12_7_fixed)}")
-    print(f"PSNR of PDHG reconstructed image with nonconvex TV (M6): {psnr(img, iml12_7_moreau_env_fixed)}")
-
-    fig2, axes = plt.subplots(2, 4, figsize=(12, 8))
+    fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
     plt.gray()  # show the filtered result in grayscale
-    axes[0,0].imshow(img)
-    axes[0,0].set_title("Original image", fontsize=16)
+    # axes[0,0].imshow(img)
+    # axes[0,0].set_title("Ground truth", fontsize=16)
 
-    axes[0,1].imshow(y)
-    axes[0,1].set_title("Blurred and noisy image", fontsize=16)
+    axes[0,0].imshow(y)
+    axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-    axes[0,2].imshow(iml12_5_fixed)
-    axes[0,2].set_title(r"PDHG ($\mathcal{M}_1$)", fontsize=16)
+    axes[0,1].imshow(iml12_5_fixed)
+    axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
 
-    axes[0,3].imshow(iml12_5_moreau_env_fixed)
-    axes[0,3].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_1$)", fontsize=16)
+    axes[0,2].imshow(iml12_5_mc_fixed)
+    axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
 
-    axes[1,0].imshow(iml12_6_fixed)
-    axes[1,0].set_title(r"PDHG ($\mathcal{M}_2$)", fontsize=16)
+    axes[0,3].imshow(iml12_5_me_fixed)
+    axes[0,3].set_title(r"$\mathcal{M}_3$", fontsize=16)
 
-    axes[1,1].imshow(iml12_6_moreau_env_fixed)
-    axes[1,1].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_2$)", fontsize=16)
+    axes[0,4].imshow(iml12_6_fixed)
+    axes[0,4].set_title(r"$\mathcal{M}_4$", fontsize=16)
+
+    axes[1,0].imshow(iml12_6_mc_fixed)
+    axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
+
+    axes[1,1].imshow(iml12_6_me_fixed)
+    axes[1,1].set_title(r"$\mathcal{M}_6$", fontsize=16)
 
     axes[1,2].imshow(iml12_7_fixed)
-    axes[1,2].set_title(r"PDHG ($\mathcal{M}_3$)", fontsize=16)
+    axes[1,2].set_title(r"$\mathcal{M}_7$", fontsize=16)
 
-    axes[1,3].imshow(iml12_7_moreau_env_fixed)
-    axes[1,3].set_title(r"PDHG with Nonconvex TV ($\mathcal{M}_3$)", fontsize=16)
+    axes[1,3].imshow(iml12_7_mc_fixed)
+    axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
+
+    axes[1,4].imshow(iml12_7_me_fixed)
+    axes[1,4].set_title(r"$\mathcal{M}_9$", fontsize=16)
 
     # plt.show()
     plt.show(block=False)
@@ -615,7 +665,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
     # plt.show(block=False)
     # plt.pause(10)
     # plt.close()
-    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{K}_3.pdf', dpi=500)
+    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{K}_3.pdf', dpi=500)
 
 
     def U_tv(x, H): 
@@ -671,12 +721,10 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1,
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
         return marginal_likelihoods
 
-    print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-                    iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
+    # print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+    #                 iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+    #                 iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
 
-    # hpd_threshold = az.hdi(iml12_5_samples, hdi_prob=alpha)
-    # print("95% HPD region threshold:", hpd_threshold)
     
 
     def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
