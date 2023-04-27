@@ -170,14 +170,19 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2, 
-                    gamma_pdhg=5e-1, gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, 
-                    lamda=0.01, sigma=0.47, tau=0.03, K=10000, seed=0):
+def prox_lmc_deconv(gamma_myula=5e-2, gamma_mymala=5e-2, gamma_pdhg=5e-1, 
+                    gamma0_ulpda=5e-2, gamma1_ulpda=5e-2, lamda=0.01, 
+                    snr=50., tau=0.03, K=10000, img='camera', seed=0):
 
-    # img = data.camera()
-    img = io.imread("fig/einstein.png")
+    # Choose the test image
+    if img == 'einstein':
+        img = io.imread("fig/einstein.png")
+    elif img == 'camera':
+        img = data.camera()
+        
     ny, nx = img.shape
     rng = default_rng(seed)
+    sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
 
     ###
     h5 = np.ones((5, 5))
@@ -209,9 +214,9 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
     # axes[1,1].imshow(y7)
     # axes[1,0].imshow(y7)
     # axes[1,1].imshow(H5.adjoint() * H5 * g)
-    # plt.show(block=False)
-    # plt.pause(5)
-    # plt.close()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close()
     # fig.savefig(f'./fig/fig_prox_lmc_deconv_1.pdf', dpi=500)  
 
 
@@ -466,22 +471,44 @@ def prox_lmc_deconv(gamma_pgld=5e-2, gamma_myula=5e-2, gamma_mymala=5e-2,
                                                                                 img.ravel(),
                                                                                 err_7_samples))
 
+    signal_noise_ratio = lambda image_true, image_test: 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
+    print(f"SNR of PDHG reconstructed image with TV regularization (H5): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H5): {signal_noise_ratio(img.ravel(), iml12_5_moreau_env_samples.mean(axis=0))}")
+    print(f"SNR of PDHG reconstructed image with TV regularization (H6): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H6): {signal_noise_ratio(img.ravel(), iml12_6_moreau_env_samples.mean(axis=0))}")
+    print(f"SNR of PDHG reconstructed image with TV regularization (H7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"SNR of PDHG reconstructed image with nonconvex TV regularization (H7): {signal_noise_ratio(img.ravel(), iml12_7_moreau_env_samples.mean(axis=0))}")
+
+    print(img.ravel().dtype, iml12_5_samples.mean(axis=0).dtype)
+    print(f"PSNR of PDHG reconstructed image with TV regularization (H5): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
+    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H5): {snr(img.ravel(), iml12_5_moreau_env_samples.mean(axis=0))}")
+    print(f"PSNR of PDHG reconstructed image with TV regularization (H6): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
+    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H6): {snr(img.ravel(), iml12_6_moreau_env_samples.mean(axis=0))}")
+    print(f"PSNR of PDHG reconstructed image with TV regularization (H7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
+    # print(f"PSNR of PDHG reconstructed image with nonconvex TV regularization (H7): {snr(img.ravel(), iml12_7_moreau_env_samples.mean(axis=0))}")
+
     fig3, axes = plt.subplots(2, 2, figsize=(12, 8))
     plt.gray()  # show the filtered result in grayscale    
     axes[0,0].imshow(y)
     axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-    axes[0,1].imshow(iml12_5_samples[-1].reshape(img.shape))
-    axes[0,1].set_title(r"Last image in samples ($\mathcal{M}_1$)", fontsize=16)
+    # axes[0,1].imshow(iml12_5_samples[-1].reshape(img.shape))
+    # axes[0,1].set_title(r"Last image in samples ($\mathcal{M}_1$)", fontsize=16)
 
-    # axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    # axes[0,1].set_title("Mean of samples", fontsize=16)
+    axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
+    axes[0,1].set_title(r"Posterior mean of samples ($\mathcal{M}_1$)", fontsize=16)
 
-    axes[1,0].imshow(iml12_6_samples[-1].reshape(img.shape))
-    axes[1,0].set_title(r"Last image in samples ($\mathcal{M}_2$)", fontsize=16)
+    # axes[1,0].imshow(iml12_6_samples[-1].reshape(img.shape))
+    # axes[1,0].set_title(r"Last image in samples ($\mathcal{M}_2$)", fontsize=16)
 
-    axes[1,1].imshow(iml12_7_samples[-1].reshape(img.shape))
-    axes[1,1].set_title(r"Last image in samples ($\mathcal{M}_3$)", fontsize=16)
+    axes[1,0].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
+    axes[1,0].set_title(r"Posterior mean of samples ($\mathcal{M}_2$)", fontsize=16)
+
+    # axes[1,1].imshow(iml12_7_samples[-1].reshape(img.shape))
+    # axes[1,1].set_title(r"Last image in samples ($\mathcal{M}_3$)", fontsize=16)
+
+    axes[1,1].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
+    axes[1,1].set_title(r"Posterior mean of samples ($\mathcal{M}_3$)", fontsize=16)
 
     # axes[1,0].imshow(iml12_5_moreau_env_samples[-1])
     # axes[1,0].set_title("Last image in samples (Nonconvex TV)", fontsize=16)
