@@ -719,18 +719,18 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
         # print(truncated_weights.shape)
         marginal_likelihoods = 1 / np.mean(truncated_weights, axis=0)
         # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
-        return marginal_likelihoods
+        marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
+        return marginal_likelihoods, marginal_posteriors
 
     # print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
     #                 iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
     #                 iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
 
-    
 
     def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                     iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                     iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, alpha=0.8):
-        marginal_likelihoods = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+        marginal_likelihoods, _ = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                         iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                                         iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
                                         alpha)
