@@ -136,8 +136,9 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
-                    tau=0.03, N=10000, image='camera', alg='ULPDA', seed=0):
+def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.5, tau=0.03, 
+                    N=10000, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA', 
+                    computeMAP=False, seed=0):
 
     # Choose the test image
     if image == 'einstein':
@@ -147,7 +148,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
         
     ny, nx = img.shape
     rng = default_rng(seed)
-    # sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
+    snr = 50.0
+    sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
 
     ###
     h5 = np.ones((5, 5))
@@ -191,29 +193,29 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
+    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
+    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
+    l2_6_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
+    l2_7_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
-    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
-    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
-    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
+    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
+    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
+    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
 
 
-    # L1 regularization (isotropic TV) for ULPDA
+    # L1 regularization (isotropic TV) for ULPDA or PDHG
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
 
-    # L1 regularization (anisotropic TV) for ULPDA
+    # L1 regularization (anisotropic TV) for ULPDA or PDHG
     l1 = pyproximal.L1(sigma=tau)
 
-    # Isotropic TV for MYULA
-    tv = pyproximal.TV(dims=img.shape, sigma=tau)
+    # Isotropic TV for MYULA or Proximal Gradient
+    tv = pyproximal.TV(dims=img.shape, sigma=tau, niter=niter_tv)
 
     # Identity operator
     Iop = pylops.Identity(ny * nx)
@@ -226,195 +228,192 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
     tau0 = 0.95 / np.sqrt(L)
     mu0 = 0.95 / np.sqrt(L)
 
-
-    '''
-    ## Compute MAP estimators using PDHG
-    cost_5_fixed = []
-    err_5_fixed = []
-    iml12_5_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_5, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_5, l1iso,
-                                                                                Gop, cost_5_fixed,
-                                                                                img.ravel(),
-                                                                                err_5_fixed))
-    iml12_5_fixed = iml12_5_fixed.reshape(img.shape)
-
-
-    cost_6_fixed = []
-    err_6_fixed = []
-    iml12_6_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_6, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_6, l1iso,
-                                                                                Gop, cost_6_fixed,
-                                                                                img.ravel(),
-                                                                                err_6_fixed))
-    iml12_6_fixed = iml12_6_fixed.reshape(img.shape)
+    
+    ## Compute MAP estimators using Adaptive PDHG or Accelerated Proximal Gradient (FISTA)
+    if computeMAP:    
+        cost_5_map = []
+        err_5_map = []
+        iml12_5_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5, l1iso, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True,
+                                                        callback=lambda x: callback(x, l2_5, l1iso,
+                                                                                    Gop, cost_5_map,
+                                                                                    img.ravel(),
+                                                                                    err_5_map))
+        iml12_5_map = iml12_5_map.reshape(img.shape)
 
 
-    cost_7_fixed = []
-    err_7_fixed = []
-    iml12_7_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_7, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_7, l1iso,
-                                                                                Gop, cost_7_fixed,
-                                                                                img.ravel(),
-                                                                                err_7_fixed))
-    iml12_7_fixed = iml12_7_fixed.reshape(img.shape)
+        cost_6_map = []
+        err_6_map = []
+        iml12_6_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6, l1iso, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True,
+                                                        callback=lambda x: callback(x, l2_6, l1iso,
+                                                                                    Gop, cost_6_map,
+                                                                                    img.ravel(),
+                                                                                    err_6_map))
+        iml12_6_map = iml12_6_map.reshape(img.shape)
 
 
-    cost_5_mc_fixed = []
-    err_5_mc_fixed = []
-    iml12_5_mc_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_5_mc, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_5_mc, l1iso,
-                                                                                Gop, cost_5_mc_fixed,
-                                                                                img.ravel(),
-                                                                                err_5_mc_fixed))
-    iml12_5_mc_fixed = iml12_5_mc_fixed.reshape(img.shape)
+        cost_7_map = []
+        err_7_map = []
+        iml12_7_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7, l1iso, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True,
+                                                        callback=lambda x: callback(x, l2_7, l1iso,
+                                                                                    Gop, cost_7_map,
+                                                                                    img.ravel(),
+                                                                                    err_7_map))
+        iml12_7_map = iml12_7_map.reshape(img.shape)
 
 
-    cost_6_mc_fixed = []
-    err_6_mc_fixed = []
-    iml12_6_mc_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_6_mc, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_6_mc, l1iso,
-                                                                                Gop, cost_6_mc_fixed,
-                                                                                img.ravel(),
-                                                                                err_6_mc_fixed))
-    iml12_6_mc_fixed = iml12_6_mc_fixed.reshape(img.shape)
+        cost_5_mc_map = []
+        err_5_mc_map = []
+        iml12_5_mc_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True,
+                                                        callback=lambda x: callback(x, l2_5_mc, l1,
+                                                                                    Gop, cost_5_mc_map,
+                                                                                    img.ravel(),
+                                                                                    err_5_mc_map))
+        iml12_5_mc_map = iml12_5_mc_map.reshape(img.shape)
 
 
-    cost_7_mc_fixed = []
-    err_7_mc_fixed = []
-    iml12_7_mc_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_7_mc, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_7_mc, l1iso,
-                                                                                Gop, cost_7_mc_fixed,
-                                                                                img.ravel(),
-                                                                                err_7_mc_fixed))
-    iml12_7_mc_fixed = iml12_7_mc_fixed.reshape(img.shape)
+        cost_6_mc_map = []
+        err_6_mc_map = []
+        iml12_6_mc_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True,
+                                                        callback=lambda x: callback(x, l2_6_mc, l1,
+                                                                                    Gop, cost_6_mc_map,
+                                                                                    img.ravel(),
+                                                                                    err_6_mc_map))
+        iml12_6_mc_map = iml12_6_mc_map.reshape(img.shape)
 
 
-    cost_5_me_fixed = []
-    err_5_me_fixed = []
-    iml12_5_me_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_5_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_5_me, l1iso,
-                                                                                Gop, cost_5_me_fixed,
-                                                                                img.ravel(),
-                                                                                err_5_me_fixed))
-    iml12_5_me_fixed = iml12_5_me_fixed.reshape(img.shape)
+        cost_7_mc_map = []
+        err_7_mc_map = []
+        iml12_7_mc_map = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop,
+                                                        tau=tau0, mu=mu0,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=N, show=True,
+                                                        callback=lambda x: callback(x, l2_7_mc, l1,
+                                                                                    Gop, cost_7_mc_map,
+                                                                                    img.ravel(),
+                                                                                    err_7_mc_map))
+        iml12_7_mc_map = iml12_7_mc_map.reshape(img.shape)
 
 
-    cost_6_me_fixed = []
-    err_6_me_fixed = []
-    iml12_6_me_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_6_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_6_me, l1iso,
-                                                                                Gop, cost_6_me_fixed,
-                                                                                img.ravel(),
-                                                                                err_6_me_fixed))
-    iml12_6_me_fixed = iml12_6_me_fixed.reshape(img.shape)
+        cost_5_me_map = []
+        err_5_me_map = []
+        iml12_5_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True, acceleration='fista',
+                                                        callback=lambda x: callback(x, l2_5_me, tv,
+                                                                                    Iop, cost_5_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_5_me_map))
+        iml12_5_me_map = iml12_5_me_map.reshape(img.shape)
 
 
-    cost_7_me_fixed = []
-    err_7_me_fixed = []
-    iml12_7_me_fixed = \
-        pyproximal.optimization.primaldual.PrimalDual(l2_7_me, l1iso, Gop,
-                                                    tau=tau0, mu=mu0, theta=1.,
-                                                    x0=np.zeros_like(img.ravel()),
-                                                    gfirst=False, niter=N, show=True,
-                                                    callback=lambda x: callback(x, l2_7_me, l1iso,
-                                                                                Gop, cost_7_me_fixed,
-                                                                                img.ravel(),
-                                                                                err_7_me_fixed))
-    iml12_7_me_fixed = iml12_7_me_fixed.reshape(img.shape)
+        cost_6_me_map = []
+        err_6_me_map = []
+        iml12_6_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True, acceleration='fista',
+                                                        callback=lambda x: callback(x, l2_6_me, tv,
+                                                                                    Iop, cost_6_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_6_me_map))
+        iml12_6_me_map = iml12_6_me_map.reshape(img.shape)
 
-    print(f"SNR of PDHG MAP image with TV (M1): {signal_noise_ratio(img, iml12_5_fixed)}")
-    print(f"SNR of PDHG MAP image with MC-TV (M2): {signal_noise_ratio(img, iml12_5_mc_fixed)}")
-    print(f"SNR of PDHG MAP image with ME-TV (M3): {signal_noise_ratio(img, iml12_5_me_fixed)}")
-    print(f"SNR of PDHG MAP image with TV (M4): {signal_noise_ratio(img, iml12_6_fixed)}")
-    print(f"SNR of PDHG MAP image with MC-TV (M5): {signal_noise_ratio(img, iml12_6_mc_fixed)}")
-    print(f"SNR of PDHG MAP image with ME-TV (M6): {signal_noise_ratio(img, iml12_6_me_fixed)}")
-    print(f"SNR of PDHG MAP image with TV (M7): {signal_noise_ratio(img, iml12_7_fixed)}")
-    print(f"SNR of PDHG MAP image with MC-TV (M8): {signal_noise_ratio(img, iml12_7_mc_fixed)}")
-    print(f"SNR of PDHG MAP image with ME-TV (M9): {signal_noise_ratio(img, iml12_7_me_fixed)}")
 
-    print(f"PSNR of PDHG MAP image with TV (M1): {psnr(img, iml12_5_fixed)}")
-    print(f"PSNR of PDHG MAP image with MC-TV (M2): {psnr(img, iml12_5_mc_fixed)}")
-    print(f"PSNR of PDHG MAP image with ME-TV (M3): {psnr(img, iml12_5_me_fixed)}")
-    print(f"PSNR of PDHG MAP image with TV (M4): {psnr(img, iml12_6_fixed)}")
-    print(f"PSNR of PDHG MAP image with MC-TV (M5): {psnr(img, iml12_6_mc_fixed)}")
-    print(f"PSNR of PDHG MAP image with ME-TV (M6): {psnr(img, iml12_6_me_fixed)}")
-    print(f"PSNR of PDHG MAP image with TV (M7): {psnr(img, iml12_7_fixed)}")
-    print(f"PSNR of PDHG MAP image with MC-TV (M8): {psnr(img, iml12_7_mc_fixed)}")
-    print(f"PSNR of PDHG MAP image with ME-TV (M9): {psnr(img, iml12_7_me_fixed)}")
+        cost_7_me_map = []
+        err_7_me_map = []
+        iml12_7_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv,
+                                                        x0=np.zeros_like(img.ravel()),
+                                                        niter=niter_map, show=True, acceleration='fista',
+                                                        callback=lambda x: callback(x, l2_7_me, tv,
+                                                                                    Iop, cost_7_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_7_me_map))
+        iml12_7_me_map = iml12_7_me_map.reshape(img.shape)
 
-    fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
-    plt.gray()  # show the filtered result in grayscale
-    axes[0,0].imshow(img)
-    axes[0,0].set_title("Ground truth", fontsize=16)
+        print(f"SNR of PDHG MAP image with TV (M1): {signal_noise_ratio(img, iml12_5_map)}")
+        print(f"SNR of PDHG MAP image with MC-TV (M2): {signal_noise_ratio(img, iml12_5_mc_map)}")
+        print(f"SNR of PDHG MAP image with ME-TV (M3): {signal_noise_ratio(img, iml12_5_me_map)}")
+        print(f"SNR of PDHG MAP image with TV (M4): {signal_noise_ratio(img, iml12_6_map)}")
+        print(f"SNR of PDHG MAP image with MC-TV (M5): {signal_noise_ratio(img, iml12_6_mc_map)}")
+        print(f"SNR of PDHG MAP image with ME-TV (M6): {signal_noise_ratio(img, iml12_6_me_map)}")
+        print(f"SNR of PDHG MAP image with TV (M7): {signal_noise_ratio(img, iml12_7_map)}")
+        print(f"SNR of PDHG MAP image with MC-TV (M8): {signal_noise_ratio(img, iml12_7_mc_map)}")
+        print(f"SNR of PDHG MAP image with ME-TV (M9): {signal_noise_ratio(img, iml12_7_me_map)}")
 
-    # axes[0,0].imshow(y)
-    # axes[0,0].set_title("Blurred and noisy image", fontsize=16)
+        print(f"PSNR of PDHG MAP image with TV (M1): {psnr(img, iml12_5_map)}")
+        print(f"PSNR of PDHG MAP image with MC-TV (M2): {psnr(img, iml12_5_mc_map)}")
+        print(f"PSNR of PDHG MAP image with ME-TV (M3): {psnr(img, iml12_5_me_map)}")
+        print(f"PSNR of PDHG MAP image with TV (M4): {psnr(img, iml12_6_map)}")
+        print(f"PSNR of PDHG MAP image with MC-TV (M5): {psnr(img, iml12_6_mc_map)}")
+        print(f"PSNR of PDHG MAP image with ME-TV (M6): {psnr(img, iml12_6_me_map)}")
+        print(f"PSNR of PDHG MAP image with TV (M7): {psnr(img, iml12_7_map)}")
+        print(f"PSNR of PDHG MAP image with MC-TV (M8): {psnr(img, iml12_7_mc_map)}")
+        print(f"PSNR of PDHG MAP image with ME-TV (M9): {psnr(img, iml12_7_me_map)}")
 
-    axes[0,1].imshow(iml12_5_fixed)
-    axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
+        fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
+        plt.gray()  # show the filtered result in grayscale
+        axes[0,0].imshow(img)
+        axes[0,0].set_title("Ground truth", fontsize=16)
 
-    axes[0,2].imshow(iml12_5_mc_fixed)
-    axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
+        # axes[0,0].imshow(y)
+        # axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-    axes[0,3].imshow(iml12_5_me_fixed)
-    axes[0,3].set_title(r"$\mathcal{M}_3$", fontsize=16)
+        axes[0,1].imshow(iml12_5_map)        
+        axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
 
-    axes[0,4].imshow(iml12_6_fixed)
-    axes[0,4].set_title(r"$\mathcal{M}_4$", fontsize=16)
+        axes[0,2].imshow(iml12_5_mc_map)
+        axes[0,2].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
 
-    axes[1,0].imshow(iml12_6_mc_fixed)
-    axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
+        axes[0,3].imshow(iml12_5_me_map)
+        axes[0,3].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
 
-    axes[1,1].imshow(iml12_6_me_fixed)
-    axes[1,1].set_title(r"$\mathcal{M}_6$", fontsize=16)
+        axes[0,4].imshow(iml12_6_map)
+        axes[0,4].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
 
-    axes[1,2].imshow(iml12_7_fixed)
-    axes[1,2].set_title(r"$\mathcal{M}_7$", fontsize=16)
+        axes[1,0].imshow(iml12_6_mc_map)
+        axes[1,0].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
 
-    axes[1,3].imshow(iml12_7_mc_fixed)
-    axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
+        axes[1,1].imshow(iml12_6_me_map)
+        axes[1,1].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
 
-    axes[1,4].imshow(iml12_7_me_fixed)
-    axes[1,4].set_title(r"$\mathcal{M}_9$", fontsize=16)
+        axes[1,2].imshow(iml12_7_map)
+        axes[1,2].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
 
-    # plt.show()
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
-    fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{K}_2.pdf', dpi=500) 
-    '''
+        axes[1,3].imshow(iml12_7_mc_map)
+        axes[1,3].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+
+        axes[1,4].imshow(iml12_7_me_map)
+        axes[1,4].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(10)
+        plt.close()
+        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{N}_map.pdf', dpi=500) 
+    
 
 
     # Generate samples using ULPDA or MYULA
@@ -486,7 +485,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True, seed=seed,
-                                                    callback=lambda x: callback(x, l2_5_mc, l1iso,
+                                                    callback=lambda x: callback(x, l2_5_mc, l1,
                                                                                 Gop, cost_5_mc_samples,
                                                                                 img.ravel(),
                                                                                 err_5_mc_samples)) if alg == 'ULPDA' else \
@@ -505,7 +504,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
                                             tau=tau0, mu=mu0, theta=1.,
                                             x0=np.zeros_like(img.ravel()),
                                             gfirst=False, niter=N, show=True, seed=seed,
-                                            callback=lambda x: callback(x, l2_6_mc, l1iso,
+                                            callback=lambda x: callback(x, l2_6_mc, l1,
                                                                         Gop, cost_6_mc_samples,
                                                                         img.ravel(),
                                                                         err_6_mc_samples)) if alg == 'ULPDA' else \
@@ -524,7 +523,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
                                             tau=tau0, mu=mu0, theta=1.,
                                             x0=np.zeros_like(img.ravel()),
                                             gfirst=False, niter=N, show=True, seed=seed,
-                                            callback=lambda x: callback(x, l2_7_mc, l1iso,
+                                            callback=lambda x: callback(x, l2_7_mc, l1,
                                                                         Gop, cost_7_mc_samples,
                                                                         img.ravel(),
                                                                         err_7_mc_samples)) if alg == 'ULPDA' else \
@@ -641,38 +640,38 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
     axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
     axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
-    axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
+    axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
 
     axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
+    axes[0,2].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
 
     axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
-    axes[0,3].set_title(r"$\mathcal{M}_3$", fontsize=16)
+    axes[0,3].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
 
     axes[0,4].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
-    axes[0,4].set_title(r"$\mathcal{M}_4$", fontsize=16)
+    axes[0,4].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
 
     axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
+    axes[1,0].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
 
     axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,1].set_title(r"$\mathcal{M}_6$", fontsize=16)
+    axes[1,1].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
 
     axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
-    axes[1,2].set_title(r"$\mathcal{M}_7$", fontsize=16)
+    axes[1,2].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
 
     axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
+    axes[1,3].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
 
     axes[1,4].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,4].set_title(r"$\mathcal{M}_9$", fontsize=16)
+    axes[1,4].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
 
 
     plt.show()
     # plt.show(block=False)
     # plt.pause(10)
     # plt.close()
-    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{K}_3.pdf', dpi=500)
+    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_3.pdf', dpi=500)
 
     def U(x, f, g, Op=None):
         return f(x) + g(Op.matvec(x)) if Op is not None else f(x) + g(x)
@@ -715,9 +714,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
         marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
         return marginal_likelihoods, marginal_posteriors
 
-    # print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-    #                 iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-    #                 iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
+    print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                    iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
 
 
     def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 

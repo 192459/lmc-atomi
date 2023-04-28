@@ -421,7 +421,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
               (type(proxf), type(proxg), type(A),
                None if z is None else 'vector', str(tau[0]) if fixedtau else 'Variable',
                str(mu[0]) if fixedmu else 'Variable', theta, niter))
-        head = '   Itn       x[0]          f           g o A          z^x       U = f + g o A + z^x'
+        head = '   Itn       x[0]          f         g o A        z^x      U = f + g o A + z^x'
         print(head)
 
     x = x0.copy()
