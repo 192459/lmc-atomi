@@ -148,8 +148,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         
     ny, nx = img.shape
     rng = default_rng(seed)
-    snr = 50.0
-    sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
+    # snr = 50.0
+    # sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
 
     ###
     h5 = np.ones((5, 5))
@@ -234,8 +234,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_5_map = []
         err_5_map = []
         iml12_5_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5, l1iso, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True,
                                                         callback=lambda x: callback(x, l2_5, l1iso,
@@ -248,8 +247,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_6_map = []
         err_6_map = []
         iml12_6_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6, l1iso, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True,
                                                         callback=lambda x: callback(x, l2_6, l1iso,
@@ -262,8 +260,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_7_map = []
         err_7_map = []
         iml12_7_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7, l1iso, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True,
                                                         callback=lambda x: callback(x, l2_7, l1iso,
@@ -276,8 +273,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_5_mc_map = []
         err_5_mc_map = []
         iml12_5_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True,
                                                         callback=lambda x: callback(x, l2_5_mc, l1,
@@ -290,8 +286,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_6_mc_map = []
         err_6_mc_map = []
         iml12_6_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True,
                                                         callback=lambda x: callback(x, l2_6_mc, l1,
@@ -304,8 +299,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_7_mc_map = []
         err_7_mc_map = []
         iml12_7_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop,
-                                                        tau=tau0, mu=mu0,
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=np.zeros_like(img.ravel()),
                                                         niter=N, show=True,
                                                         callback=lambda x: callback(x, l2_7_mc, l1,
@@ -318,8 +312,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_5_me_map = []
         err_5_me_map = []
         iml12_5_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv,
-                                                        x0=np.zeros_like(img.ravel()),
+            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True, acceleration='fista',
                                                         callback=lambda x: callback(x, l2_5_me, tv,
                                                                                     Iop, cost_5_me_map,
@@ -331,8 +324,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_6_me_map = []
         err_6_me_map = []
         iml12_6_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv,
-                                                        x0=np.zeros_like(img.ravel()),
+            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True, acceleration='fista',
                                                         callback=lambda x: callback(x, l2_6_me, tv,
                                                                                     Iop, cost_6_me_map,
@@ -344,8 +336,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_7_me_map = []
         err_7_me_map = []
         iml12_7_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv,
-                                                        x0=np.zeros_like(img.ravel()),
+            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=np.zeros_like(img.ravel()),
                                                         niter=niter_map, show=True, acceleration='fista',
                                                         callback=lambda x: callback(x, l2_7_me, tv,
                                                                                     Iop, cost_7_me_map,
