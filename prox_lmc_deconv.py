@@ -148,7 +148,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         
     ny, nx = img.shape
     rng = default_rng(seed)
-    # snr = 50.0
+    # snr = 20.
     # sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
 
     ###
