@@ -136,8 +136,8 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, 
-                    snr=50., tau=0.03, N=10000, image='camera', alg='ULPDA', seed=0):
+def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01, sigma=0.5,
+                    tau=0.03, N=10000, image='camera', alg='ULPDA', seed=0):
 
     # Choose the test image
     if image == 'einstein':
@@ -147,7 +147,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
         
     ny, nx = img.shape
     rng = default_rng(seed)
-    sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
+    # sigma = np.linalg.norm(img.ravel(), np.inf) * 10**(-snr/20)
 
     ###
     h5 = np.ones((5, 5))
@@ -190,20 +190,29 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     l2_6 = pyproximal.L2(Op=H6, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
-    # L2 data term - Moreau envelope of isotropic TV
+    # L2 data term - Moreau envelope of anisotropic TV
     l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
     l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
-    # L2 data term - Moreau envelope of isotropic TV
-    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    # L2 data term - Moreau envelope of anisotropic TV
+    l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
-    # L1 regularization (isotropic TV) for primal-dual
+    # L2 data term - Moreau envelope of isotropic TV
+    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
+    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
+    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, isotropic=True, niter=50, warm=True)
+
+
+    # L1 regularization (isotropic TV) for ULPDA
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
 
-    # Isotropic TV
+    # L1 regularization (anisotropic TV) for ULPDA
+    l1 = pyproximal.L1(sigma=tau)
+
+    # Isotropic TV for MYULA
     tv = pyproximal.TV(dims=img.shape, sigma=tau)
 
     # Identity operator
@@ -469,11 +478,11 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
                                                                         err_7_samples))
 
 
-    '''
+    
     cost_5_mc_samples = []
     err_5_mc_samples = []
     iml12_5_mc_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_5_mc, l1iso, Gop,
+        prox.UnadjustedLangevinPrimalDual(l2_5_mc, l1, Gop,
                                                     tau=tau0, mu=mu0, theta=1.,
                                                     x0=np.zeros_like(img.ravel()),
                                                     gfirst=False, niter=N, show=True, seed=seed,
@@ -492,7 +501,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     cost_6_mc_samples = []
     err_6_mc_samples = []
     iml12_6_mc_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_6_mc, l1iso, Gop,
+        prox.UnadjustedLangevinPrimalDual(l2_6_mc, l1, Gop,
                                             tau=tau0, mu=mu0, theta=1.,
                                             x0=np.zeros_like(img.ravel()),
                                             gfirst=False, niter=N, show=True, seed=seed,
@@ -511,7 +520,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     cost_7_mc_samples = []
     err_7_mc_samples = []
     iml12_7_mc_samples = \
-        prox.UnadjustedLangevinPrimalDual(l2_7_mc, l1iso, Gop,
+        prox.UnadjustedLangevinPrimalDual(l2_7_mc, l1, Gop,
                                             tau=tau0, mu=mu0, theta=1.,
                                             x0=np.zeros_like(img.ravel()),
                                             gfirst=False, niter=N, show=True, seed=seed,
@@ -526,7 +535,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
                                                                         Iop, cost_7_mc_samples,
                                                                         img.ravel(),
                                                                         err_7_mc_samples))
-    '''
+    
 
 
     cost_5_me_samples = []
@@ -590,35 +599,35 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
 
     # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
     print(f"SNR of {alg} posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"SNR of {alg} posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
     print(f"SNR of {alg} posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
     print(f"SNR of {alg} posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"SNR of {alg} posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
     print(f"SNR of {alg} posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
     print(f"SNR of {alg} posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"SNR of {alg} posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"SNR of {alg} posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
     print(f"SNR of {alg} posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
     print(f"PSNR of {alg} posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"PSNR of {alg} posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
     print(f"PSNR of {alg} posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
     print(f"PSNR of {alg} posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"PSNR of {alg} posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
     print(f"PSNR of {alg} posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
     print(f"PSNR of {alg} posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"PSNR of {alg} posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"PSNR of {alg} posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
     print(f"PSNR of {alg} posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
     print(f"MSE of {alg} posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
-    # print(f"MSE of {alg} posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
     print(f"MSE of {alg} posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
     print(f"MSE of {alg} posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
-    # print(f"MSE of {alg} posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
     print(f"MSE of {alg} posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
     print(f"MSE of {alg} posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
-    # print(f"MSE of {alg} posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
+    print(f"MSE of {alg} posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
     print(f"MSE of {alg} posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
 
 
@@ -634,8 +643,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
     axes[0,1].set_title(r"$\mathcal{M}_1$", fontsize=16)
 
-    # axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
+    axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[0,2].set_title(r"$\mathcal{M}_2$", fontsize=16)
 
     axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
     axes[0,3].set_title(r"$\mathcal{M}_3$", fontsize=16)
@@ -643,8 +652,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     axes[0,4].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
     axes[0,4].set_title(r"$\mathcal{M}_4$", fontsize=16)
 
-    # axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
+    axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[1,0].set_title(r"$\mathcal{M}_5$", fontsize=16)
 
     axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
     axes[1,1].set_title(r"$\mathcal{M}_6$", fontsize=16)
@@ -652,8 +661,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
     axes[1,2].set_title(r"$\mathcal{M}_7$", fontsize=16)
 
-    # axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
-    # axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
+    axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[1,3].set_title(r"$\mathcal{M}_8$", fontsize=16)
 
     axes[1,4].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
     axes[1,4].set_title(r"$\mathcal{M}_9$", fontsize=16)
@@ -665,36 +674,23 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     # plt.close()
     # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{K}_3.pdf', dpi=500)
 
-
-    def U_tv(x, H): 
-        neg_log_likelihood = pyproximal.L2(Op=H, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)(x)
-        neg_log_prior = l1iso(Gop.matvec(x))
-        return neg_log_likelihood + neg_log_prior
-    
-    def U_mc(x, H): 
-        neg_log_likelihood = prox.L2_minimax_concave(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x)
-        neg_log_prior = l1iso(Gop.matvec(x))
-        return neg_log_likelihood + neg_log_prior
-
-    def U_me(x, H): 
-        neg_log_likelihood = prox.L2_moreau_env(dims=(ny, nx), Op=H, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)(x)
-        neg_log_prior = l1iso(Gop.matvec(x))
-        return neg_log_likelihood + neg_log_prior
+    def U(x, f, g, Op=None):
+        return f(x) + g(Op.matvec(x)) if Op is not None else f(x) + g(x)
 
 
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                         iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                                         iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
                                         alpha=0.8):
-        neg_log_posteriors_5 = np.array([U_tv(sample, H5) for sample in iml12_5_samples])
-        neg_log_posteriors_6 = np.array([U_tv(sample, H6) for sample in iml12_6_samples])
-        neg_log_posteriors_7 = np.array([U_tv(sample, H7) for sample in iml12_7_samples])
-        neg_log_posteriors_5_mc = np.array([U_mc(sample, H5) for sample in iml12_5_mc_samples])
-        neg_log_posteriors_6_mc = np.array([U_mc(sample, H6) for sample in iml12_6_mc_samples])
-        neg_log_posteriors_7_mc = np.array([U_mc(sample, H7) for sample in iml12_7_mc_samples])
-        neg_log_posteriors_5_me = np.array([U_me(sample, H5) for sample in iml12_5_me_samples])
-        neg_log_posteriors_6_me = np.array([U_me(sample, H6) for sample in iml12_6_me_samples])
-        neg_log_posteriors_7_me = np.array([U_me(sample, H7) for sample in iml12_7_me_samples])
+        neg_log_posteriors_5 = np.array([U(sample, l2_5, l1iso, Gop) for sample in iml12_5_samples])
+        neg_log_posteriors_6 = np.array([U(sample, l2_6, l1iso, Gop) for sample in iml12_6_samples])
+        neg_log_posteriors_7 = np.array([U(sample, l2_7, l1iso, Gop) for sample in iml12_7_samples])
+        neg_log_posteriors_5_mc = np.array([U(sample, l2_5_mc, l1, Gop) for sample in iml12_5_mc_samples])
+        neg_log_posteriors_6_mc = np.array([U(sample, l2_6_mc, l1, Gop) for sample in iml12_6_mc_samples])
+        neg_log_posteriors_7_mc = np.array([U(sample, l2_7_mc, l1, Gop) for sample in iml12_7_mc_samples])
+        neg_log_posteriors_5_me = np.array([U(sample, l2_5_me, l1iso, Gop) for sample in iml12_5_me_samples])
+        neg_log_posteriors_6_me = np.array([U(sample, l2_6_me, l1iso, Gop) for sample in iml12_6_me_samples])
+        neg_log_posteriors_7_me = np.array([U(sample, l2_7_me, l1iso, Gop) for sample in iml12_7_me_samples])
         neg_log_posteriors = np.concatenate((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
                                                 neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
                                                 neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me), axis=1)

@@ -68,6 +68,9 @@ class L2_ncvx_tv(ProxOperator):
         Smoothing parameter of Moreau envelope
     qgrad : :obj:`bool`, optional
         Add q term to gradient (``True``) or not (``False``)
+    isotropic : :obj:`bool`, optional
+        Use isotropic TV (``True``) or anisotropic TV (``False``)
+        (Only for ME-TV; only anisotropic TV is available for MC-TV)
     niter : :obj:`int` or :obj:`func`, optional
         Number of iterations of iterative scheme used to compute the proximal.
         This can be a constant number or a function that is called passing a
@@ -95,7 +98,7 @@ class L2_ncvx_tv(ProxOperator):
 
     Notes
     -----
-    The L2 - Moreau envelope proximal operator is defined as:
+    The L2 - Moreau envelope of TV proximal operator is defined as:
 
     .. math::
         prox_{\tau f_\alpha}(\mathbf{x}) = prox_{\tau \phi_\alpha} \left(
@@ -140,7 +143,7 @@ class L2_ncvx_tv(ProxOperator):
 
     """
     def __init__(self, dims, Op=None, Op2=None, b=None, q=None, sigma=1., alpha=1.,
-                 lamda=1., gamma=.5, qgrad=True, niter=10, rtol=1e-4, 
+                 lamda=1., gamma=.5, qgrad=True, isotropic=False, niter=10, rtol=1e-4, 
                  x0=None, warm=True, densesolver=None, kwargs_solver=None):
         super().__init__(Op, True)
         self.dims = dims
@@ -153,6 +156,7 @@ class L2_ncvx_tv(ProxOperator):
         self.lamda = lamda
         self.gamma = gamma
         self.qgrad = qgrad
+        self.isotropic = isotropic
         self.niter = niter
         self.rtol = rtol
         self.x0 = x0
@@ -174,16 +178,20 @@ class L2_ncvx_tv(ProxOperator):
                 self.ATA = np.conj(self.Op.A.T) @ self.Op.A
         
         if self.Op2 is not None:
-
-
-        # self.L2 = pyproximal.L2(Op, b, sigma, alpha, qgrad, niter, x0, 
-        #                         warm, densesolver, kwargs_solver)
-        self.isotropic_tv = pyproximal.TV(dims, 1., niter, rtol)
+            # MC-TV
+            self.g_gamma = pyproximal.L1(1.) 
+        else:
+            # ME-TV
+            self.g_gamma = pyproximal.TV(dims, 1., niter, rtol) if self.isotropic else \
+                pyproximal.TV((np.prod(dims),), 1., niter, rtol)
 
 
     def __call__(self, x):
-        moreau_prox = self.isotropic_tv.prox(x, self.gamma)
-        moreau_env = self.isotropic_tv.__call__(moreau_prox)
+        Op2x = self.Op2.matvec(x) if self.Op2 is not None else x        
+        moreau_prox = self.g_gamma.prox(Op2x, self.gamma)
+        moreau_env = self.g_gamma(moreau_prox) \
+                + np.linalg.norm(Op2x - moreau_prox)**2 / (2*self.gamma)
+        
         if self.Op is not None and self.b is not None:
             f = (self.sigma / 2.) * (np.linalg.norm(self.Op * x - self.b) ** 2)
         elif self.b is not None:
@@ -194,6 +202,7 @@ class L2_ncvx_tv(ProxOperator):
             f += self.alpha * np.dot(self.q, x)
         return f - self.lamda * moreau_env
     
+
     def _increment_count(func):
         """Increment counter
         """
@@ -212,7 +221,13 @@ class L2_ncvx_tv(ProxOperator):
             niter = self.niter(self.count)
 
         # solve proximal optimization
-        x += tau * self.lamda / self.gamma * (x - self.isotropic_tv.prox(x, self.gamma))
+        if self.Op2 is not None:
+            # MC-TV
+            x += tau * self.lamda / self.gamma * \
+                self.Op2.rmatvec(self.Op2.matvec(x) - self.g_gamma.prox(self.Op2.matvec(x), self.gamma))
+        else:
+            # ME-TV
+            x += tau * self.lamda / self.gamma * (x - self.g_gamma.prox(x, self.gamma))
         if self.Op is not None and self.b is not None:
             y = x + tau * self.OpTb
             if self.q is not None:
@@ -260,6 +275,14 @@ class L2_ncvx_tv(ProxOperator):
 
     
     def grad(self, x):
+        if self.Op2 is not None:
+            # MC-TV
+            grad_moreau = self.Op2.rmatvec(self.Op2.matvec(x) \
+                            - self.g_gamma.prox(self.Op2.matvec(x), self.gamma)) \
+                                / self.gamma 
+        else:
+            # ME-TV
+            grad_moreau = (x - self.g_gamma.prox(x, self.gamma)) / self.gamma
         if self.Op is not None and self.b is not None:
             g = self.sigma * self.Op.H @ (self.Op @ x - self.b)
         elif self.b is not None:
@@ -268,12 +291,13 @@ class L2_ncvx_tv(ProxOperator):
             g = self.sigma * x
         if self.q is not None and self.qgrad:
             g += self.alpha * self.q
-        return g - self.lamda / self.gamma * (x - self.isotropic_tv.prox(x, self.gamma))    
+        return g - self.lamda * grad_moreau 
+
 
 
 def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None, 
-                                 theta=1., niter=10, seed=0, gfirst=True, callback=None, 
-                                 callbacky=False, returny=False, show=False):
+                                 theta=1., niter=10, seed=0, gfirst=True, 
+                                 callback=None, callbacky=False, returny=False, show=False):
     r"""Unadjusted Langevin Primal-Dual algorithm (ULPDA)
 
     Samples from the target distribution with the following potential using
@@ -339,13 +363,13 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
     Returns
     -------
-    x : :obj:`numpy.ndarray`
-        Inverted model
+    x_samples : :obj:`numpy.ndarray`
+        Samples
 
     Notes
     -----
-    The Primal-dual algorithm can be expressed by the following recursion
-    (``gfirst=True``):
+    The Unadjusted Langevin primal-dual algorithm can be expressed by the following 
+    recursion (``gfirst=True``):
 
     .. math::
 
@@ -387,7 +411,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
     if show:
         tstart = time.time()
-        print('Unadjusted Langevin primal-dual: U(x) = f(Ax) + x^T z + g(x)\n'
+        print('Unadjusted Langevin primal-dual: U(x) = f(x) + x^T z + g(Ax)\n'
               '---------------------------------------------------------\n'
               'Proximal operator (f): %s\n'
               'Proximal operator (g): %s\n'
