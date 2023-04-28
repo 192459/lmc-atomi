@@ -191,14 +191,14 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_pdhg=5e-1, lamda=0.01,
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
-    l2_5_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_mc = prox.L2_minimax_concave(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
-    l2_5_me = prox.L2_moreau_env(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_6_me = prox.L2_moreau_env(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
-    l2_7_me = prox.L2_moreau_env(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
+    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_pdhg, niter=50, warm=True)
 
     # L1 regularization (isotropic TV) for primal-dual
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
