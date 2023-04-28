@@ -156,7 +156,6 @@ class L2_ncvx_tv(ProxOperator):
         self.lamda = lamda
         self.gamma = gamma
         self.qgrad = qgrad
-        self.isotropic = isotropic
         self.niter = niter
         self.rtol = rtol
         self.x0 = x0
@@ -182,7 +181,7 @@ class L2_ncvx_tv(ProxOperator):
             self.g_gamma = pyproximal.L1(1.) 
         else:
             # ME-TV
-            self.g_gamma = pyproximal.TV(dims, 1., niter, rtol) if self.isotropic else \
+            self.g_gamma = pyproximal.TV(dims, 1., niter, rtol) if isotropic else \
                 pyproximal.TV((np.prod(dims),), 1., niter, rtol)
 
 

@@ -230,7 +230,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
 
     
     ## Compute MAP estimators using Adaptive PDHG or Accelerated Proximal Gradient (FISTA)
-    if computeMAP:    
+    if computeMAP:
+        '''
         cost_5_map = []
         err_5_map = []
         iml12_5_map, _ = \
@@ -307,14 +308,15 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
                                                                                     img.ravel(),
                                                                                     err_7_mc_map))
         iml12_7_mc_map = iml12_7_mc_map.reshape(img.shape)
-
+        '''
 
         cost_5_me_map = []
         err_5_me_map = []
         iml12_5_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=np.zeros_like(img.ravel()),
-                                                        niter=niter_map, show=True, acceleration='fista',
-                                                        callback=lambda x: callback(x, l2_5_me, tv,
+            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, #tau=tau0, 
+                                                            x0=np.zeros_like(img.ravel()),
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_5_me, tv,
                                                                                     Iop, cost_5_me_map,
                                                                                     img.ravel(),
                                                                                     err_5_me_map))
@@ -324,9 +326,10 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_6_me_map = []
         err_6_me_map = []
         iml12_6_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0=np.zeros_like(img.ravel()),
-                                                        niter=niter_map, show=True, acceleration='fista',
-                                                        callback=lambda x: callback(x, l2_6_me, tv,
+            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, #tau=tau0,
+                                                            x0=np.zeros_like(img.ravel()),
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_6_me, tv,
                                                                                     Iop, cost_6_me_map,
                                                                                     img.ravel(),
                                                                                     err_6_me_map))
@@ -336,9 +339,10 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost_7_me_map = []
         err_7_me_map = []
         iml12_7_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=np.zeros_like(img.ravel()),
-                                                        niter=niter_map, show=True, acceleration='fista',
-                                                        callback=lambda x: callback(x, l2_7_me, tv,
+            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, #tau=tau0,
+                                                            x0=np.zeros_like(img.ravel()),
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_7_me, tv,
                                                                                     Iop, cost_7_me_map,
                                                                                     img.ravel(),
                                                                                     err_7_me_map))
