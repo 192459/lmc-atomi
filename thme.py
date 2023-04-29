@@ -34,7 +34,7 @@ import prox
 
 
 
-def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, alpha=0.8,
+def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alpha=0.8,
         N=10, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA',
         computeMAP=False, seed=0):
 
@@ -227,7 +227,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
             # truncated_log_weights = truncated_log_posteriors - np.max(truncated_log_posteriors, axis=1)[:, np.newaxis]
             # truncated_weights = np.exp(truncated_log_weights)
             weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
-            print(weights)
+            # print(weights)
             truncated_weights = np.where(inds, weights, np.nan)
             truncated_weights = np.where(np.isnan(truncated_weights), 0, 1 / truncated_weights)
             marginal_likelihoods = 1 / np.sum(truncated_weights, axis=1)
