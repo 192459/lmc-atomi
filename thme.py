@@ -248,11 +248,11 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
 
     marginal_likelihoods, marginal_posteriors = \
         truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, alpha)
-    print(marginal_likelihoods)
-    print(marginal_posteriors)
+    print('Marginal likelihoods:', marginal_likelihoods)
+    print('Marginal posteriors:', marginal_posteriors)
 
     bfs = bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, alpha)    
-    print(bfs)
+    print('Bayes factors:', bfs)
 
 
 
