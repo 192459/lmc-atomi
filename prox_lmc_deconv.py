@@ -185,8 +185,7 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
     # Gradient operator
     sampling = 1.
     Gop = pylops.Gradient(dims=(ny, nx), sampling=sampling, edge=False, kind='forward', dtype='float64')
-    L = 8. / sampling ** 2 # maxeig(Gop^H Gop)
-
+    
     # L2 data term
     l2_5 = pyproximal.L2(Op=H5, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
     l2_6 = pyproximal.L2(Op=H6, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
@@ -225,8 +224,9 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         cost.append(f(x) + g(K.matvec(x)))
         err.append(np.linalg.norm(x - xtrue))
 
+    L = 8. / sampling ** 2 # maxeig(Gop^H Gop)
     tau0 = 0.95 / np.sqrt(L)
-    mu0 = 0.95 / np.sqrt(L)
+    mu0 = 0.95 / (tau0 * L)
 
     x0 = np.zeros(img.ravel().shape)
     
@@ -682,10 +682,11 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
         return marginal_likelihoods, marginal_posteriors
 
-    print(truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+    marginal_likelihoods, marginal_posteriors = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                     iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
-
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples)
+    print(marginal_likelihoods)
+    print(marginal_posteriors)
 
     def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                     iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 

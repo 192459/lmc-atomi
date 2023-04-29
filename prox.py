@@ -595,6 +595,173 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, x0, tau, mu, theta=1.,
     return np.array(x_samples)    
 
 
+def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
+                     epsg=1., niter=10, niterback=100,
+                     acceleration=None,
+                     callback=None, show=False):
+    r"""Proximal gradient (optionally accelerated)
+
+    Solves the following minimization problem using (Accelerated) Proximal
+    gradient algorithm:
+
+    .. math::
+
+        \mathbf{x} = \argmin_\mathbf{x} f(\mathbf{x}) + \epsilon g(\mathbf{x})
+
+    where :math:`f(\mathbf{x})` is a smooth convex function with a uniquely
+    defined gradient and :math:`g(\mathbf{x})` is any convex function that
+    has a known proximal operator.
+
+    Parameters
+    ----------
+    proxf : :obj:`pyproximal.ProxOperator`
+        Proximal operator of f function (must have ``grad`` implemented)
+    proxg : :obj:`pyproximal.ProxOperator`
+        Proximal operator of g function
+    x0 : :obj:`numpy.ndarray`
+        Initial vector
+    tau : :obj:`float` or :obj:`numpy.ndarray`, optional
+        Positive scalar weight, which should satisfy the following condition
+        to guarantees convergence: :math:`\tau  \in (0, 1/L]` where ``L`` is
+        the Lipschitz constant of :math:`\nabla f`. When ``tau=None``,
+        backtracking is used to adaptively estimate the best tau at each
+        iteration. Finally note that :math:`\tau` can be chosen to be a vector
+        when dealing with problems with multiple right-hand-sides
+    beta : :obj:`float`, optional
+        Backtracking parameter (must be between 0 and 1)
+    epsg : :obj:`float` or :obj:`np.ndarray`, optional
+        Scaling factor of g function
+    niter : :obj:`int`, optional
+        Number of iterations of iterative scheme
+    niterback : :obj:`int`, optional
+        Max number of iterations of backtracking
+    acceleration : :obj:`str`, optional
+        Acceleration (``None``, ``vandenberghe`` or ``fista``)
+    callback : :obj:`callable`, optional
+        Function with signature (``callback(x)``) to call after each iteration
+        where ``x`` is the current model vector
+    show : :obj:`bool`, optional
+        Display iterations log
+
+    Returns
+    -------
+    x : :obj:`numpy.ndarray`
+        Inverted model
+
+    Notes
+    -----
+    The Proximal point algorithm can be expressed by the following recursion:
+
+    .. math::
+
+
+        \mathbf{x}^{k+1} = \prox_{\tau^k \epsilon g}(\mathbf{y}^{k+1}  -
+        \tau^k \nabla f(\mathbf{y}^{k+1})) \\
+        \mathbf{y}^{k+1} = \mathbf{x}^k + \omega^k
+        (\mathbf{x}^k - \mathbf{x}^{k-1})
+
+    where at each iteration :math:`\tau^k` can be estimated by back-tracking
+    as follows:
+
+    .. math::
+
+        \begin{aligned}
+        &\tau = \tau^{k-1} &\\
+        &repeat \; \mathbf{z} = \prox_{\tau \epsilon g}(\mathbf{x}^k -
+        \tau \nabla f(\mathbf{x}^k)), \tau = \beta \tau \quad if \;
+        f(\mathbf{z}) \leq \tilde{f}_\tau(\mathbf{z}, \mathbf{x}^k) \\
+        &\tau^k = \tau, \quad \mathbf{x}^{k+1} = \mathbf{z} &\\
+        \end{aligned}
+
+    where :math:`\tilde{f}_\tau(\mathbf{x}, \mathbf{y}) = f(\mathbf{y}) +
+    \nabla f(\mathbf{y})^T (\mathbf{x} - \mathbf{y}) +
+    1/(2\tau)||\mathbf{x} - \mathbf{y}||_2^2`.
+
+    Different accelerations are provided:
+
+    - ``acceleration=None``: :math:`\omega^k = 0`;
+    - `acceleration=vandenberghe`` [1]_: :math:`\omega^k = k / (k + 3)` for `
+    - ``acceleration=fista``: :math:`\omega^k = (t_{k-1}-1)/t_k` for  where
+      :math:`t_k = (1 + \sqrt{1+4t_{k-1}^{2}}) / 2` [2]_
+
+    .. [1] Vandenberghe, L., "Fast proximal gradient methods", 2010.
+    .. [2] Beck, A., and Teboulle, M. "A Fast Iterative Shrinkage-Thresholding
+       Algorithm for Linear Inverse Problems", SIAM Journal on
+       Imaging Sciences, vol. 2, pp. 183-202. 2009.
+
+    """
+    # check if epgs is a ve
+    if np.asarray(epsg).size == 1.:
+        epsg_print = str(epsg)
+    else:
+        epsg_print = 'Multi'
+
+    if acceleration not in [None, 'None', 'vandenberghe', 'fista']:
+        raise NotImplementedError('Acceleration should be None, vandenberghe '
+                                  'or fista')
+    if show:
+        tstart = time.time()
+        print('Accelerated Proximal Gradient\n'
+              '---------------------------------------------------------\n'
+              'Proximal operator (f): %s\n'
+              'Proximal operator (g): %s\n'
+              'tau = %s\tbeta=%10e\n'
+              'epsg = %s\tniter = %d\t'
+              'niterback = %d\n' % (type(proxf), type(proxg),
+                                    'Adaptive' if tau is None else str(tau), beta,
+                                    epsg_print, niter, niterback))
+        head = '   Itn       x[0]          f           g       J=f+eps*g'
+        print(head)
+
+    backtracking = False
+    if tau is None:
+        backtracking = True
+        tau = 1.
+
+    # initialize model
+    t = 1.
+    x = x0.copy()
+    y = x.copy()
+
+    # iterate
+    for iiter in range(niter):
+        xold = x.copy()
+
+        # proximal step
+        if not backtracking:
+            x = proxg.prox(y - tau * proxf.grad(y), epsg * tau)
+        else:
+            x, tau = _backtracking(y, tau, proxf, proxg, epsg,
+                                   beta=beta, niterback=niterback)
+        
+        # update y
+        if acceleration == 'vandenberghe':
+            omega = iiter / (iiter + 3)
+        elif acceleration == 'fista':
+            told = t
+            t = (1. + np.sqrt(1. + 4. * t ** 2)) / 2.
+            omega = ((told - 1.) / t)
+        else:
+            omega = 0
+        y = x + omega * (x - xold)
+
+        # run callback
+        if callback is not None:
+            callback(x)
+
+        if show:
+            if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
+                pf, pg = proxf(x), proxg(x)
+                msg = '%6g  %12.5e  %10.3e  %10.3e  %10.3e' % \
+                      (iiter + 1, np.real(to_numpy(x[0])) if x.ndim == 1 else np.real(to_numpy(x[0, 0])),
+                       pf, pg[0] if epsg_print == 'Multi' else pg,
+                       pf + np.sum(epsg * pg))
+                print(msg)
+    if show:
+        print('\nTotal time (s) = %.2f' % (time.time() - tstart))
+        print('---------------------------------------------------------\n')
+    return x
+
 
 def prox_conjugate(x, gamma, prox):
     return x - gamma * prox(x / gamma, 1/gamma)
