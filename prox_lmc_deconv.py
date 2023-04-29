@@ -635,11 +635,11 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
     axes[1,4].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
 
 
-    plt.show()
-    # plt.show(block=False)
-    # plt.pause(10)
-    # plt.close()
-    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_3.pdf', dpi=500)
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(10)
+    plt.close()
+    fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_3.pdf', dpi=500)
 
     def U(x, f, g, Op=None):
         return f(x) + g(Op.matvec(x)) if Op is not None else f(x) + g(x)
