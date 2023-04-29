@@ -36,7 +36,7 @@ import prox
 
 def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, alpha=0.8,
         N=10, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA',
-        computeMAP=False, seed=0):
+        computeMAP=False, burnin=0.2, seed=0):
 
         # Choose the test image
     if image == 'einstein':
@@ -176,7 +176,8 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                             # iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                                             # iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                                            alpha=0.8):
+                                            alpha=0.8, burnin=0.1):
+            burnin_len = int(burnin * len(iml12_5_samples))
             U5 = lambda sample: U(sample, l2_5, l1iso, Gop)
             U6 = lambda sample: U(sample, l2_6, l1iso, Gop)
             U7 = lambda sample: U(sample, l2_7, l1iso, Gop)
@@ -188,9 +189,9 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
             U7_me = lambda sample: U(sample, l2_7_me, l1iso, Gop)
             # U_list = [U5, U6, U7, U5_mc, U6_mc, U7_mc, U5_me, U6_me, U7_me]
             U_list = [U5, U6, U7]
-            neg_log_posteriors_5 = np.array([U5(sample) for sample in iml12_5_samples])
-            neg_log_posteriors_6 = np.array([U6(sample) for sample in iml12_6_samples])
-            neg_log_posteriors_7 = np.array([U7(sample) for sample in iml12_7_samples])
+            neg_log_posteriors_5 = np.array([U5(sample) for sample in iml12_5_samples[burnin_len:]])
+            neg_log_posteriors_6 = np.array([U6(sample) for sample in iml12_6_samples[burnin_len:]])
+            neg_log_posteriors_7 = np.array([U7(sample) for sample in iml12_7_samples[burnin_len:]])
             # neg_log_posteriors_5_mc = np.array([U5_mc(sample) for sample in iml12_5_mc_samples])
             # neg_log_posteriors_6_mc = np.array([U6_mc(sample) for sample in iml12_6_mc_samples])
             # neg_log_posteriors_7_mc = np.array([U7_mc(sample) for sample in iml12_7_mc_samples])
@@ -202,9 +203,9 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
             #                                         neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me), axis=1)
             neg_log_posteriors = np.vstack((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7))
             etas = np.quantile(neg_log_posteriors, 1 - alpha, axis=1) # compute the HPD thresholds
-            neg_log_posteriors_5s = np.array([[U(sample) for U in U_list] for sample in iml12_5_samples])
-            neg_log_posteriors_6s = np.array([[U(sample) for U in U_list] for sample in iml12_6_samples])
-            neg_log_posteriors_7s = np.array([[U(sample) for U in U_list] for sample in iml12_7_samples])
+            neg_log_posteriors_5s = np.array([[U(sample) for U in U_list] for sample in iml12_5_samples[burnin_len:]])
+            neg_log_posteriors_6s = np.array([[U(sample) for U in U_list] for sample in iml12_6_samples[burnin_len:]])
+            neg_log_posteriors_7s = np.array([[U(sample) for U in U_list] for sample in iml12_7_samples[burnin_len:]])
             # neg_log_posteriors_5s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_5_mc_samples])
             # neg_log_posteriors_6s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_6_mc_samples])
             # neg_log_posteriors_7s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_7_mc_samples])
@@ -223,7 +224,6 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
             inds = np.vstack((ind_5s, ind_6s, ind_7s))
             log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors, axis=1)[:, np.newaxis]
             weights = np.exp(log_weights)
-            # print(weights)
             truncated_weights = np.where(inds, 1 / weights, 0)
             marginal_likelihoods = 1 / np.mean(truncated_weights, axis=1)
             marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
