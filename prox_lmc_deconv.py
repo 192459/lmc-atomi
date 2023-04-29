@@ -157,19 +157,16 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
     nh5 = h5.shape
     H5 = pylops.signalprocessing.Convolve2D((ny, nx), h=h5, offset=(nh5[0] // 2, nh5[1] // 2))
     y = H5 * img + rng.normal(0, sigma, size=(ny, nx))
-    # y5 = img + rng.normal(0, sigma, size=(ny, nx))
 
     h6 = np.ones((6, 6))
     h6 /= h6.sum()
     nh6 = h6.shape
     H6 = pylops.signalprocessing.Convolve2D((ny, nx), h=h6, offset=(nh6[0] // 2, nh6[1] // 2))
-    # y6 = H6 * img + rng.normal(0, sigma, size=(ny, nx))
 
     h7 = np.ones((7, 7))
     h7 /= h7.sum()
     nh7 = h7.shape
     H7 = pylops.signalprocessing.Convolve2D((ny, nx), h=h7, offset=(nh7[0] // 2, nh7[1] // 2))
-    # y7 = H7 * img + rng.normal(0, sigma, size=(ny, nx))
 
 
     # Plot of the original image and the blurred image
@@ -456,7 +453,6 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
                                                                         img.ravel(),
                                                                         err_7_samples))
 
-
     
     cost_5_mc_samples = []
     err_5_mc_samples = []
@@ -658,9 +654,10 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         neg_log_posteriors_5_me = np.array([U(sample, l2_5_me, l1iso, Gop) for sample in iml12_5_me_samples])
         neg_log_posteriors_6_me = np.array([U(sample, l2_6_me, l1iso, Gop) for sample in iml12_6_me_samples])
         neg_log_posteriors_7_me = np.array([U(sample, l2_7_me, l1iso, Gop) for sample in iml12_7_me_samples])
-        neg_log_posteriors = np.concatenate((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
+        print(neg_log_posteriors_5.shape)
+        neg_log_posteriors = np.vstack((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
                                                 neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
-                                                neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me), axis=1)
+                                                neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me))
         eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
         # samples_ind = np.zeros(samples.shape[0])
         # for k in range(samples.shape[0]):
