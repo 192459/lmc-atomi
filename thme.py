@@ -43,6 +43,8 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
         img = io.imread("fig/einstein.png")
     elif image == 'camera':
         img = data.camera()
+    elif image == 'ascent':
+         img = scipy.datasets.ascent()
         
     ny, nx = img.shape
     rng = default_rng(seed)

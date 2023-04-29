@@ -145,6 +145,8 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
         img = io.imread("fig/einstein.png")
     elif image == 'camera':
         img = data.camera()
+    elif image == 'ascent':
+        img = scipy.datasets.ascent()
         
     ny, nx = img.shape
     rng = default_rng(seed)
