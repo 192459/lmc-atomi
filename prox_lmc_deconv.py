@@ -136,9 +136,9 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, 
+def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, alpha=0.8,
                     N=10000, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA', 
-                    computeMAP=False, seed=0):
+                    computeMAP=False, burnin=0.2, seed=0):
 
     # Choose the test image
     if image == 'einstein':
@@ -644,46 +644,68 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                         iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                                         iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                                        alpha=0.8):
-        neg_log_posteriors_5 = np.array([U(sample, l2_5, l1iso, Gop) for sample in iml12_5_samples])
-        neg_log_posteriors_6 = np.array([U(sample, l2_6, l1iso, Gop) for sample in iml12_6_samples])
-        neg_log_posteriors_7 = np.array([U(sample, l2_7, l1iso, Gop) for sample in iml12_7_samples])
-        neg_log_posteriors_5_mc = np.array([U(sample, l2_5_mc, l1, Gop) for sample in iml12_5_mc_samples])
-        neg_log_posteriors_6_mc = np.array([U(sample, l2_6_mc, l1, Gop) for sample in iml12_6_mc_samples])
-        neg_log_posteriors_7_mc = np.array([U(sample, l2_7_mc, l1, Gop) for sample in iml12_7_mc_samples])
-        neg_log_posteriors_5_me = np.array([U(sample, l2_5_me, l1iso, Gop) for sample in iml12_5_me_samples])
-        neg_log_posteriors_6_me = np.array([U(sample, l2_6_me, l1iso, Gop) for sample in iml12_6_me_samples])
-        neg_log_posteriors_7_me = np.array([U(sample, l2_7_me, l1iso, Gop) for sample in iml12_7_me_samples])
-        print(neg_log_posteriors_5.shape)
+                                        alpha=0.8, burnin=0.1):
+        burnin_len = int(burnin * len(iml12_5_samples))
+
+        U5 = lambda sample: U(sample, l2_5, l1iso, Gop)
+        U6 = lambda sample: U(sample, l2_6, l1iso, Gop)
+        U7 = lambda sample: U(sample, l2_7, l1iso, Gop)
+        U5_mc = lambda sample: U(sample, l2_5_mc, l1, Gop)
+        U6_mc = lambda sample: U(sample, l2_6_mc, l1, Gop)
+        U7_mc = lambda sample: U(sample, l2_7_mc, l1, Gop)
+        U5_me = lambda sample: U(sample, l2_5_me, l1iso, Gop)
+        U6_me = lambda sample: U(sample, l2_6_me, l1iso, Gop)
+        U7_me = lambda sample: U(sample, l2_7_me, l1iso, Gop)
+        U_list = [U5, U6, U7, U5_mc, U6_mc, U7_mc, U5_me, U6_me, U7_me]
+        
+        neg_log_posteriors_5 = np.array([U5(sample) for sample in iml12_5_samples[burnin_len:]])
+        neg_log_posteriors_6 = np.array([U6(sample) for sample in iml12_6_samples[burnin_len:]])
+        neg_log_posteriors_7 = np.array([U7(sample) for sample in iml12_7_samples[burnin_len:]])
+        neg_log_posteriors_5_mc = np.array([U5_mc(sample) for sample in iml12_5_mc_samples[burnin_len:]])
+        neg_log_posteriors_6_mc = np.array([U6_mc(sample) for sample in iml12_6_mc_samples[burnin_len:]])
+        neg_log_posteriors_7_mc = np.array([U7_mc(sample) for sample in iml12_7_mc_samples[burnin_len:]])
+        neg_log_posteriors_5_me = np.array([U5_me(sample) for sample in iml12_5_me_samples[burnin_len:]])
+        neg_log_posteriors_6_me = np.array([U6_me(sample) for sample in iml12_6_me_samples[burnin_len:]])
+        neg_log_posteriors_7_me = np.array([U7_me(sample) for sample in iml12_7_me_samples[burnin_len:]])
         neg_log_posteriors = np.vstack((neg_log_posteriors_5, neg_log_posteriors_6, neg_log_posteriors_7,
-                                                neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
-                                                neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me))
-        eta = np.quantile(neg_log_posteriors, 1 - alpha, axis=0)     
-        # samples_ind = np.zeros(samples.shape[0])
-        # for k in range(samples.shape[0]):
-        #     samples_ind[k] = neg_log_posteriors[k,:] <= np.max(eta)
-        # samples_filtered = np.compress(samples_ind, samples, axis=0)
-        # samples_filtered_U = np.zeros((samples_filtered.shape[0], len(Hs)))
-        # for k in range(samples_filtered.shape[0]):
-        #     for h in range(len(Hs)):
-        #         samples_filtered_U[k, h] = U(samples_filtered[k], Hs[h])
-        log_weights = -neg_log_posteriors
-        # print(log_weights.max(axis=0))  
-        weights = np.exp(log_weights - log_weights.max(axis=0))
-        # print(log_weights)
-        truncated_weights = np.where(neg_log_posteriors <= np.max(eta), 1 / weights, 0)
-        # print(truncated_weights)
-        # print(truncated_weights.shape)
-        marginal_likelihoods = 1 / np.mean(truncated_weights, axis=0)
-        # return np.exp(-samples_filtered_U - (-samples_U).max()).sum() / np.exp(-samples_U - (-samples_U).max()).sum()
+                                        neg_log_posteriors_5_mc, neg_log_posteriors_6_mc, neg_log_posteriors_7_mc,
+                                        neg_log_posteriors_5_me, neg_log_posteriors_6_me, neg_log_posteriors_7_me))
+        
+        etas = np.quantile(neg_log_posteriors, 1 - alpha, axis=1) # compute the HPD thresholds
+        neg_log_posteriors_5s = np.array([[U(sample) for U in U_list] for sample in iml12_5_samples[burnin_len:]])
+        neg_log_posteriors_6s = np.array([[U(sample) for U in U_list] for sample in iml12_6_samples[burnin_len:]])
+        neg_log_posteriors_7s = np.array([[U(sample) for U in U_list] for sample in iml12_7_samples[burnin_len:]])
+        neg_log_posteriors_5s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_5_mc_samples[burnin_len:]])
+        neg_log_posteriors_6s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_6_mc_samples[burnin_len:]])
+        neg_log_posteriors_7s_mc = np.array([[U(sample) for U in U_list] for sample in iml12_7_mc_samples[burnin_len:]])
+        neg_log_posteriors_5s_me = np.array([[U(sample) for U in U_list] for sample in iml12_5_me_samples[burnin_len:]])
+        neg_log_posteriors_6s_me = np.array([[U(sample) for U in U_list] for sample in iml12_6_me_samples[burnin_len:]])
+        neg_log_posteriors_7s_me = np.array([[U(sample) for U in U_list] for sample in iml12_7_me_samples[burnin_len:]])
+        ind_5s = (neg_log_posteriors_5s <= etas).any(axis=1)
+        ind_6s = (neg_log_posteriors_6s <= etas).any(axis=1)
+        ind_7s = (neg_log_posteriors_7s <= etas).any(axis=1)
+        ind_5s_mc = (neg_log_posteriors_5s_mc <= etas).any(axis=1)
+        ind_6s_mc = (neg_log_posteriors_6s_mc <= etas).any(axis=1)
+        ind_7s_mc = (neg_log_posteriors_7s_mc <= etas).any(axis=1)
+        ind_5s_me = (neg_log_posteriors_5s_me <= etas).any(axis=1)
+        ind_6s_me = (neg_log_posteriors_6s_me <= etas).any(axis=1)
+        ind_7s_me = (neg_log_posteriors_7s_me <= etas).any(axis=1)
+        inds = np.vstack((ind_5s, ind_6s, ind_7s, ind_5s_mc, ind_6s_mc, ind_7s_mc, ind_5s_me, ind_6s_me, ind_7s_me))
+
+        log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors, axis=1)[:, np.newaxis]
+        weights = np.exp(log_weights)
+        truncated_weights = np.where(inds, 1 / weights, 0)        
+        marginal_likelihoods = 1 / np.mean(truncated_weights, axis=1)
         marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
         return marginal_likelihoods, marginal_posteriors
 
     marginal_likelihoods, marginal_posteriors = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                     iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples)
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples,
+                    alpha)
     print(marginal_likelihoods)
     print(marginal_posteriors)
+
 
     def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                     iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
@@ -697,19 +719,15 @@ def prox_lmc_deconv(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, 
             for j in range(i + 1, marginal_likelihoods.shape[0]):
                 res.append(marginal_likelihoods[i] / marginal_likelihoods[j])
         return res
+       
     
-    # print(bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-    #                 iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-    #                 iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples))
+    bfs = bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
+                    iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
+                    iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples,
+                    alpha=0.8)
+    print(bfs)
 
 
-
-    '''
-    prox_lmc = ProximalLangevinMonteCarloDeconvolution(lamda, sigma, tau, K, seed)      
-
-    myula_samples = prox_lmc.myula(y, H5, gamma_myula)
-    '''
-    
 
 if __name__ == '__main__':
     if not os.path.exists('fig'):
