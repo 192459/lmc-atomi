@@ -222,27 +222,20 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
             # ind_6s_me = (neg_log_posteriors_6s_me <= etas).any(axis=1)
             # ind_7s_me = (neg_log_posteriors_7s_me <= etas).any(axis=1)
             inds = np.vstack((ind_5s, ind_6s, ind_7s))
-            truncated_log_posteriors = np.where(inds, -neg_log_posteriors, -np.inf)
+            # truncated_log_posteriors = np.where(inds, -neg_log_posteriors, -np.inf)
             # print(truncated_log_posteriors)
-            truncated_log_weights = truncated_log_posteriors - np.max(truncated_log_posteriors, axis=1)[:, np.newaxis]
-            truncated_weights = np.exp(truncated_log_weights)
-            # truncated_weights = scipy.special.softmax(truncated_log_posteriors, axis=1)
-            # print(truncated_weights)  
-            # truncated_weights = np.where(inds, weights, np.nan)
-            truncated_weights = np.where(truncated_weights == 0, 0, 1 / truncated_weights)
-            marginal_likelihoods = 1 / np.mean(truncated_weights, axis=1)
+            # truncated_log_weights = truncated_log_posteriors - np.max(truncated_log_posteriors, axis=1)[:, np.newaxis]
+            # truncated_weights = np.exp(truncated_log_weights)
+            weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
+            print(weights)
+            truncated_weights = np.where(inds, weights, np.nan)
+            truncated_weights = np.where(np.isnan(truncated_weights), 0, 1 / truncated_weights)
+            marginal_likelihoods = 1 / np.sum(truncated_weights, axis=1)
             marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
             return marginal_likelihoods, marginal_posteriors
 
 
-    def bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-                            # iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                            # iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                            alpha=0.8):
-            marginal_likelihoods, _ = truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
-                                            # iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
-                                            # iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                                            alpha)
+    def bayes_factor(marginal_likelihoods):
             res = []
             for i in range(marginal_likelihoods.shape[0]):
                 for j in range(i + 1, marginal_likelihoods.shape[0]):
@@ -256,7 +249,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=5e-1, lamda=0.01, sigma=0.75, tau=0.03, a
     print('Marginal likelihoods:', marginal_likelihoods)
     print('Marginal posteriors:', marginal_posteriors)
 
-    bfs = bayes_factor(iml12_5_samples, iml12_6_samples, iml12_7_samples, alpha)    
+    bfs = bayes_factor(marginal_likelihoods)    
     print('Bayes factors:', bfs)
 
 
