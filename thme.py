@@ -172,15 +172,17 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
     def U(x, f, g, Op=None):
         return f(x) + g(Op.matvec(x)) if Op is not None else f(x) + g(x)
 
+    print(U(img.ravel(), l2_5, l1iso, Gop))
 
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                             # iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
                                             # iml12_5_me_samples, iml12_6_me_samples, iml12_7_me_samples, 
-                                            alpha=0.8, burnin=0.5):
-            burnin_len = int(burnin * len(iml12_5_samples))
-            iml12_5_samples = iml12_5_samples[burnin_len:]
-            iml12_6_samples = iml12_6_samples[burnin_len:]
-            iml12_7_samples = iml12_7_samples[burnin_len:]
+                                            alpha=0.8):
+            # burnin=0.5
+            # burnin_len = int(burnin * len(iml12_5_samples))
+            # iml12_5_samples = iml12_5_samples[burnin_len:]
+            # iml12_6_samples = iml12_6_samples[burnin_len:]
+            # iml12_7_samples = iml12_7_samples[burnin_len:]
             U5 = lambda sample: U(sample, l2_5, l1iso, Gop)
             U6 = lambda sample: U(sample, l2_6, l1iso, Gop)
             U7 = lambda sample: U(sample, l2_7, l1iso, Gop)
@@ -232,7 +234,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
             # weights = np.exp(log_weights)
             weights = scipy.special.softmax(log_weights, axis=1)
             # weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
-            print(weights)
+            # print(weights)
             truncated_weights = np.where(inds, weights, np.nan)
             truncated_weights = np.where(np.isnan(truncated_weights), 0, 1 / truncated_weights)
             marginal_likelihoods = 1 / np.sum(truncated_weights, axis=1)
