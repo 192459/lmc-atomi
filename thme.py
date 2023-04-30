@@ -174,7 +174,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
     def U(x, f, g, Op=None):
         return f(x) + g(Op.matvec(x)) if Op is not None else f(x) + g(x)
 
-    print(U(img.ravel(), l2_5, l1iso, Gop))
+    # print(U(img.ravel(), l2_5, l1iso, Gop))
 
     def truncated_harmonic_mean_estimator(iml12_5_samples, iml12_6_samples, iml12_7_samples, 
                                             # iml12_5_mc_samples, iml12_6_mc_samples, iml12_7_mc_samples, 
@@ -188,12 +188,12 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
             U5 = lambda sample: U(sample, l2_5, l1iso, Gop)
             U6 = lambda sample: U(sample, l2_6, l1iso, Gop)
             U7 = lambda sample: U(sample, l2_7, l1iso, Gop)
-            U5_mc = lambda sample: U(sample, l2_5_mc, l1, Gop)
-            U6_mc = lambda sample: U(sample, l2_6_mc, l1, Gop)
-            U7_mc = lambda sample: U(sample, l2_7_mc, l1, Gop)
-            U5_me = lambda sample: U(sample, l2_5_me, l1iso, Gop)
-            U6_me = lambda sample: U(sample, l2_6_me, l1iso, Gop)
-            U7_me = lambda sample: U(sample, l2_7_me, l1iso, Gop)
+            # U5_mc = lambda sample: U(sample, l2_5_mc, l1, Gop)
+            # U6_mc = lambda sample: U(sample, l2_6_mc, l1, Gop)
+            # U7_mc = lambda sample: U(sample, l2_7_mc, l1, Gop)
+            # U5_me = lambda sample: U(sample, l2_5_me, l1iso, Gop)
+            # U6_me = lambda sample: U(sample, l2_6_me, l1iso, Gop)
+            # U7_me = lambda sample: U(sample, l2_7_me, l1iso, Gop)
             # U_list = [U5, U6, U7, U5_mc, U6_mc, U7_mc, U5_me, U6_me, U7_me]
             U_list = [U5, U6, U7]
             neg_log_posteriors_5 = np.array([U5(sample) for sample in iml12_5_samples])
@@ -219,6 +219,9 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
             # neg_log_posteriors_5s_me = np.array([[U(sample) for U in U_list] for sample in iml12_5_me_samples])
             # neg_log_posteriors_6s_me = np.array([[U(sample) for U in U_list] for sample in iml12_6_me_samples])
             # neg_log_posteriors_7s_me = np.array([[U(sample) for U in U_list] for sample in iml12_7_me_samples])
+            # ind_5s = neg_log_posteriors_5 <= etas.max()
+            # ind_6s = neg_log_posteriors_6 <= etas.max()
+            # ind_7s = neg_log_posteriors_7 <= etas.max()            
             ind_5s = (neg_log_posteriors_5s <= etas).any(axis=1)
             ind_6s = (neg_log_posteriors_6s <= etas).any(axis=1)
             ind_7s = (neg_log_posteriors_7s <= etas).any(axis=1)
@@ -231,14 +234,14 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
             inds = np.vstack((ind_5s, ind_6s, ind_7s))
             # truncated_log_posteriors = np.where(inds, -neg_log_posteriors, -np.inf)
             # print(truncated_log_posteriors)
+            # print(-neg_log_posteriors - scipy.special.logsumexp(-neg_log_posteriors, axis=1)[:, np.newaxis])
             log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors, axis=1)[:, np.newaxis]
             # print(log_weights)
-            # weights = np.exp(log_weights)
-            weights = scipy.special.softmax(log_weights, axis=1)
+            weights = np.exp(log_weights)
             # weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
-            # print(weights)
-            truncated_weights = np.where(inds, weights, np.nan)
-            truncated_weights = np.where(np.isnan(truncated_weights), 0, 1 / truncated_weights)
+            print(weights)
+            truncated_weights = np.where(inds, 1 / weights, 0)
+            # truncated_weights = np.where(truncated_weights == 0, 0, 1 / truncated_weights)
             marginal_likelihoods = 1 / np.sum(truncated_weights, axis=1)
             marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
             return marginal_likelihoods, marginal_posteriors
