@@ -34,7 +34,7 @@ import prox
 
 
 
-def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alpha=0.8,
+def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, alpha=0.8,
         N=10, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA',
         computeMAP=False, seed=0):
 
@@ -67,6 +67,15 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
     h7 /= h7.sum()
     nh7 = h7.shape
     H7 = pylops.signalprocessing.Convolve2D((ny, nx), h=h7, offset=(nh7[0] // 2, nh7[1] // 2))
+
+    # Plot of the original image and the blurred image
+    fig, axes = plt.subplots(1, 2, figsize=(9, 6))
+    plt.gray()  # show the filtered result in grayscale
+    axes[0].imshow(img)
+    axes[1].imshow(y)
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close() 
 
     # Gradient operator
     sampling = 1.
@@ -112,7 +121,8 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
 
     L = 8. / sampling ** 2 # maxeig(Gop^H Gop)
     tau0 = 0.95 / np.sqrt(L)
-    mu0 = 0.95 / (tau0 * L)
+    # mu0 = 0.95 / (tau0 * L)
+    mu0 = tau0
 
     x0 = np.zeros(img.ravel().shape)
 
@@ -235,14 +245,14 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.3, alp
             # truncated_log_posteriors = np.where(inds, -neg_log_posteriors, -np.inf)
             # print(truncated_log_posteriors)
             # print(-neg_log_posteriors - scipy.special.logsumexp(-neg_log_posteriors, axis=1)[:, np.newaxis])
-            log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors, axis=1)[:, np.newaxis]
+            # log_weights = -neg_log_posteriors - np.max(-neg_log_posteriors, axis=1)[:, np.newaxis]
             # print(log_weights)
-            weights = np.exp(log_weights)
-            # weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
+            # weights = np.exp(log_weights)
+            weights = scipy.special.softmax(-neg_log_posteriors, axis=1)
             print(weights)
             truncated_weights = np.where(inds, 1 / weights, 0)
             # truncated_weights = np.where(truncated_weights == 0, 0, 1 / truncated_weights)
-            marginal_likelihoods = 1 / np.sum(truncated_weights, axis=1)
+            marginal_likelihoods = 1 / np.mean(truncated_weights, axis=1)
             marginal_posteriors = marginal_likelihoods / np.sum(marginal_likelihoods)
             return marginal_likelihoods, marginal_posteriors
 
