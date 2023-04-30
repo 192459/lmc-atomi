@@ -156,6 +156,7 @@ class L2_ncvx_tv(ProxOperator):
         self.lamda = lamda
         self.gamma = gamma
         self.qgrad = qgrad
+        self.isotropic = isotropic
         self.niter = niter
         self.rtol = rtol
         self.x0 = x0
@@ -186,7 +187,10 @@ class L2_ncvx_tv(ProxOperator):
 
 
     def __call__(self, x):
-        Op2x = self.Op2.matvec(x) if self.Op2 is not None else x        
+        Op2x = self.Op2.matvec(x) if self.Op2 is not None else x      
+        if self.Op2 is not None and self.isotropic:
+            Op2x = Op2x.reshape(self.ndim, len(Op2x) // self.ndim)
+            Op2x = np.sqrt(np.sum(Op2x ** 2, axis=0))  
         moreau_prox = self.g_gamma.prox(Op2x, self.gamma)
         moreau_env = self.g_gamma(moreau_prox) \
                 + np.linalg.norm(Op2x - moreau_prox)**2 / (2*self.gamma)
@@ -222,8 +226,15 @@ class L2_ncvx_tv(ProxOperator):
         # solve proximal optimization
         if self.Op2 is not None:
             # MC-TV
-            x += tau * self.lamda / self.gamma * \
-                self.Op2.rmatvec(self.Op2.matvec(x) - self.g_gamma.prox(self.Op2.matvec(x), self.gamma))
+            Op2x = self.Op2.matvec(x)
+            if self.isotropic:
+                Op2x = Op2x.reshape(self.ndim, len(Op2x) // self.ndim)
+                Op2x = np.sqrt(np.sum(Op2x ** 2, axis=0))
+                x += tau * self.lamda / self.gamma * \
+                    self.Op2.rmatvec(self.Op2.matvec(x) / np.linalg.norm(self.Op2.matvec(x)) * (Op2x - self.g_gamma.prox(Op2x, self.gamma)))
+            else:
+                x += tau * self.lamda / self.gamma * \
+                    self.Op2.rmatvec(Op2x - self.g_gamma.prox(Op2x, self.gamma))
         else:
             # ME-TV
             x += tau * self.lamda / self.gamma * (x - self.g_gamma.prox(x, self.gamma))
@@ -276,9 +287,14 @@ class L2_ncvx_tv(ProxOperator):
     def grad(self, x):
         if self.Op2 is not None:
             # MC-TV
-            grad_moreau = self.Op2.rmatvec(self.Op2.matvec(x) \
-                            - self.g_gamma.prox(self.Op2.matvec(x), self.gamma)) \
-                                / self.gamma 
+            Op2x = self.Op2.matvec(x)
+            if self.isotropic:                
+                Op2x = Op2x.reshape(self.ndim, len(Op2x) // self.ndim)
+                Op2x = np.sqrt(np.sum(Op2x ** 2, axis=0))
+                grad_moreau = \
+                    self.Op2.rmatvec(self.Op2.matvec(x) / np.linalg.norm(self.Op2.matvec(x)) * (Op2x - self.g_gamma.prox(Op2x, self.gamma))) / self.gamma
+            else: 
+                grad_moreau = self.Op2.rmatvec(Op2x - self.g_gamma.prox(Op2x, self.gamma)) / self.gamma 
         else:
             # ME-TV
             grad_moreau = (x - self.g_gamma.prox(x, self.gamma)) / self.gamma
