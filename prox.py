@@ -28,7 +28,7 @@ from scipy.sparse.linalg import lsqr as sp_lsqr
 import pylops
 from pylops import MatrixMult, Identity
 from pylops.optimization.basic import lsqr
-from pylops.utils.backend import get_array_module, get_module_name
+from pylops.utils.backend import get_array_module, get_module_name, to_numpy
 
 import pyproximal
 from pyproximal.ProxOperator import _check_tau
@@ -347,6 +347,8 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         algorithm
     niter : :obj:`int`, optional
         Number of iterations of iterative scheme
+    seed : :obj:`int`, optional
+        Seed for random number generator
     gfirst : :obj:`bool`, optional
         Apply Proximal of operator ``g`` first (``True``) or Proximal of
         operator ``f`` first (``False``)
@@ -367,8 +369,7 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
 
     Notes
     -----
-    The Unadjusted Langevin primal-dual algorithm can be expressed by the following 
-    recursion (``gfirst=True``):
+    The Unadjusted Langevin primal-dual algorithm (ULPDA) can be expressed by the following recursion (``gfirst=True``):
 
     .. math::
 
@@ -475,140 +476,16 @@ def UnadjustedLangevinPrimalDual(proxf, proxg, A, x0, tau, mu, y0=None, z=None,
         return np.array(x_samples), np.array(y_samples)
 
 
-# todo: modify
-def MoreauYosidaUnadjustedLangevin(proxf, proxg, x0, tau, mu, theta=1., 
-                                niter=10, seed=0, callback=None, show=False):
+def MoreauYosidaUnadjustedLangevin(proxf, proxg, x0, tau=None, gamma=.1,
+                    epsg=1., niter=10, seed=0, callback=None, show=False):
     r"""Moreau--Yosida Unadjusted Langevin algorithm (MYULA)
 
     Samples from the target distribution with the following potential using
-    the general version of the first-order primal-dual algorithm of [2]_:
+    the algorithm of [1]_:
 
     .. math::
 
-        g(\mathbf{x}) + f(\mathbf{x})
-
-    where :math:`f` can be any convex function that have a know gradient and 
-    :math:`g` can be any convex function that have a known proximal operator.
-    
-
-    Parameters
-    ----------
-    proxf : :obj:`pyproximal.ProxOperator`
-        Proximal operator of f function
-    proxg : :obj:`pyproximal.ProxOperator`
-        Proximal operator of g function
-    x0 : :obj:`numpy.ndarray`
-        Initial vector
-    tau : :obj:`float` or :obj:`np.ndarray`
-        Stepsize of subgradient of :math:`f`. This can be constant 
-        or function of iterations (in the latter cases provided as np.ndarray)
-    mu : :obj:`float` or :obj:`np.ndarray`
-        Stepsize of subgradient of :math:`g^*`. This can be constant 
-        or function of iterations (in the latter cases provided as np.ndarray)
-    theta : :obj:`float`
-        Scalar between 0 and 1 that defines the update of the
-        :math:`\bar{\mathbf{x}}` variable - note that ``theta=0`` is a
-        special case that represents the semi-implicit classical Arrow-Hurwicz
-        algorithm
-    niter : :obj:`int`, optional
-        Number of iterations of iterative scheme
-    callback : :obj:`callable`, optional
-        Function with signature (``callback(x)``) to call after each iteration
-        where ``x`` is the current model vector
-    show : :obj:`bool`, optional
-        Display iterations log
-
-    Returns
-    -------
-    x : :obj:`numpy.ndarray`
-        Inverted model
-
-    Notes
-    -----
-    MYULA can be expressed by the following recursion:
-
-    .. math::
-
-        \mathbf{y}^{k+1} = \prox_{\mu g^*}(\mathbf{y}^{k} +
-        \mu \mathbf{A}\bar{\mathbf{x}}^{k})\\
-        \mathbf{x}^{k+1} = \prox_{\tau f}(\mathbf{x}^{k} -
-        \tau (\mathbf{A}^H \mathbf{y}^{k+1} + \mathbf{z})) \\
-        \bar{\mathbf{x}}^{k+1} = \mathbf{x}^{k+1} +
-        \theta (\mathbf{x}^{k+1} - \mathbf{x}^k)
-
-    where :math:`\tau \mu \lambda_{max}(\mathbf{A}^H\mathbf{A}) < 1`.
-
-
-    .. [2] A., Chambolle, and T., Pock, "A first-order primal-dual algorithm for
-        convex problems with applications to imaging", Journal of Mathematical
-        Imaging and Vision, 40, 8pp. 120-145. 2011.
-
-    """
-    ncp = get_array_module(x0)
-
-    # check if tau and mu are scalars or arrays
-    fixedtau = fixedmu = False
-    if isinstance(tau, (int, float)):
-        tau = tau * ncp.ones(niter, dtype=x0.dtype)
-        fixedtau = True
-    if isinstance(mu, (int, float)):
-        mu = mu * ncp.ones(niter, dtype=x0.dtype)
-        fixedmu = True
-
-    if show:
-        tstart = time.time()
-        print('Moreau--Yosida Unadjusted Langevin: U(x) = f(x) + g(x)\n'
-              '---------------------------------------------------------\n'
-              'Proximal operator (f): %s\n'
-              'Proximal operator (g): %s\n'
-              'tau = %s\t\tmu = %s\ntheta = %.2f\t\tniter = %d\n' %
-              (type(proxf), type(proxg),
-               str(tau[0]) if fixedtau else 'Variable',
-               str(mu[0]) if fixedmu else 'Variable', theta, niter))
-        head = '   Itn       x[0]          f           g          z^x       J = f + g + z^x'
-        print(head)
-
-    x = x0.copy()
-    xhat = x.copy()
-    x_samples = []
-    rng = default_rng(seed)
-    for iiter in range(niter):
-        xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
-        xold = x.copy()
-        y = proxg.proxdual(y + mu[iiter] * A.matvec(xhat), mu[iiter])
-        x = proxf.prox(x - tau[iiter] * ATy, tau[iiter]) + np.sqrt(2 * tau[iiter]) * xi
-        xhat = x + theta * (x - xold)        
-        x_samples.append(x)
-
-        # run callback
-        if callback is not None:
-            callback(x)
-        if show:
-            if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
-                pf, pg = proxf(x), proxg(x)
-                pf = 0. if type(pf) == bool else pf
-                pg = 0. if type(pg) == bool else pg
-                msg = '%6g  %12.5e  %10.3e %10.3e      ' % \
-                      (iiter + 1, x[0], pf, pg, pf + pg)
-                print(msg)
-    if show:
-        print('\nTotal time (s) = %.2f' % (time.time() - tstart))
-        print('---------------------------------------------------------\n')
-    return np.array(x_samples)    
-
-
-def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
-                     epsg=1., niter=10, niterback=100,
-                     acceleration=None,
-                     callback=None, show=False):
-    r"""Proximal gradient (optionally accelerated)
-
-    Solves the following minimization problem using (Accelerated) Proximal
-    gradient algorithm:
-
-    .. math::
-
-        \mathbf{x} = \argmin_\mathbf{x} f(\mathbf{x}) + \epsilon g(\mathbf{x})
+        f(\mathbf{x}) + \epsilon g(\mathbf{x})
 
     where :math:`f(\mathbf{x})` is a smooth convex function with a uniquely
     defined gradient and :math:`g(\mathbf{x})` is any convex function that
@@ -629,16 +506,14 @@ def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
         backtracking is used to adaptively estimate the best tau at each
         iteration. Finally note that :math:`\tau` can be chosen to be a vector
         when dealing with problems with multiple right-hand-sides
-    beta : :obj:`float`, optional
-        Backtracking parameter (must be between 0 and 1)
+    gamma : :obj:`float`, optional
+        Smoothing parameter of Moreau envelope
     epsg : :obj:`float` or :obj:`np.ndarray`, optional
         Scaling factor of g function
     niter : :obj:`int`, optional
         Number of iterations of iterative scheme
-    niterback : :obj:`int`, optional
-        Max number of iterations of backtracking
-    acceleration : :obj:`str`, optional
-        Acceleration (``None``, ``vandenberghe`` or ``fista``)
+    seed : :obj:`int`, optional
+        Seed for random number generator
     callback : :obj:`callable`, optional
         Function with signature (``callback(x)``) to call after each iteration
         where ``x`` is the current model vector
@@ -648,48 +523,18 @@ def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
     Returns
     -------
     x : :obj:`numpy.ndarray`
-        Inverted model
+        Samples
 
     Notes
     -----
-    The Proximal point algorithm can be expressed by the following recursion:
+    The Moreau--Yosida unadjusted Langevin algorithm (MYULA) can be expressed by the following recursion:
 
     .. math::
 
+        \mathbf{x}^{k+1} = (1 - \tau^k/\gamma^k) \mathbf{x}^k - \tau^k \nabla f(\mathbf{x}^{k}) + \tau^k/\gamma^k \prox_{\gamma^k * \eps g}(\mathbf{x}^{k}) + \sqrt{2 \tau^k} \mathbf{\xi}^k
+        
 
-        \mathbf{x}^{k+1} = \prox_{\tau^k \epsilon g}(\mathbf{y}^{k+1}  -
-        \tau^k \nabla f(\mathbf{y}^{k+1})) \\
-        \mathbf{y}^{k+1} = \mathbf{x}^k + \omega^k
-        (\mathbf{x}^k - \mathbf{x}^{k-1})
-
-    where at each iteration :math:`\tau^k` can be estimated by back-tracking
-    as follows:
-
-    .. math::
-
-        \begin{aligned}
-        &\tau = \tau^{k-1} &\\
-        &repeat \; \mathbf{z} = \prox_{\tau \epsilon g}(\mathbf{x}^k -
-        \tau \nabla f(\mathbf{x}^k)), \tau = \beta \tau \quad if \;
-        f(\mathbf{z}) \leq \tilde{f}_\tau(\mathbf{z}, \mathbf{x}^k) \\
-        &\tau^k = \tau, \quad \mathbf{x}^{k+1} = \mathbf{z} &\\
-        \end{aligned}
-
-    where :math:`\tilde{f}_\tau(\mathbf{x}, \mathbf{y}) = f(\mathbf{y}) +
-    \nabla f(\mathbf{y})^T (\mathbf{x} - \mathbf{y}) +
-    1/(2\tau)||\mathbf{x} - \mathbf{y}||_2^2`.
-
-    Different accelerations are provided:
-
-    - ``acceleration=None``: :math:`\omega^k = 0`;
-    - `acceleration=vandenberghe`` [1]_: :math:`\omega^k = k / (k + 3)` for `
-    - ``acceleration=fista``: :math:`\omega^k = (t_{k-1}-1)/t_k` for  where
-      :math:`t_k = (1 + \sqrt{1+4t_{k-1}^{2}}) / 2` [2]_
-
-    .. [1] Vandenberghe, L., "Fast proximal gradient methods", 2010.
-    .. [2] Beck, A., and Teboulle, M. "A Fast Iterative Shrinkage-Thresholding
-       Algorithm for Linear Inverse Problems", SIAM Journal on
-       Imaging Sciences, vol. 2, pp. 183-202. 2009.
+    .. [1] Durmus, A., Moulines, E., & Pereyra, M. "Efficient Bayesian computation by proximal Markov chain Monte Carlo: when Langevin meets Moreau." SIAM Journal on Imaging Sciences 11.1 (2018): 473-506.
 
     """
     # check if epgs is a ve
@@ -698,54 +543,34 @@ def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
     else:
         epsg_print = 'Multi'
 
-    if acceleration not in [None, 'None', 'vandenberghe', 'fista']:
-        raise NotImplementedError('Acceleration should be None, vandenberghe '
-                                  'or fista')
     if show:
         tstart = time.time()
-        print('Accelerated Proximal Gradient\n'
+        print('Moreau--Yosida Unadjusted Langevin\n'
               '---------------------------------------------------------\n'
               'Proximal operator (f): %s\n'
               'Proximal operator (g): %s\n'
-              'tau = %s\tbeta=%10e\n'
-              'epsg = %s\tniter = %d\t'
-              'niterback = %d\n' % (type(proxf), type(proxg),
-                                    'Adaptive' if tau is None else str(tau), beta,
-                                    epsg_print, niter, niterback))
-        head = '   Itn       x[0]          f           g       J=f+eps*g'
+              'tau = %s\ttau=%10e\n'
+              'gamma = %s\tgamma=%10e\n'
+              'epsg = %s\tniter = %d\n' % (type(proxf), type(proxg),
+                                    'Adaptive' if tau is None else str(tau), gamma,
+                                    epsg_print, niter))
+        head = '   Itn       x[0]          f           g     J = f + eps*g'
         print(head)
 
-    backtracking = False
-    if tau is None:
-        backtracking = True
-        tau = 1.
 
     # initialize model
-    t = 1.
     x = x0.copy()
-    y = x.copy()
+    x_samples = []
+    rng = default_rng(seed)
 
     # iterate
     for iiter in range(niter):
-        xold = x.copy()
-
-        # proximal step
-        if not backtracking:
-            x = proxg.prox(y - tau * proxf.grad(y), epsg * tau)
-        else:
-            x, tau = _backtracking(y, tau, proxf, proxg, epsg,
-                                   beta=beta, niterback=niterback)
+        xi = scipy.stats.multivariate_normal.rvs(size=x.shape, random_state=rng)
+        # xold = x.copy()
         
-        # update y
-        if acceleration == 'vandenberghe':
-            omega = iiter / (iiter + 3)
-        elif acceleration == 'fista':
-            told = t
-            t = (1. + np.sqrt(1. + 4. * t ** 2)) / 2.
-            omega = ((told - 1.) / t)
-        else:
-            omega = 0
-        y = x + omega * (x - xold)
+        # proximal step        
+        x = (1 - tau / gamma) * x - tau * proxf.grad(x) + tau / gamma * proxg.prox(x, epsg * gamma) + np.sqrt(2 * tau) * xi 
+        x_samples.append(x)
 
         # run callback
         if callback is not None:
@@ -762,7 +587,7 @@ def ProximalGradient(proxf, proxg, x0, tau=None, beta=0.5,
     if show:
         print('\nTotal time (s) = %.2f' % (time.time() - tstart))
         print('---------------------------------------------------------\n')
-    return x
+    return np.array(x_samples)
 
 
 def prox_conjugate(x, gamma, prox):
