@@ -549,8 +549,7 @@ def MoreauYosidaUnadjustedLangevin(proxf, proxg, x0, tau=None, gamma=.1,
               '---------------------------------------------------------\n'
               'Proximal operator (f): %s\n'
               'Proximal operator (g): %s\n'
-              'tau = %s\ttau=%10e\n'
-              'gamma = %s\tgamma=%10e\n'
+              'tau = %s\tgamma=%10e\n'
               'epsg = %s\tniter = %d\n' % (type(proxf), type(proxg),
                                     'Adaptive' if tau is None else str(tau), gamma,
                                     epsg_print, niter))
