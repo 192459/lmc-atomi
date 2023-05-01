@@ -136,8 +136,8 @@ class ProximalLangevinMonteCarloDeconvolution:
 
 
 ## Main function
-def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.8,
-                    N=10000, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA', 
+def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000, 
+                    niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA', 
                     computeMAP=False, seed=0):
 
     # Choose the test image
