@@ -10,7 +10,7 @@ python prox_lmc.py --gamma_pgld=5e-3 --gamma_myula=5e-3 --gamma_mymala=5e-3 --ga
 python prox_lmc.py --gamma_pgld=8e-2 --gamma_myula=8e-2 --gamma_mymala=8e-2 --gamma_ppula=8e-2 --gamma_fbula=8e-2 --gamma_lbmumla=8e-2 --gamma0_ulpda=8e-2 --gamma1_ulpda=8e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=50000 --n=2
 
 python prox_lmc_deconv.py --N=100 --tau=0.3 --sigma=0.75 --gamma_ulpda=15. --image='camera' --alg='ULPDA'
-python prox_lmc_deconv.py --N=100 --tau=0.3 --sigma=0.75 --gamma_ulpda=15. --image='camera' --alg='MYULA'
+python prox_lmc_deconv.py --N=500 --gamma_mc=100. --gamma_me=15. --tau=0.3 --sigma=.75 --image='camera' --alg='MYULA'
 
 
 
