@@ -34,7 +34,7 @@ import prox
 
 
 
-def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, alpha=0.8,
+def main(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.8,
         N=10, niter_l2=50, niter_tv=10, niter_map=1000, image='camera', alg='ULPDA',
         computeMAP=False, seed=0):
 
@@ -77,6 +77,27 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
     plt.pause(5)
     plt.close() 
 
+    L = 1. / sigma**2 # maxeig(Hop^H Hop)
+    tau0 = 0.95 / L
+    mu0 = 0.95 / (tau0 * L)
+
+    # L_myula = lambda Aop: np.abs((Aop.H * Aop).eigs(neigs=1, symmetric=True)[0]) / sigma**2
+
+    # L5_myula = L_myula(H5)
+    # L6_myula = L_myula(H6)
+    # L7_myula = L_myula(H7)
+    # print(f'L5_myula = {L5_myula}', f'L6_myula = {L6_myula}', f'L7_myula = {L7_myula}')
+    L_myula = 1. / sigma**2
+    gamma_myula = 1. / L_myula
+    tau_myula = 0.2 * gamma_myula
+
+    gamma_myula_mc = 15.
+    tau_myula_mc = 0.2 / sigma**2
+
+    gamma_myula_me = 15.
+    tau_myula_me = 0.2 / sigma**2
+
+
     # Gradient operator
     sampling = 1.
     Gop = pylops.Gradient(dims=(ny, nx), sampling=sampling, edge=False, kind='forward', dtype='float64')
@@ -87,20 +108,24 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
-    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
-    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
-
-    # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
-    l2_6_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
-    l2_7_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, niter=niter_l2, warm=True)
+    l2_5_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    l2_6_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    l2_7_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
-    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
-    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
-    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_ulpda, isotropic=True, niter=niter_l2, warm=True)
+    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
+    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
+    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
 
+    # L2 data term - Moreau envelope of anisotropic TV
+    # l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, niter=niter_l2, warm=True)
+    # l2_6_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, niter=niter_l2, warm=True)
+    # l2_7_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, niter=niter_l2, warm=True)
+
+    # L2 data term - Moreau envelope of isotropic TV
+    l2_5_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, isotropic=True, niter=niter_l2, warm=True)
+    l2_6_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, isotropic=True, niter=niter_l2, warm=True)
+    l2_7_me = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, isotropic=True, niter=niter_l2, warm=True)
 
     # L1 regularization (isotropic TV) for ULPDA or PDHG
     l1iso = pyproximal.L21(ndim=2, sigma=tau)
@@ -113,7 +138,6 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
 
     # Identity operator
     Iop = pylops.Identity(ny * nx)
-
     # Primal-dual
     def callback(x, f, g, K, cost, xtrue, err):
         cost.append(f(x) + g(K.matvec(x)))
@@ -138,7 +162,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
                                                                         Gop, cost_5_samples,
                                                                         img.ravel(), 
                                                                         err_5_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_5, tv, tau=tau0, mu=mu0, theta=1.,
+        prox.MoreauYosidaUnadjustedLangevin(l2_5, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_5, tv,
                                                                         Iop, cost_5_samples,
@@ -156,7 +180,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
                                                                         Gop, cost_6_samples,
                                                                         img.ravel(),
                                                                         err_6_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_6, tv, tau=tau0, mu=mu0, theta=1.,
+        prox.MoreauYosidaUnadjustedLangevin(l2_6, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_6, tv,
                                                                         Iop, cost_6_samples,
@@ -174,7 +198,7 @@ def main(gamma_myula=5e-2, gamma_ulpda=15., lamda=0.01, sigma=0.75, tau=0.03, al
                                                                         Gop, cost_7_samples,
                                                                         img.ravel(),
                                                                         err_7_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_7, tv, tau=tau0, mu=mu0, theta=1.,
+        prox.MoreauYosidaUnadjustedLangevin(l2_7, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_7, tv,
                                                                         Iop, cost_7_samples,

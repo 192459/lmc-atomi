@@ -192,7 +192,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
     # L7_myula = L_myula(H7)
     # print(f'L5_myula = {L5_myula}', f'L6_myula = {L6_myula}', f'L7_myula = {L7_myula}')
     L_myula = 1. / sigma**2
-    gamma_myula = 0.95 / L_myula
+    gamma_myula = 1. / L_myula
     tau_myula = 0.2 * gamma_myula
 
     gamma_myula_mc = 15.
@@ -212,9 +212,14 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
-    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
-    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    l2_5_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    l2_6_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    l2_7_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+
+    # L2 data term - Moreau envelope of isotropic TV
+    l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
+    l2_6_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
+    l2_7_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
     # l2_5_me_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_me, niter=niter_l2, warm=True)
@@ -372,6 +377,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
             #                                                                         err_7_me_map))
         iml12_7_me_map = iml12_7_me_map.reshape(img.shape)
 
+
         print(f"SNR of PDHG MAP image with TV (M1): {signal_noise_ratio(img, iml12_5_map)}")
         print(f"SNR of PDHG MAP image with MC-TV (M2): {signal_noise_ratio(img, iml12_5_mc_map)}")
         print(f"SNR of PDHG MAP image with ME-TV (M3): {signal_noise_ratio(img, iml12_5_me_map)}")
@@ -391,6 +397,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
         print(f"PSNR of PDHG MAP image with TV (M7): {psnr(img, iml12_7_map)}")
         print(f"PSNR of PDHG MAP image with MC-TV (M8): {psnr(img, iml12_7_mc_map)}")
         print(f"PSNR of PDHG MAP image with ME-TV (M9): {psnr(img, iml12_7_me_map)}")
+
 
         fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
         plt.gray()  # show the filtered result in grayscale
@@ -490,6 +497,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         err_7_samples))
 
     
+    x0_mc = rng.standard_normal(img.ravel().shape)
     cost_5_mc_samples = []
     err_5_mc_samples = []
     iml12_5_mc_samples = \
@@ -501,7 +509,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_5_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_5_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0, niter=N, show=True, seed=seed,
+                                            x0=x0_mc, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_5_mc, tv,
                                                                         Iop, cost_5_mc_samples,
                                                                         img.ravel(),
@@ -518,7 +526,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_6_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_6_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0, niter=N, show=True, seed=seed,
+                                            x0=x0_mc, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_6_mc, tv,
                                                                         Iop, cost_6_mc_samples,
                                                                         img.ravel(),
@@ -535,7 +543,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_7_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_7_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0, niter=N, show=True, seed=seed,
+                                            x0=x0_mc, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_7_mc, tv,
                                                                         Iop, cost_7_mc_samples,
                                                                         img.ravel(),
@@ -670,7 +678,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    # fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.pdf', dpi=250)
+    fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.pdf', dpi=250)
 
 
     '''

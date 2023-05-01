@@ -228,10 +228,9 @@ class L2_ncvx_tv(ProxOperator):
             # MC-TV
             Op2x = self.Op2.matvec(x)
             if self.isotropic:
-                Op2x = Op2x.reshape(self.ndim, len(Op2x) // self.ndim)
-                Op2x = np.sqrt(np.sum(Op2x ** 2, axis=0))
+                Op2x_euc = np.linalg.norm(Op2x.reshape(self.ndim, len(Op2x) // self.ndim), axis=0)
                 x += tau * self.lamda / self.gamma * \
-                    self.Op2.rmatvec(self.Op2.matvec(x) / np.linalg.norm(self.Op2.matvec(x)) * (Op2x - self.g_gamma.prox(Op2x, self.gamma)))
+                    self.Op2.rmatvec(Op2x) / Op2x_euc * (Op2x_euc - self.g_gamma.prox(Op2x_euc, self.gamma))
             else:
                 x += tau * self.lamda / self.gamma * \
                     self.Op2.rmatvec(Op2x - self.g_gamma.prox(Op2x, self.gamma))
