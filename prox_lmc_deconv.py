@@ -13,14 +13,13 @@
 # limitations under the License.
 
 # Install libraries: 
-# pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal arviz
+# pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal
 
 '''
-Usage: python prox_lmc_deconv.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --gamma_fbula=5e-2 --gamma0_ulpda=5e-2 --gamma1_ulpda=5e-2 --alpha=1.5e-1 --lamda=2.5e-1 --t=100 --seed=0 --K=10000 --n=5
+Usage: python prox_lmc_deconv.py --N=1000 --gamma_mc=100. --gamma_me=15. --tau=0.3 --sigma=.75 --image='camera' --alg='ULPDA'
 '''
 
 import os
-from fastprogress import progress_bar
 import fire
 
 import numpy as np
@@ -39,100 +38,19 @@ plt.rcParams.update({
     )
 
 import scipy
-from scipy.linalg import sqrtm
-from scipy.stats import multivariate_normal
-from scipy import ndimage
 
-import skimage as ski
-from skimage import data, io, filters
+from skimage import data, io
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
 
 import pylops
 import pyproximal
 
-import arviz as az
-
 import prox
 
 
 def signal_noise_ratio(image_true, image_test): 
     return 20 * np.log10(np.linalg.norm(image_true) / np.linalg.norm(image_test - image_true))
-
-class ProximalLangevinMonteCarloDeconvolution:
-    def __init__(self, lamda, sigma, tau, N=10000, seed=0) -> None:
-        super(ProximalLangevinMonteCarloDeconvolution, self).__init__()
-        self.lamda = lamda
-        self.sigma = sigma
-        self.tau = tau
-        self.n = N
-        self.seed = seed
-
-    def total_variation(self, g):
-        nx, ny = g.shape
-        tv_x = pylops.FirstDerivative((ny, nx), axis=0, edge=False, kind="backward")
-        tv_y = pylops.FirstDerivative((ny, nx), axis=1, edge=False, kind="backward")
-        return tv_x, tv_y
-    
-
-    def posterior(self, x, y, H):   
-        U = np.linalg.norm(y - H * x)**2 / (2*self.sigma**2)
-        U += self.tau * self.total_variation(x)[0] * x
-        U += self.tau * self.total_variation(x)[1] * x
-        return np.exp(-U)
-
-
-    def gd_update(self, x, y, H, gamma): 
-        return x - gamma * H.adjoint() * (H * x - y) / (2*self.sigma**2)
-
-
-    ## Moreau--Yosida Unadjusted Langevin Algorithm (MYULA)
-    def grad_Moreau_env(self, theta):
-        return (theta - pyproximal.TV(dims=theta.shape, sigma=self.lamda * self.tau)(theta)) / self.lamda
-
-    def prox_update(self, theta, gamma):
-        return -gamma * self.grad_Moreau_env(theta)
-
-    def myula(self, y, H, gamma):
-        print("\nSampling with MYULA:")
-        d = y.shape[0]
-        rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
-            theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-
-
-    ## Moreau--Yosida regularized Metropolis-Adjusted Langevin Algorithm (MYMALA)
-    def q_prob(self, theta1, theta2, gamma):
-        return multivariate_normal(mean=self.gd_update(theta2, gamma) + self.prox_update(theta2, gamma), cov=2*gamma).pdf(theta1)
-
-
-    def prob(self, theta_new, theta_old, y, H, gamma):
-        density_ratio = self.posterior(theta_new, y, H) / self.posterior(theta_old, y, H)
-        q_ratio = self.q_prob(theta_old, theta_new, gamma) / self.q_prob(theta_new, theta_old, gamma)
-        return density_ratio * q_ratio
-
-
-    def mymala(self, y, H, gamma):
-        print("\nSampling with MYMALA:")
-        d = y.shape[0]
-        rng = default_rng(self.seed)
-        theta0 = rng.standard_normal(d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(d), np.identity(d))
-            theta_new = self.gd_update(theta0, y, H, gamma) + self.prox_update(theta0, gamma) + np.sqrt(2*gamma) * xi
-            p = self.prob(theta_new, theta0, gamma)
-            alpha = min(1, p)
-            if rng.random() <= alpha:
-                theta.append(theta_new) 
-                theta0 = theta_new
-        return np.array(theta), len(theta)
 
 
 ## Main function
@@ -183,7 +101,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
     L = 1. / sigma**2 # maxeig(Hop^H Hop)
     tau0 = 0.95 / L
-    mu0 = 0.95 / (tau0 * L)
+    # mu0 = 0.95 / (tau0 * L)
+    mu0 = 1.
 
     # L_myula = lambda Aop: np.abs((Aop.H * Aop).eigs(neigs=1, symmetric=True)[0]) / sigma**2
 
@@ -195,13 +114,6 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
     gamma_myula = 1. / L_myula
     tau_myula = 0.2 * gamma_myula
 
-    gamma_myula_mc = 15.
-    tau_myula_mc = 0.2 / sigma**2
-
-    gamma_myula_me = 15.
-    tau_myula_me = 0.2 / sigma**2
-
-
     # Gradient operator
     sampling = 1.
     Gop = pylops.Gradient(dims=(ny, nx), sampling=sampling, edge=False, kind='forward', dtype='float64')
@@ -212,9 +124,9 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
     l2_7 = pyproximal.L2(Op=H7, b=y.ravel(), sigma=1/sigma**2, niter=50, warm=True)
 
     # L2 data term - Moreau envelope of anisotropic TV
-    l2_5_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
-    l2_6_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
-    l2_7_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    # l2_5_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    # l2_6_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H6, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
+    # l2_7_mc_a = prox.L2_ncvx_tv(dims=(ny, nx), Op=H7, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, niter=niter_l2, warm=True)
 
     # L2 data term - Moreau envelope of isotropic TV
     l2_5_mc = prox.L2_ncvx_tv(dims=(ny, nx), Op=H5, Op2=Gop, b=y.ravel(), sigma=1/sigma**2, lamda=tau, gamma=gamma_mc, isotropic=True, niter=niter_l2, warm=True)
@@ -290,11 +202,18 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
         cost_5_mc_map = []
         err_5_mc_map = []
+        # iml12_5_mc_map, _ = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_5_mc, l1,
+            #                                                                         Gop, cost_5_mc_map,
+            #                                                                         img.ravel(),
+            #                                                                         err_5_mc_map))
         iml12_5_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_5_mc, l1,
-                                                                                    Gop, cost_5_mc_map,
+            pyproximal.optimization.primal.ProximalGradient(l2_5_mc, tv, x0=x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_5_mc, tv,
+                                                                                    Iop, cost_5_mc_map,
                                                                                     img.ravel(),
                                                                                     err_5_mc_map))
         iml12_5_mc_map = iml12_5_mc_map.reshape(img.shape)
@@ -302,11 +221,18 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
         cost_6_mc_map = []
         err_6_mc_map = []
+        # iml12_6_mc_map, _ = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_6_mc, l1,
+            #                                                                         Gop, cost_6_mc_map,
+            #                                                                         img.ravel(),
+            #                                                                         err_6_mc_map))
         iml12_6_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_6_mc, l1,
-                                                                                    Gop, cost_6_mc_map,
+            pyproximal.optimization.primal.ProximalGradient(l2_6_mc, tv, x0=x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_6_mc, tv,
+                                                                                    Iop, cost_6_mc_map,
                                                                                     img.ravel(),
                                                                                     err_6_mc_map))
         iml12_6_mc_map = iml12_6_mc_map.reshape(img.shape)
@@ -314,11 +240,18 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
         cost_7_mc_map = []
         err_7_mc_map = []
+        # iml12_7_mc_map, _ = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_7_mc, l1,
+            #                                                                         Gop, cost_7_mc_map,
+            #                                                                         img.ravel(),
+            #                                                                         err_7_mc_map))
         iml12_7_mc_map, _ = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_7_mc, l1,
-                                                                                    Gop, cost_7_mc_map,
+            pyproximal.optimization.primal.ProximalGradient(l2_7_mc, tv, x0=x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_7_mc, tv,
+                                                                                    Iop, cost_7_mc_map,
                                                                                     img.ravel(),
                                                                                     err_7_mc_map))
         iml12_7_mc_map = iml12_7_mc_map.reshape(img.shape)
@@ -326,55 +259,58 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
         cost_5_me_map = []
         err_5_me_map = []
-        iml12_5_me_map = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_me, l1iso, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_5_me, l1iso,
-                                                                                    Gop, cost_5_me_map,
-                                                                                    img.ravel(),
-                                                                                    err_5_me_map))
-            # pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=x0,
-            #                                                 niter=niter_map, show=True, acceleration='fista',
-            #                                                 callback=lambda x: callback(x, l2_5_me, tv,
-            #                                                                         Iop, cost_5_me_map,
+        # iml12_5_me_map = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_me, l1iso, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_5_me, l1iso,
+            #                                                                         Gop, cost_5_me_map,
             #                                                                         img.ravel(),
             #                                                                         err_5_me_map))
+        iml12_5_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_5_me, tv,
+                                                                                    Iop, cost_5_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_5_me_map))
         iml12_5_me_map = iml12_5_me_map.reshape(img.shape)
 
 
         cost_6_me_map = []
         err_6_me_map = []
-        iml12_6_me_map = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_me, l1iso, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_6_me, l1iso,
-                                                                                    Gop, cost_6_me_map,
-                                                                                    img.ravel(),
-                                                                                    err_6_me_map))
-            # pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0 = x0,
-            #                                                 niter=niter_map, show=True, acceleration='fista',
-            #                                                 callback=lambda x: callback(x, l2_6_me, tv,
-            #                                                                         Iop, cost_6_me_map,
+        # iml12_6_me_map = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_me, l1iso, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_6_me, l1iso,
+            #                                                                         Gop, cost_6_me_map,
             #                                                                         img.ravel(),
             #                                                                         err_6_me_map))
+        iml12_6_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0 = x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_6_me, tv,
+                                                                                    Iop, cost_6_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_6_me_map))
         iml12_6_me_map = iml12_6_me_map.reshape(img.shape)
 
 
         cost_7_me_map = []
         err_7_me_map = []
-        iml12_7_me_map = \
-            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_me, l1iso, Gop, tau=tau0, mu=mu0,
-                                                        x0=x0, niter=niter_map, show=True,
-                                                        callback=lambda x: callback(x, l2_7_me, l1iso,
-                                                                                    Gop, cost_7_me_map,
-                                                                                    img.ravel(),
-                                                                                    err_7_me_map))
-            # pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=x0,
-            #                                                 niter=niter_map, show=True, acceleration='fista',
-            #                                                 callback=lambda x: callback(x, l2_7_me, tv,
-            #                                                                         Iop, cost_7_me_map,
+        # iml12_7_me_map = \
+            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_me, l1iso, Gop, tau=tau0, mu=mu0,
+            #                                             x0=x0, niter=niter_map, show=True,
+            #                                             callback=lambda x: callback(x, l2_7_me, l1iso,
+            #                                                                         Gop, cost_7_me_map,
             #                                                                         img.ravel(),
             #                                                                         err_7_me_map))
+        iml12_7_me_map = \
+            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=x0,
+                                                            niter=niter_map, show=True, acceleration='fista',
+                                                            callback=lambda x: callback(x, l2_7_me, tv,
+                                                                                    Iop, cost_7_me_map,
+                                                                                    img.ravel(),
+                                                                                    err_7_me_map))
         iml12_7_me_map = iml12_7_me_map.reshape(img.shape)
 
 
@@ -399,7 +335,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
         print(f"PSNR of PDHG MAP image with ME-TV (M9): {psnr(img, iml12_7_me_map)}")
 
 
-        fig2, axes = plt.subplots(2, 5, figsize=(20, 8))
+        fig2, axes = plt.subplots(5, 2, figsize=(8, 20))
         plt.gray()  # show the filtered result in grayscale
         axes[0,0].imshow(img)
         axes[0,0].set_title("Ground truth", fontsize=16)
@@ -410,35 +346,35 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
         axes[0,1].imshow(iml12_5_map)        
         axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
 
-        axes[0,2].imshow(iml12_5_mc_map)
-        axes[0,2].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+        axes[1,0].imshow(iml12_5_mc_map)
+        axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
 
-        axes[0,3].imshow(iml12_5_me_map)
-        axes[0,3].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+        axes[1,1].imshow(iml12_5_me_map)
+        axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
 
-        axes[0,4].imshow(iml12_6_map)
-        axes[0,4].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+        axes[2,0].imshow(iml12_6_map)
+        axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
 
-        axes[1,0].imshow(iml12_6_mc_map)
-        axes[1,0].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+        axes[2,1].imshow(iml12_6_mc_map)
+        axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
 
-        axes[1,1].imshow(iml12_6_me_map)
-        axes[1,1].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+        axes[3,0].imshow(iml12_6_me_map)
+        axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
 
-        axes[1,2].imshow(iml12_7_map)
-        axes[1,2].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+        axes[3,1].imshow(iml12_7_map)
+        axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
 
-        axes[1,3].imshow(iml12_7_mc_map)
-        axes[1,3].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+        axes[4,0].imshow(iml12_7_mc_map)
+        axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
 
-        axes[1,4].imshow(iml12_7_me_map)
-        axes[1,4].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+        axes[4,1].imshow(iml12_7_me_map)
+        axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
 
         # plt.show()
         plt.show(block=False)
         plt.pause(10)
         plt.close()
-        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{niter_map}_map.pdf', dpi=500) 
+        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_map}.pdf', dpi=250) 
     
 
 
@@ -508,7 +444,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_5_mc_samples,
                                                                         img.ravel(),
                                                                         err_5_mc_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_5_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_5_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_5_mc, tv,
                                                                         Iop, cost_5_mc_samples,
@@ -525,7 +461,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_6_mc_samples,
                                                                         img.ravel(),
                                                                         err_6_mc_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_6_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_6_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_6_mc, tv,
                                                                         Iop, cost_6_mc_samples,
@@ -542,7 +478,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_7_mc_samples,
                                                                         img.ravel(),
                                                                         err_7_mc_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_7_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_7_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_7_mc, tv,
                                                                         Iop, cost_7_mc_samples,
@@ -561,7 +497,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_5_me_samples,
                                                                         img.ravel(),
                                                                         err_5_me_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_5_me, tv, tau=tau_myula_me, gamma=gamma_myula_me, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_5_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_5_me, tv,
                                                                         Iop, cost_5_me_samples,
@@ -578,7 +514,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_6_me_samples,
                                                                         img.ravel(),
                                                                         err_6_me_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_6_me, tv, tau=tau_myula_me, gamma=gamma_myula_me, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_6_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_6_me, tv,
                                                                         Iop, cost_6_me_samples,
@@ -595,7 +531,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                         Gop, cost_7_me_samples,
                                                                         img.ravel(),
                                                                         err_7_me_samples)) if alg == 'ULPDA' else \
-        prox.MoreauYosidaUnadjustedLangevin(l2_7_me, tv, tau=tau_myula_me, gamma=gamma_myula_me, 
+        prox.MoreauYosidaUnadjustedLangevin(l2_7_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                             x0=x0, niter=N, show=True,
                                             callback=lambda x: callback(x, l2_7_me, tv,
                                                                         Iop, cost_7_me_samples,
@@ -638,7 +574,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
 
     # Plot the results
-    fig3, axes = plt.subplots(2, 5, figsize=(20, 8))
+    fig3, axes = plt.subplots(5, 2, figsize=(8, 20))
     plt.gray()  # show the filtered result in grayscale
     # axes[0,0].imshow(img)
     # axes[0,0].set_title("True image", fontsize=16)
@@ -649,29 +585,29 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
     axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
     axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
 
-    axes[0,2].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[0,2].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+    axes[1,0].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
 
-    axes[0,3].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
-    axes[0,3].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+    axes[1,1].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
+    axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
 
-    axes[0,4].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
-    axes[0,4].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+    axes[2,0].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
+    axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
 
-    axes[1,0].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[1,0].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+    axes[2,1].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
 
-    axes[1,1].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,1].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+    axes[3,0].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
+    axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
 
-    axes[1,2].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
-    axes[1,2].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+    axes[3,1].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
+    axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
 
-    axes[1,3].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
-    axes[1,3].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+    axes[4,0].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
+    axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
 
-    axes[1,4].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
-    axes[1,4].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+    axes[4,1].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
+    axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
 
 
     # plt.show()
@@ -679,7 +615,6 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
     plt.pause(10)
     plt.close()
     fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.pdf', dpi=250)
-
 
     '''
     def U(x, f, g, Op=None):
