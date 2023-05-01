@@ -443,6 +443,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
 
 
     # Generate samples using ULPDA or MYULA
+    '''
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -495,9 +496,12 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         Iop, cost_7_samples,
                                                                         img.ravel(),
                                                                         err_7_samples))
+    '''                                                                    
 
     
-    x0_mc = rng.standard_normal(img.ravel().shape)
+    # x0_mc = np.abs(rng.standard_normal(img.ravel().shape)) + 1e-6
+    # x0_mc = 0.1 * np.ones(img.ravel().shape)
+    x0_mc = np.zeros(img.ravel().shape)
     cost_5_mc_samples = []
     err_5_mc_samples = []
     iml12_5_mc_samples = \
