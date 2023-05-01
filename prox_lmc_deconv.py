@@ -443,7 +443,6 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
 
 
     # Generate samples using ULPDA or MYULA
-    '''
     cost_5_samples = []
     err_5_samples = []
     iml12_5_samples = \
@@ -496,11 +495,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         Iop, cost_7_samples,
                                                                         img.ravel(),
                                                                         err_7_samples))
-    '''                                                                    
-
+                                                                    
     
-    # x0_mc = np.abs(rng.standard_normal(img.ravel().shape)) + 1e-6
-    # x0_mc = 0.1 * np.ones(img.ravel().shape)
     x0_mc = np.zeros(img.ravel().shape)
     cost_5_mc_samples = []
     err_5_mc_samples = []
@@ -513,7 +509,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_5_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_5_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0_mc, niter=N, show=True, seed=seed,
+                                            x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_5_mc, tv,
                                                                         Iop, cost_5_mc_samples,
                                                                         img.ravel(),
@@ -530,7 +526,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_6_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_6_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0_mc, niter=N, show=True, seed=seed,
+                                            x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_6_mc, tv,
                                                                         Iop, cost_6_mc_samples,
                                                                         img.ravel(),
@@ -547,7 +543,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
                                                                         img.ravel(),
                                                                         err_7_mc_samples)) if alg == 'ULPDA' else \
         prox.MoreauYosidaUnadjustedLangevin(l2_7_mc, tv, tau=tau_myula_mc, gamma=gamma_myula_mc, 
-                                            x0=x0_mc, niter=N, show=True, seed=seed,
+                                            x0=x0, niter=N, show=True, seed=seed,
                                             callback=lambda x: callback(x, l2_7_mc, tv,
                                                                         Iop, cost_7_mc_samples,
                                                                         img.ravel(),

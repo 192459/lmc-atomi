@@ -230,7 +230,7 @@ class L2_ncvx_tv(ProxOperator):
             if self.isotropic:
                 Op2x_euc = np.linalg.norm(Op2x.reshape(self.ndim, len(Op2x) // self.ndim), axis=0)
                 Op2x_euc = np.where(Op2x_euc != 0, Op2x_euc, 1e-9)
-                x += tau * self.lamda * self.Op2.rmatvec(np.minimum(1/self.gamma, np.hstack((1/Op2x_euc, 1/Op2x_euc))) * Op2x)
+                x += tau * self.lamda * self.Op2.rmatvec(np.minimum(1/self.gamma, np.tile(1/Op2x_euc, 2)) * Op2x)
             else:
                 x += tau * self.lamda / self.gamma * \
                     self.Op2.rmatvec(Op2x - self.g_gamma.prox(Op2x, self.gamma))
@@ -290,7 +290,7 @@ class L2_ncvx_tv(ProxOperator):
             if self.isotropic:                
                 Op2x_euc = np.linalg.norm(Op2x.reshape(self.ndim, len(Op2x) // self.ndim), axis=0)
                 Op2x_euc = np.where(Op2x_euc != 0, Op2x_euc, 1e-9)
-                grad_moreau = self.Op2.rmatvec(np.minimum(1/self.gamma, np.hstack((1/Op2x_euc, 1/Op2x_euc))) * Op2x)
+                grad_moreau = self.Op2.rmatvec(np.minimum(1/self.gamma, np.tile(1/Op2x_euc, 2)) * Op2x)
             else: 
                 grad_moreau = self.Op2.rmatvec(Op2x - self.g_gamma.prox(Op2x, self.gamma)) / self.gamma 
         else:
