@@ -181,8 +181,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, alpha=0.
     plt.close() 
 
 
-    L = 1. / sigma**2 # maxeig(Gop^H Gop)
-    tau0 = 0.95 / np.sqrt(L)
+    L = 1. / sigma**2 # maxeig(Hop^H Hop)
+    tau0 = 0.95 / L
     mu0 = 0.95 / (tau0 * L)
 
     # L_myula = lambda Aop: np.abs((Aop.H * Aop).eigs(neigs=1, symmetric=True)[0]) / sigma**2
