@@ -209,7 +209,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
             #                                                                         Gop, cost_5_mc_map,
             #                                                                         img.ravel(),
             #                                                                         err_5_mc_map))
-        iml12_5_mc_map, _ = \
+        iml12_5_mc_map = \
             pyproximal.optimization.primal.ProximalGradient(l2_5_mc, tv, x0=x0,
                                                             niter=niter_MAP, show=True, acceleration='fista',
                                                             callback=lambda x: callback(x, l2_5_mc, tv,
@@ -228,7 +228,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
             #                                                                         Gop, cost_6_mc_map,
             #                                                                         img.ravel(),
             #                                                                         err_6_mc_map))
-        iml12_6_mc_map, _ = \
+        iml12_6_mc_map = \
             pyproximal.optimization.primal.ProximalGradient(l2_6_mc, tv, x0=x0,
                                                             niter=niter_MAP, show=True, acceleration='fista',
                                                             callback=lambda x: callback(x, l2_6_mc, tv,
@@ -247,7 +247,7 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
             #                                                                         Gop, cost_7_mc_map,
             #                                                                         img.ravel(),
             #                                                                         err_7_mc_map))
-        iml12_7_mc_map, _ = \
+        iml12_7_mc_map = \
             pyproximal.optimization.primal.ProximalGradient(l2_7_mc, tv, x0=x0,
                                                             niter=niter_MAP, show=True, acceleration='fista',
                                                             callback=lambda x: callback(x, l2_7_mc, tv,
