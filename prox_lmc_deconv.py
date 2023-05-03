@@ -101,15 +101,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
     L = 1. / sigma**2 # maxeig(Hop^H Hop)
     tau0 = 0.95 / L
-    # mu0 = 0.95 / (tau0 * L)
     mu0 = 1.
 
-    # L_myula = lambda Aop: np.abs((Aop.H * Aop).eigs(neigs=1, symmetric=True)[0]) / sigma**2
-
-    # L5_myula = L_myula(H5)
-    # L6_myula = L_myula(H6)
-    # L7_myula = L_myula(H7)
-    # print(f'L5_myula = {L5_myula}', f'L6_myula = {L6_myula}', f'L7_myula = {L7_myula}')
     L_myula = 1. / sigma**2
     gamma_myula = 1. / L_myula
     tau_myula = 0.2 * gamma_myula
@@ -202,115 +195,115 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
 
         cost_5_mc_map = []
         err_5_mc_map = []
-        # iml12_5_mc_map, _ = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_5_mc, l1,
-            #                                                                         Gop, cost_5_mc_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_5_mc_map))
-        iml12_5_mc_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_5_mc, tv, x0=x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_5_mc, tv,
-                                                                                    Iop, cost_5_mc_map,
+        iml12_5_mc_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_5_mc, l1,
+                                                                                    Gop, cost_5_mc_map,
                                                                                     img.ravel(),
                                                                                     err_5_mc_map))
+        # iml12_5_mc_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_5_mc, tv, x0=x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_5_mc, tv,
+        #                                                                             Iop, cost_5_mc_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_5_mc_map))
         iml12_5_mc_map = iml12_5_mc_map.reshape(img.shape)
 
 
         cost_6_mc_map = []
         err_6_mc_map = []
-        # iml12_6_mc_map, _ = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_6_mc, l1,
-            #                                                                         Gop, cost_6_mc_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_6_mc_map))
-        iml12_6_mc_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_6_mc, tv, x0=x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_6_mc, tv,
-                                                                                    Iop, cost_6_mc_map,
+        iml12_6_mc_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_6_mc, l1,
+                                                                                    Gop, cost_6_mc_map,
                                                                                     img.ravel(),
                                                                                     err_6_mc_map))
+        # iml12_6_mc_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_6_mc, tv, x0=x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_6_mc, tv,
+        #                                                                             Iop, cost_6_mc_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_6_mc_map))
         iml12_6_mc_map = iml12_6_mc_map.reshape(img.shape)
 
 
         cost_7_mc_map = []
         err_7_mc_map = []
-        # iml12_7_mc_map, _ = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_7_mc, l1,
-            #                                                                         Gop, cost_7_mc_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_7_mc_map))
-        iml12_7_mc_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_7_mc, tv, x0=x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_7_mc, tv,
-                                                                                    Iop, cost_7_mc_map,
+        iml12_7_mc_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_7_mc, l1,
+                                                                                    Gop, cost_7_mc_map,
                                                                                     img.ravel(),
                                                                                     err_7_mc_map))
+        # iml12_7_mc_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_7_mc, tv, x0=x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_7_mc, tv,
+        #                                                                             Iop, cost_7_mc_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_7_mc_map))
         iml12_7_mc_map = iml12_7_mc_map.reshape(img.shape)
         
 
         cost_5_me_map = []
         err_5_me_map = []
-        # iml12_5_me_map = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_me, l1iso, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_5_me, l1iso,
-            #                                                                         Gop, cost_5_me_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_5_me_map))
-        iml12_5_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_5_me, tv,
-                                                                                    Iop, cost_5_me_map,
+        iml12_5_me_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_me, l1iso, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_5_me, l1iso,
+                                                                                    Gop, cost_5_me_map,
                                                                                     img.ravel(),
                                                                                     err_5_me_map))
+        # iml12_5_me_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_5_me, tv, x0=x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_5_me, tv,
+        #                                                                             Iop, cost_5_me_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_5_me_map))
         iml12_5_me_map = iml12_5_me_map.reshape(img.shape)
 
 
         cost_6_me_map = []
         err_6_me_map = []
-        # iml12_6_me_map = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_me, l1iso, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_6_me, l1iso,
-            #                                                                         Gop, cost_6_me_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_6_me_map))
-        iml12_6_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0 = x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_6_me, tv,
-                                                                                    Iop, cost_6_me_map,
+        iml12_6_me_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_me, l1iso, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_6_me, l1iso,
+                                                                                    Gop, cost_6_me_map,
                                                                                     img.ravel(),
                                                                                     err_6_me_map))
+        # iml12_6_me_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_6_me, tv, x0 = x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_6_me, tv,
+        #                                                                             Iop, cost_6_me_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_6_me_map))
         iml12_6_me_map = iml12_6_me_map.reshape(img.shape)
 
 
         cost_7_me_map = []
         err_7_me_map = []
-        # iml12_7_me_map = \
-            # pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_me, l1iso, Gop, tau=tau0, mu=mu0,
-            #                                             x0=x0, niter=niter_MAP, show=True,
-            #                                             callback=lambda x: callback(x, l2_7_me, l1iso,
-            #                                                                         Gop, cost_7_me_map,
-            #                                                                         img.ravel(),
-            #                                                                         err_7_me_map))
-        iml12_7_me_map = \
-            pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=x0,
-                                                            niter=niter_MAP, show=True, acceleration='fista',
-                                                            callback=lambda x: callback(x, l2_7_me, tv,
-                                                                                    Iop, cost_7_me_map,
+        iml12_7_me_map, _ = \
+            pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_me, l1iso, Gop, tau=tau0, mu=mu0,
+                                                        x0=x0, niter=niter_MAP, show=True,
+                                                        callback=lambda x: callback(x, l2_7_me, l1iso,
+                                                                                    Gop, cost_7_me_map,
                                                                                     img.ravel(),
                                                                                     err_7_me_map))
+        # iml12_7_me_map = \
+        #     pyproximal.optimization.primal.ProximalGradient(l2_7_me, tv, x0=x0,
+        #                                                     niter=niter_MAP, show=True, acceleration='fista',
+        #                                                     callback=lambda x: callback(x, l2_7_me, tv,
+        #                                                                             Iop, cost_7_me_map,
+        #                                                                             img.ravel(),
+        #                                                                             err_7_me_map))
         iml12_7_me_map = iml12_7_me_map.reshape(img.shape)
 
 
