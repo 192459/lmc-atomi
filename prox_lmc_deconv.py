@@ -397,6 +397,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_5_samples,
                                                                             img.ravel(),
                                                                             err_5_samples))
+        iml12_5_samples_mean = iml12_5_samples.mean(axis=0)
+        del iml12_5_samples
             
 
         cost_6_samples = []
@@ -415,6 +417,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_6_samples,
                                                                             img.ravel(),
                                                                             err_6_samples))
+        iml12_6_samples_mean = iml12_6_samples.mean(axis=0)
+        del iml12_6_samples
         
 
         cost_7_samples = []
@@ -433,6 +437,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_7_samples,
                                                                             img.ravel(),
                                                                             err_7_samples))
+        iml12_7_samples_mean = iml12_7_samples.mean(axis=0)
+        del iml12_7_samples
                                                                         
         
         cost_5_mc_samples = []
@@ -451,6 +457,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_5_mc_samples,
                                                                             img.ravel(),
                                                                             err_5_mc_samples))
+        iml12_5_mc_samples_mean = iml12_5_mc_samples.mean(axis=0)
+        del iml12_5_mc_samples
         
         cost_6_mc_samples = []
         err_6_mc_samples = []
@@ -468,6 +476,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_6_mc_samples,
                                                                             img.ravel(),
                                                                             err_6_mc_samples))
+        iml12_6_mc_samples_mean = iml12_6_mc_samples.mean(axis=0)
+        del iml12_6_mc_samples
             
         cost_7_mc_samples = []
         err_7_mc_samples = []
@@ -485,7 +495,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_7_mc_samples,
                                                                             img.ravel(),
                                                                             err_7_mc_samples))
-        
+        iml12_7_mc_samples_mean = iml12_7_mc_samples.mean(axis=0)
+        del iml12_7_mc_samples
 
 
         cost_5_me_samples = []
@@ -504,6 +515,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_5_me_samples,
                                                                             img.ravel(),
                                                                             err_5_me_samples))
+        iml12_5_me_samples_mean = iml12_5_me_samples.mean(axis=0)
+        del iml12_5_me_samples
         
         cost_6_me_samples = []
         err_6_me_samples = []
@@ -521,6 +534,8 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_6_me_samples,
                                                                             img.ravel(),
                                                                             err_6_me_samples))
+        iml12_6_me_samples_mean = iml12_6_me_samples.mean(axis=0)
+        del iml12_6_me_samples
             
         cost_7_me_samples = []
         err_7_me_samples = []
@@ -538,40 +553,42 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
                                                                             Iop, cost_7_me_samples,
                                                                             img.ravel(),
                                                                             err_7_me_samples))
+        iml12_7_me_samples_mean = iml12_7_me_samples.mean(axis=0)
+        del iml12_7_me_samples
         
 
         # Compute SNR, PSNR and MSE of samples (Require the ground truth image which might not be available in practice)
-        print(f"SNR of {alg} posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-        print(f"SNR of {alg} posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+        print(f"SNR of {alg} posterior mean image with TV (M1): {signal_noise_ratio(img.ravel(), iml12_5_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with MC-TV (M2): {signal_noise_ratio(img.ravel(), iml12_5_mc_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with ME-TV (M3): {signal_noise_ratio(img.ravel(), iml12_5_me_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with TV (M4): {signal_noise_ratio(img.ravel(), iml12_6_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with MC-TV (M5): {signal_noise_ratio(img.ravel(), iml12_6_mc_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with ME-TV (M6): {signal_noise_ratio(img.ravel(), iml12_6_me_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with TV (M7): {signal_noise_ratio(img.ravel(), iml12_7_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with MC-TV (M8): {signal_noise_ratio(img.ravel(), iml12_7_mc_samples_mean)}")
+        print(f"SNR of {alg} posterior mean image with ME-TV (M9): {signal_noise_ratio(img.ravel(), iml12_7_me_samples_mean)}")
 
 
-        print(f"PSNR of {alg} posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-        print(f"PSNR of {alg} posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+        print(f"PSNR of {alg} posterior mean image with TV (M1): {psnr(img.ravel(), iml12_5_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with MC-TV (M2): {psnr(img.ravel(), iml12_5_mc_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with ME-TV (M3): {psnr(img.ravel(), iml12_5_me_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with TV (M4): {psnr(img.ravel(), iml12_6_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with MC-TV (M5): {psnr(img.ravel(), iml12_6_mc_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with ME-TV (M6): {psnr(img.ravel(), iml12_6_me_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with TV (M7): {psnr(img.ravel(), iml12_7_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with MC-TV (M8): {psnr(img.ravel(), iml12_7_mc_samples_mean)}")
+        print(f"PSNR of {alg} posterior mean image with ME-TV (M9): {psnr(img.ravel(), iml12_7_me_samples_mean)}")
 
 
-        print(f"MSE of {alg} posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples.mean(axis=0))}")
-        print(f"MSE of {alg} posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples.mean(axis=0))}")
+        print(f"MSE of {alg} posterior mean image with TV (M1): {mse(img.ravel(), iml12_5_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with MC-TV (M2): {mse(img.ravel(), iml12_5_mc_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with ME-TV (M3): {mse(img.ravel(), iml12_5_me_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with TV (M4): {mse(img.ravel(), iml12_6_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with MC-TV (M5): {mse(img.ravel(), iml12_6_mc_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with ME-TV (M6): {mse(img.ravel(), iml12_6_me_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with TV (M7): {mse(img.ravel(), iml12_7_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with MC-TV (M8): {mse(img.ravel(), iml12_7_mc_samples_mean)}")
+        print(f"MSE of {alg} posterior mean image with ME-TV (M9): {mse(img.ravel(), iml12_7_me_samples_mean)}")
 
 
         # Plot the results
@@ -583,31 +600,31 @@ def prox_lmc_deconv(gamma_mc=5e-1, gamma_me=5e-1, sigma=0.75, tau=0.03, N=10000,
         axes[0,0].imshow(y)
         axes[0,0].set_title("Blurred and noisy image", fontsize=16)
 
-        axes[0,1].imshow(iml12_5_samples.mean(axis=0).reshape(img.shape))
+        axes[0,1].imshow(iml12_5_samples_mean.reshape(img.shape))
         axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
 
-        axes[1,0].imshow(iml12_5_mc_samples.mean(axis=0).reshape(img.shape))
+        axes[1,0].imshow(iml12_5_mc_samples_mean.reshape(img.shape))
         axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
 
-        axes[1,1].imshow(iml12_5_me_samples.mean(axis=0).reshape(img.shape))
+        axes[1,1].imshow(iml12_5_me_samples_mean.reshape(img.shape))
         axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
 
-        axes[2,0].imshow(iml12_6_samples.mean(axis=0).reshape(img.shape))
+        axes[2,0].imshow(iml12_6_samples_mean.reshape(img.shape))
         axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
 
-        axes[2,1].imshow(iml12_6_mc_samples.mean(axis=0).reshape(img.shape))
+        axes[2,1].imshow(iml12_6_mc_samples_mean.reshape(img.shape))
         axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
 
-        axes[3,0].imshow(iml12_6_me_samples.mean(axis=0).reshape(img.shape))
+        axes[3,0].imshow(iml12_6_me_samples_mean.reshape(img.shape))
         axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
 
-        axes[3,1].imshow(iml12_7_samples.mean(axis=0).reshape(img.shape))
+        axes[3,1].imshow(iml12_7_samples_mean.reshape(img.shape))
         axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
 
-        axes[4,0].imshow(iml12_7_mc_samples.mean(axis=0).reshape(img.shape))
+        axes[4,0].imshow(iml12_7_mc_samples_mean.reshape(img.shape))
         axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
 
-        axes[4,1].imshow(iml12_7_me_samples.mean(axis=0).reshape(img.shape))
+        axes[4,1].imshow(iml12_7_me_samples_mean.reshape(img.shape))
         axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
 
 
