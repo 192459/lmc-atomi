@@ -13,5 +13,3 @@ python prox_lmc_deconv.py --N=100 --tau=0.3 --sigma=0.75 --gamma_ulpda=15. --ima
 python prox_lmc_deconv.py --N=500 --gamma_mc=100. --gamma_me=15. --tau=0.3 --sigma=.75 --image='camera' --alg='MYULA'
 
 
-
-CUDA_VISIBLE_DEVICES=0 python sgld.py --n=50000 --num_partitions=10000 --lr=1e-4

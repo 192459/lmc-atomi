@@ -1,4 +1,4 @@
-# Sampling from Mixture Distributions via Langevin Monte Carlo Algorithms
+# Non-Log-Concave and Nonsmooth Sampling via Langevin Monte Carlo Algorithms
 
 ## Install Python Libraries
 ```bash
@@ -36,7 +36,30 @@ python prox_lmc.py --gamma_pgld=8e-2 --gamma_myula=8e-2 --gamma_mymala=8e-2 --ga
 ```
 
 
-## Bayesian Imaging Inverse Problems
+## Bayesian Imaging Deconvolution
+### Camera Test Image
+- MAP Estimator
 ```bash
-python prox_lmc_deconv.py --K=10 --tau=0.3 --gamma_pdhg=20.
+python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --image='camera' --compute_MAP=True
 ```
+- Posterior Mean by ULPDA
+```bash
+python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='ULPDA'
+```
+- Posterior Mean by MYULA
+```bash
+python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='MYULA'
+```
+
+### Einstein Test Image
+- MAP Estimator
+```bash
+python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --compute_MAP=True
+```
+- Posterior Mean by ULPDA
+```bash
+python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='ULPDA'
+```
+- Posterior Mean by MYULA
+```bash
+python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='MYULA'

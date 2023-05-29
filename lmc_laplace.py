@@ -1,23 +1,5 @@
 # Copyright 2023 by Tim Tsz-Kit Lau
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Install libraries: pip install -U numpy matplotlib scipy seaborn fire fastprogress
-
-'''
-Usage: 
-python lmc_laplace.py --gamma_ula=5e-2 --gamma_mala=5e-2 --gamma_pula=5e-2 --gamma_ihpula=5e-4 --gamma_mla=5e-2 --lamda=1e0 --alpha=5e-1 --n=5 --K=10000 --seed=0
-'''
+# License: MIT License
 
 import os
 from fastprogress import progress_bar
@@ -161,7 +143,6 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
         gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -178,7 +159,6 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
         gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -208,7 +188,6 @@ class LangevinMonteCarloLaplacian:
         rng = default_rng(self.seed)
         theta0 = rng.normal(0, 1, self.d)
         theta = []
-        # gammas = [gamma * i ** (-0.5) for i in range(1, self.n+1)]
         gammas = gamma * np.ones(self.n)
         for i in progress_bar(range(self.n)):
             xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
@@ -218,31 +197,6 @@ class LangevinMonteCarloLaplacian:
             theta.append(theta_new)    
             theta0 = theta_new
         return np.array(theta)
-
-
-    # Cyclical step sizes
-    def cyclical_gd_update(self, theta, gamma): 
-        return theta - gamma * self.grad_smooth_potential_laplacian_mixture(theta)
-
-    def cyclical_ula(self, gamma):
-        rng = default_rng(self.seed)
-        theta0 = rng.normal(0, 1, self.d)
-        theta = []
-        for _ in progress_bar(range(self.n)):
-            xi = rng.multivariate_normal(np.zeros(self.d), np.eye(self.d))
-            theta_new = self.cyclical_gd_update(theta0, gamma) + np.sqrt(2*gamma) * xi
-            theta.append(theta_new)    
-            theta0 = theta_new
-        return np.array(theta)
-
-
-    '''
-    def error(self, thetas1, thetas2):
-        density_2d_gaussian_mixture(theta, mus, Sigmas)
-        np.sum()
-
-        return 
-    '''
 
 
 ## Main function
@@ -274,18 +228,15 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
         mus = [mu1, mu2, mu3, mu4, mu5]
 
     # scale parameters
-    # alphas = np.arange(1, n + 1) * alpha
     alphas = np.ones(n) * alpha
 
     # weight vector
     omegas = np.ones(n) / n
 
-
     # Pack X and Y into a single 3-dimensional array
     pos = np.empty(X.shape + (2,))
     pos[:, :, 0] = X
     pos[:, :, 1] = Y
-
 
     lmc_laplacian = LangevinMonteCarloLaplacian(mus, alphas, omegas, lamda, K, seed)
 
@@ -311,10 +262,9 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ax2.set_yticks([])
     ax2.set_zticks([])
 
-    # plt.suptitle("True 2D Laplacian Mixture") 
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
+    # plt.show(block=False)
+    # plt.pause(5)
+    # plt.close()
     fig.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_1.pdf', dpi=500)
 
 
@@ -346,13 +296,10 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     print(f'\nMALA percentage of effective samples: {eff_K / K} ')
         
     M = np.array([[1.0, 0.1], [0.1, 0.5]])
-    Z4 = lmc_laplacian.pula(gamma_pula, M)
-        
-    # Z5 = lmc_laplacian.ihpula(gamma_ihpula)
-      
-    # beta = np.array([0.2, 0.8])
+    Z4 = lmc_laplacian.pula(gamma_pula, M)        
+
     beta = np.array([0.7, 0.3])
-    Z6 = lmc_laplacian.mla(gamma_mla, beta)
+    Z5 = lmc_laplacian.mla(gamma_mla, beta)
 
 
     ## Plot of the true Laplacian mixture with 2d histograms of samples
@@ -374,15 +321,12 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     axes[1,1].hist2d(Z4[:,0], Z4[:,1], bins=100, cmap=cm.viridis)
     axes[1,1].set_title("PULA", fontsize=16)
 
-    # axes[1,1].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
-    # axes[1,1].set_title("IHPULA", fontsize=16)
-
-    axes[1,2].hist2d(Z6[:,0], Z6[:,1], bins=100, cmap=cm.viridis)
+    axes[1,2].hist2d(Z5[:,0], Z5[:,1], bins=100, cmap=cm.viridis)
     axes[1,2].set_title("MLA", fontsize=16)
 
-    plt.show(block=False)
-    plt.pause(5)
-    plt.close()
+    # plt.show(block=False)
+    # plt.pause(5)
+    # plt.close()
     fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_3.pdf', dpi=500)  
 
 
@@ -409,12 +353,12 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     # sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,1])
     # axes[1,1].set_title("IHPULA", fontsize=16)
 
-    sns.kdeplot(x=Z6[:,0], y=Z6[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
+    sns.kdeplot(x=Z5[:,0], y=Z5[:,1], cmap=cm.viridis, fill=True, thresh=0, levels=7, clip=(-5, 5), ax=axes[1,2])
     axes[1,2].set_title("MLA", fontsize=16)
 
-    plt.show(block=False)
-    plt.pause(10)
-    plt.close()
+    # plt.show(block=False)
+    # plt.pause(5)
+    # plt.close()
     fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_2.pdf', dpi=500)  
 
 
