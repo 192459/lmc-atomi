@@ -65,3 +65,4 @@ python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15
 - Posterior Mean by MYULA
 ```bash
 python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='MYULA'
+```
