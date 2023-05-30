@@ -1,6 +1,6 @@
 # Non-Log-Concave and Nonsmooth Sampling via Langevin Monte Carlo Algorithms
 
-## Install Python Libraries
+## Install Required Python Libraries
 ```bash
 pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots scikit-image pylops pyproximal
 ```
