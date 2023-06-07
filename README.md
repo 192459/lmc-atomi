@@ -28,27 +28,27 @@ python prox_lmc.py --gamma_pgld=5e-2 --gamma_myula=5e-2 --gamma_mymala=5e-2 --ga
 ### Camera Test Image
 - MAP Estimator
 ```bash
-python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --image='camera' --compute_MAP=True
+python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --image='camera' --compute_MAP=True
 ```
 - Posterior Mean by ULPDA
 ```bash
-python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='ULPDA'
+python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='ULPDA'
 ```
 - Posterior Mean by MYULA
 ```bash
-python python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='MYULA'
+python prox_lmc_deconv.py --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --image='camera' --alg='MYULA'
 ```
 
 ### Einstein Test Image
 - MAP Estimator
 ```bash
-python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --compute_MAP=True
+python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --niter_MAP=1000 --compute_MAP=True
 ```
 - Posterior Mean by ULPDA
 ```bash
-python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='ULPDA'
+python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='ULPDA'
 ```
 - Posterior Mean by MYULA
 ```bash
-python python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='MYULA'
+python prox_lmc_deconv.py --image='einstein' --gamma_mc=15. --gamma_me=15. --sigma=0.75 --tau=0.3 --N=1000 --alg='MYULA'
 ```
