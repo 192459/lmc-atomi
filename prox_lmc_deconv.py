@@ -73,6 +73,12 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
     plt.gray()  # show the filtered result in grayscale
     axes[0].imshow(img)
     axes[1].imshow(y)
+    axes[0].set_title("Ground truth", fontsize=16)
+    axes[1].set_title("Blurred image", fontsize=16)
+    axes[0].set_xticks([])
+    axes[0].set_yticks([])
+    axes[1].set_xticks([])
+    axes[1].set_yticks([])
     plt.show(block=False)
     plt.pause(5)
     plt.close() 
@@ -269,33 +275,53 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         plt.gray()  # show the filtered result in grayscale
         axes[0,0].imshow(img)
         axes[0,0].set_title("Ground truth", fontsize=16)
+        axes[0,0].set_xticks([])
+        axes[0,0].set_yticks([])
 
         axes[0,1].imshow(iml12_5_map)        
         axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
+        axes[0,1].set_xticks([])
+        axes[0,1].set_yticks([])
 
         axes[1,0].imshow(iml12_5_mc_map)
         axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+        axes[1,0].set_xticks([])
+        axes[1,0].set_yticks([])
 
         axes[1,1].imshow(iml12_5_me_map)
         axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+        axes[1,1].set_xticks([])
+        axes[1,1].set_yticks([])
 
         axes[2,0].imshow(iml12_6_map)
         axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+        axes[2,0].set_xticks([])
+        axes[2,0].set_yticks([])
 
         axes[2,1].imshow(iml12_6_mc_map)
         axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+        axes[2,1].set_xticks([])
+        axes[2,1].set_yticks([])
 
         axes[3,0].imshow(iml12_6_me_map)
         axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+        axes[3,0].set_xticks([])
+        axes[3,0].set_yticks([])
 
         axes[3,1].imshow(iml12_7_map)
         axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+        axes[3,1].set_xticks([])
+        axes[3,1].set_yticks([])
 
         axes[4,0].imshow(iml12_7_mc_map)
         axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+        axes[4,0].set_xticks([])
+        axes[4,0].set_yticks([])
 
         axes[4,1].imshow(iml12_7_me_map)
         axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+        axes[4,1].set_xticks([])
+        axes[4,1].set_yticks([])
 
         # plt.show(block=False)
         # plt.pause(10)
@@ -518,33 +544,53 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
 
         axes[0,0].imshow(y)
         axes[0,0].set_title("Blurred and noisy image", fontsize=16)
+        axes[0,0].set_xticks([])
+        axes[0,0].set_yticks([])
 
         axes[0,1].imshow(iml12_5_samples_mean.reshape(img.shape))
         axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
+        axes[0,1].set_xticks([])
+        axes[0,1].set_yticks([])
 
         axes[1,0].imshow(iml12_5_mc_samples_mean.reshape(img.shape))
         axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+        axes[1,0].set_xticks([])
+        axes[1,0].set_yticks([])
 
         axes[1,1].imshow(iml12_5_me_samples_mean.reshape(img.shape))
         axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+        axes[1,1].set_xticks([])
+        axes[1,1].set_yticks([])
 
         axes[2,0].imshow(iml12_6_samples_mean.reshape(img.shape))
         axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+        axes[2,0].set_xticks([])
+        axes[2,0].set_yticks([])
 
         axes[2,1].imshow(iml12_6_mc_samples_mean.reshape(img.shape))
         axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+        axes[2,1].set_xticks([])
+        axes[2,1].set_yticks([])
 
         axes[3,0].imshow(iml12_6_me_samples_mean.reshape(img.shape))
         axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+        axes[3,0].set_xticks([])
+        axes[3,0].set_yticks([])
 
         axes[3,1].imshow(iml12_7_samples_mean.reshape(img.shape))
         axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+        axes[3,1].set_xticks([])
+        axes[3,1].set_yticks([])
 
         axes[4,0].imshow(iml12_7_mc_samples_mean.reshape(img.shape))
         axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+        axes[4,0].set_xticks([])
+        axes[4,0].set_yticks([])
 
         axes[4,1].imshow(iml12_7_me_samples_mean.reshape(img.shape))
         axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+        axes[4,1].set_xticks([])
+        axes[4,1].set_yticks([])
 
         # plt.show(block=False)
         # plt.pause(10)
