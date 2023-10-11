@@ -7,6 +7,7 @@ import fire
 import numpy as np
 from numpy.random import default_rng
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
@@ -80,7 +81,7 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
     axes[1].set_xticks([])
     axes[1].set_yticks([])
     plt.show(block=False)
-    plt.pause(5)
+    plt.pause(2)
     plt.close() 
 
 
@@ -124,12 +125,12 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
     Iop = pylops.Identity(ny * nx)
 
     # Primal-dual
-    def callback(x, f, g, K, cost, xtrue, err, snr, psnr, mse):
+    def callback(x, f, g, K, cost, xtrue, err, snr_list, psnr_list, mse_list):
         cost.append(f(x) + g(K.matvec(x)))
         err.append(np.linalg.norm(x - xtrue))
-        snr.append(signal_noise_ratio(xtrue, x))
-        psnr.append(psnr(xtrue, x))
-        mse.append(mse(xtrue, x))
+        snr_list.append(signal_noise_ratio(xtrue, x))
+        psnr_list.append(psnr(xtrue, x))
+        mse_list.append(mse(xtrue, x))
     
     x0 = np.zeros(img.ravel().shape)
     
@@ -336,47 +337,47 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         axes[0,0].set_yticks([])
 
         axes[0,1].imshow(iml12_5_map)        
-        axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
+        axes[0,1].set_title(r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)", fontsize=16)
         axes[0,1].set_xticks([])
         axes[0,1].set_yticks([])
 
         axes[1,0].imshow(iml12_5_mc_map)
-        axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+        axes[1,0].set_title(r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)", fontsize=16)
         axes[1,0].set_xticks([])
         axes[1,0].set_yticks([])
 
         axes[1,1].imshow(iml12_5_me_map)
-        axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+        axes[1,1].set_title(r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)", fontsize=16)
         axes[1,1].set_xticks([])
         axes[1,1].set_yticks([])
 
         axes[2,0].imshow(iml12_6_map)
-        axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+        axes[2,0].set_title(r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)", fontsize=16)
         axes[2,0].set_xticks([])
         axes[2,0].set_yticks([])
 
         axes[2,1].imshow(iml12_6_mc_map)
-        axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+        axes[2,1].set_title(r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)", fontsize=16)
         axes[2,1].set_xticks([])
         axes[2,1].set_yticks([])
 
         axes[3,0].imshow(iml12_6_me_map)
-        axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+        axes[3,0].set_title(r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)", fontsize=16)
         axes[3,0].set_xticks([])
         axes[3,0].set_yticks([])
 
         axes[3,1].imshow(iml12_7_map)
-        axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+        axes[3,1].set_title(r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)", fontsize=16)
         axes[3,1].set_xticks([])
         axes[3,1].set_yticks([])
 
         axes[4,0].imshow(iml12_7_mc_map)
-        axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+        axes[4,0].set_title(r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)", fontsize=16)
         axes[4,0].set_xticks([])
         axes[4,0].set_yticks([])
 
         axes[4,1].imshow(iml12_7_me_map)
-        axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+        axes[4,1].set_title(r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)", fontsize=16)
         axes[4,1].set_xticks([])
         axes[4,1].set_yticks([])
 
@@ -387,45 +388,56 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
 
 
         # plot temporal evolution of SNR, PSNR and MSE
-        fig2a, axes = plt.subplots(1, 3, figsize=(27, 5))
-        iters_MAP = np.arange(niter_MAP)
-        axes[0].plot(iters_MAP, snr_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[0].plot(iters_MAP, snr_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[0].plot(iters_MAP, snr_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[0].plot(iters_MAP, snr_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[0].plot(iters_MAP, snr_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[0].plot(iters_MAP, snr_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[0].plot(iters_MAP, snr_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[0].plot(iters_MAP, snr_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[0].plot(iters_MAP, snr_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        plt.style.use(['science'])
+        plt.rcParams.update({
+            "font.family": "serif",   # specify font family here
+            "font.serif": ["Times"],  # specify font here
+            "text.usetex": True,
+            "axes.prop_cycle": plt.cycler("color", plt.cm.tab10.colors),
+            } 
+        )
 
-        axes[1].plot(iters_MAP, psnr_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[1].plot(iters_MAP, psnr_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[1].plot(iters_MAP, psnr_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[1].plot(iters_MAP, psnr_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[1].plot(iters_MAP, psnr_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[1].plot(iters_MAP, psnr_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[1].plot(iters_MAP, psnr_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[1].plot(iters_MAP, psnr_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[1].plot(iters_MAP, psnr_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        fig2a, axes = plt.subplots(3, 1, figsize=(4, 8))
+        fig2a.subplots_adjust(hspace=0.25)
+        iters_MAP = list(range(niter_MAP))
+        axes[0].plot(iters_MAP, snr_5_map, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[0].plot(iters_MAP, snr_5_mc_map, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_5_me_map, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[0].plot(iters_MAP, snr_6_map, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[0].plot(iters_MAP, snr_6_mc_map, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_6_me_map, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[0].plot(iters_MAP, snr_7_map, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[0].plot(iters_MAP, snr_7_mc_map, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_7_me_map, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
 
-        axes[2].plot(iters_MAP, mse_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[2].plot(iters_MAP, mse_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[2].plot(iters_MAP, mse_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[2].plot(iters_MAP, mse_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[2].plot(iters_MAP, mse_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[2].plot(iters_MAP, mse_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[2].plot(iters_MAP, mse_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[2].plot(iters_MAP, mse_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[2].plot(iters_MAP, mse_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        axes[1].plot(iters_MAP, psnr_5_map, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[1].plot(iters_MAP, psnr_5_mc_map, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_5_me_map, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[1].plot(iters_MAP, psnr_6_map, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[1].plot(iters_MAP, psnr_6_mc_map, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_6_me_map, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[1].plot(iters_MAP, psnr_7_map, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[1].plot(iters_MAP, psnr_7_mc_map, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_7_me_map, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
+
+        axes[2].plot(iters_MAP, mse_5_map, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[2].plot(iters_MAP, mse_5_mc_map, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_5_me_map, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[2].plot(iters_MAP, mse_6_map, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[2].plot(iters_MAP, mse_6_mc_map, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_6_me_map, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[2].plot(iters_MAP, mse_7_map, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[2].plot(iters_MAP, mse_7_mc_map, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_7_me_map, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
 
         axes[0].set_xlabel('iteration')
         axes[0].set_ylabel('SNR')
-        # axes[0].legend(fontsize="small")
         axes[1].set_xlabel('iteration')
         axes[1].set_ylabel('PSNR')
         axes[2].set_xlabel('iteration')
         axes[2].set_ylabel('MSE')
+        axes[2].legend(fontsize=8, loc='upper right')
     
         plt.show(block=False)
         plt.pause(10)
@@ -733,47 +745,47 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         axes[0,0].set_yticks([])
 
         axes[0,1].imshow(iml12_5_samples_mean.reshape(img.shape))
-        axes[0,1].set_title(r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)", fontsize=16)
+        axes[0,1].set_title(r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)", fontsize=16)
         axes[0,1].set_xticks([])
         axes[0,1].set_yticks([])
 
         axes[1,0].imshow(iml12_5_mc_samples_mean.reshape(img.shape))
-        axes[1,0].set_title(r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)", fontsize=16)
+        axes[1,0].set_title(r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)", fontsize=16)
         axes[1,0].set_xticks([])
         axes[1,0].set_yticks([])
 
         axes[1,1].imshow(iml12_5_me_samples_mean.reshape(img.shape))
-        axes[1,1].set_title(r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)", fontsize=16)
+        axes[1,1].set_title(r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)", fontsize=16)
         axes[1,1].set_xticks([])
         axes[1,1].set_yticks([])
 
         axes[2,0].imshow(iml12_6_samples_mean.reshape(img.shape))
-        axes[2,0].set_title(r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)", fontsize=16)
+        axes[2,0].set_title(r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)", fontsize=16)
         axes[2,0].set_xticks([])
         axes[2,0].set_yticks([])
 
         axes[2,1].imshow(iml12_6_mc_samples_mean.reshape(img.shape))
-        axes[2,1].set_title(r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)", fontsize=16)
+        axes[2,1].set_title(r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)", fontsize=16)
         axes[2,1].set_xticks([])
         axes[2,1].set_yticks([])
 
         axes[3,0].imshow(iml12_6_me_samples_mean.reshape(img.shape))
-        axes[3,0].set_title(r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)", fontsize=16)
+        axes[3,0].set_title(r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)", fontsize=16)
         axes[3,0].set_xticks([])
         axes[3,0].set_yticks([])
 
         axes[3,1].imshow(iml12_7_samples_mean.reshape(img.shape))
-        axes[3,1].set_title(r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)", fontsize=16)
+        axes[3,1].set_title(r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)", fontsize=16)
         axes[3,1].set_xticks([])
         axes[3,1].set_yticks([])
 
         axes[4,0].imshow(iml12_7_mc_samples_mean.reshape(img.shape))
-        axes[4,0].set_title(r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)", fontsize=16)
+        axes[4,0].set_title(r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)", fontsize=16)
         axes[4,0].set_xticks([])
         axes[4,0].set_yticks([])
 
         axes[4,1].imshow(iml12_7_me_samples_mean.reshape(img.shape))
-        axes[4,1].set_title(r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)", fontsize=16)
+        axes[4,1].set_title(r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)", fontsize=16)
         axes[4,1].set_xticks([])
         axes[4,1].set_yticks([])
 
@@ -784,45 +796,56 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
 
 
         # plot temporal evolution of SNR, PSNR and MSE
-        fig3a, axes = plt.subplots(1, 3, figsize=(27, 5))
-        iters = np.arange(N)
-        axes[0].plot(iters, snr_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[0].plot(iters, snr_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[0].plot(iters, snr_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[0].plot(iters, snr_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[0].plot(iters, snr_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[0].plot(iters, snr_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[0].plot(iters, snr_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[0].plot(iters, snr_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[0].plot(iters, snr_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        plt.style.use(['science'])
+        plt.rcParams.update({
+            "font.family": "serif",   # specify font family here
+            "font.serif": ["Times"],  # specify font here
+            "text.usetex": True,
+            "axes.prop_cycle": plt.cycler("color", plt.cm.tab10.colors),
+            } 
+        )
 
-        axes[1].plot(iters, psnr_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[1].plot(iters, psnr_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[1].plot(iters, psnr_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[1].plot(iters, psnr_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[1].plot(iters, psnr_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[1].plot(iters, psnr_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[1].plot(iters, psnr_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[1].plot(iters, psnr_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[1].plot(iters, psnr_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        fig3a, axes = plt.subplots(3, 1, figsize=(4, 8))
+        fig3a.subplots_adjust(hspace=0.25)
+        iters = list(range(N))
+        axes[0].plot(iters, snr_5_samples, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[0].plot(iters, snr_5_mc_samples, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[0].plot(iters, snr_5_me_samples, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[0].plot(iters, snr_6_samples, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[0].plot(iters, snr_6_mc_samples, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[0].plot(iters, snr_6_me_samples, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[0].plot(iters, snr_7_samples, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[0].plot(iters, snr_7_mc_samples, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[0].plot(iters, snr_7_me_samples, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
 
-        axes[2].plot(iters, mse_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
-        axes[2].plot(iters, mse_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
-        axes[2].plot(iters, mse_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
-        axes[2].plot(iters, mse_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
-        axes[2].plot(iters, mse_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
-        axes[2].plot(iters, mse_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
-        axes[2].plot(iters, mse_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
-        axes[2].plot(iters, mse_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
-        axes[2].plot(iters, mse_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+        axes[1].plot(iters, psnr_5_samples, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[1].plot(iters, psnr_5_mc_samples, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[1].plot(iters, psnr_5_me_samples, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[1].plot(iters, psnr_6_samples, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[1].plot(iters, psnr_6_mc_samples, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[1].plot(iters, psnr_6_me_samples, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[1].plot(iters, psnr_7_samples, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[1].plot(iters, psnr_7_mc_samples, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[1].plot(iters, psnr_7_me_samples, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
+
+        axes[2].plot(iters, mse_5_samples, label=r"$\mathcal{M}_1$ (\textbf{\textit{H}}$_1$, TV)")
+        axes[2].plot(iters, mse_5_mc_samples, label=r"$\mathcal{M}_2$ (\textbf{\textit{H}}$_1$, MC-TV)")
+        axes[2].plot(iters, mse_5_me_samples, label=r"$\mathcal{M}_3$ (\textbf{\textit{H}}$_1$, ME-TV)")
+        axes[2].plot(iters, mse_6_samples, '--', label=r"$\mathcal{M}_4$ (\textbf{\textit{H}}$_2$, TV)")
+        axes[2].plot(iters, mse_6_mc_samples, '--', label=r"$\mathcal{M}_5$ (\textbf{\textit{H}}$_2$, MC-TV)")
+        axes[2].plot(iters, mse_6_me_samples, '--', label=r"$\mathcal{M}_6$ (\textbf{\textit{H}}$_2$, ME-TV)")
+        axes[2].plot(iters, mse_7_samples, '-.', label=r"$\mathcal{M}_7$ (\textbf{\textit{H}}$_3$, TV)")
+        axes[2].plot(iters, mse_7_mc_samples, '-.', label=r"$\mathcal{M}_8$ (\textbf{\textit{H}}$_3$, MC-TV)")
+        axes[2].plot(iters, mse_7_me_samples, '-.', label=r"$\mathcal{M}_9$ (\textbf{\textit{H}}$_3$, ME-TV)")
 
         axes[0].set_xlabel('iteration')
         axes[0].set_ylabel('SNR')
-        # axes[0].legend(fontsize="small")
         axes[1].set_xlabel('iteration')
         axes[1].set_ylabel('PSNR')
         axes[2].set_xlabel('iteration')
         axes[2].set_ylabel('MSE')
+        axes[2].legend(fontsize=8, loc='upper right')
     
         plt.show(block=False)
         plt.pause(10)
