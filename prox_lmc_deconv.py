@@ -124,9 +124,12 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
     Iop = pylops.Identity(ny * nx)
 
     # Primal-dual
-    def callback(x, f, g, K, cost, xtrue, err):
+    def callback(x, f, g, K, cost, xtrue, err, snr, psnr, mse):
         cost.append(f(x) + g(K.matvec(x)))
         err.append(np.linalg.norm(x - xtrue))
+        snr.append(signal_noise_ratio(xtrue, x))
+        psnr.append(psnr(xtrue, x))
+        mse.append(mse(xtrue, x))
     
     x0 = np.zeros(img.ravel().shape)
     
@@ -134,109 +137,163 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
     if compute_MAP:
         cost_5_map = []
         err_5_map = []
+        snr_5_map = []
+        psnr_5_map = []
+        mse_5_map = []
         iml12_5_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_5, l1iso,
                                                                                     Gop, cost_5_map,
                                                                                     img.ravel(),
-                                                                                    err_5_map))
+                                                                                    err_5_map,
+                                                                                    snr_5_map,
+                                                                                    psnr_5_map,
+                                                                                    mse_5_map))
         iml12_5_map = iml12_5_map.reshape(img.shape)
 
 
         cost_6_map = []
         err_6_map = []
+        snr_6_map = []
+        psnr_6_map = []
+        mse_6_map = []
         iml12_6_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_6, l1iso,
                                                                                     Gop, cost_6_map,
                                                                                     img.ravel(),
-                                                                                    err_6_map))
+                                                                                    err_6_map,
+                                                                                    snr_6_map,
+                                                                                    psnr_6_map,
+                                                                                    mse_6_map))
         iml12_6_map = iml12_6_map.reshape(img.shape)
 
 
         cost_7_map = []
         err_7_map = []
+        snr_7_map = []
+        psnr_7_map = []
+        mse_7_map = []
         iml12_7_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_7, l1iso,
                                                                                     Gop, cost_7_map,
                                                                                     img.ravel(),
-                                                                                    err_7_map))
+                                                                                    err_7_map,
+                                                                                    snr_7_map,
+                                                                                    psnr_7_map,
+                                                                                    mse_7_map))
         iml12_7_map = iml12_7_map.reshape(img.shape)
 
 
         cost_5_mc_map = []
         err_5_mc_map = []
+        snr_5_mc_map = []
+        psnr_5_mc_map = []
+        mse_5_mc_map = []
         iml12_5_mc_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_5_mc, l1,
                                                                                     Gop, cost_5_mc_map,
                                                                                     img.ravel(),
-                                                                                    err_5_mc_map))
+                                                                                    err_5_mc_map,
+                                                                                    snr_5_mc_map,
+                                                                                    psnr_5_mc_map,
+                                                                                    mse_5_mc_map))
         iml12_5_mc_map = iml12_5_mc_map.reshape(img.shape)
 
 
         cost_6_mc_map = []
         err_6_mc_map = []
+        snr_6_mc_map = []
+        psnr_6_mc_map = []
+        mse_6_mc_map = []
         iml12_6_mc_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_6_mc, l1,
                                                                                     Gop, cost_6_mc_map,
                                                                                     img.ravel(),
-                                                                                    err_6_mc_map))
+                                                                                    err_6_mc_map,
+                                                                                    snr_6_mc_map,
+                                                                                    psnr_6_mc_map,
+                                                                                    mse_6_mc_map))
         iml12_6_mc_map = iml12_6_mc_map.reshape(img.shape)
 
 
         cost_7_mc_map = []
         err_7_mc_map = []
+        snr_7_mc_map = []
+        psnr_7_mc_map = []
+        mse_7_mc_map = []
         iml12_7_mc_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_mc, l1, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_7_mc, l1,
                                                                                     Gop, cost_7_mc_map,
                                                                                     img.ravel(),
-                                                                                    err_7_mc_map))
+                                                                                    err_7_mc_map,
+                                                                                    snr_7_mc_map,
+                                                                                    psnr_7_mc_map,
+                                                                                    mse_7_mc_map))
         iml12_7_mc_map = iml12_7_mc_map.reshape(img.shape)
         
 
         cost_5_me_map = []
         err_5_me_map = []
+        snr_5_me_map = []
+        psnr_5_me_map = []
+        mse_5_me_map = []
         iml12_5_me_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_5_me, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_5_me, l1iso,
                                                                                     Gop, cost_5_me_map,
                                                                                     img.ravel(),
-                                                                                    err_5_me_map))
+                                                                                    err_5_me_map,
+                                                                                    snr_5_me_map,
+                                                                                    psnr_5_me_map,
+                                                                                    mse_5_me_map))
         iml12_5_me_map = iml12_5_me_map.reshape(img.shape)
 
 
         cost_6_me_map = []
         err_6_me_map = []
+        snr_6_me_map = []
+        psnr_6_me_map = []
+        mse_6_me_map = []
         iml12_6_me_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_6_me, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_6_me, l1iso,
                                                                                     Gop, cost_6_me_map,
                                                                                     img.ravel(),
-                                                                                    err_6_me_map))
+                                                                                    err_6_me_map,
+                                                                                    snr_6_me_map,
+                                                                                    psnr_6_me_map,
+                                                                                    mse_6_me_map))
         iml12_6_me_map = iml12_6_me_map.reshape(img.shape)
 
 
         cost_7_me_map = []
         err_7_me_map = []
+        snr_7_me_map = []
+        psnr_7_me_map = []
+        mse_7_me_map = []
         iml12_7_me_map, _ = \
             pyproximal.optimization.primaldual.AdaptivePrimalDual(l2_7_me, l1iso, Gop, tau=tau0, mu=mu0,
                                                         x0=x0, niter=niter_MAP, show=True,
                                                         callback=lambda x: callback(x, l2_7_me, l1iso,
                                                                                     Gop, cost_7_me_map,
                                                                                     img.ravel(),
-                                                                                    err_7_me_map))
+                                                                                    err_7_me_map,
+                                                                                    snr_7_me_map,
+                                                                                    psnr_7_me_map,
+                                                                                    mse_7_me_map))
         iml12_7_me_map = iml12_7_me_map.reshape(img.shape)
 
 
@@ -326,12 +383,62 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         # plt.show(block=False)
         # plt.pause(10)
         # plt.close()
-        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}.pdf', dpi=250) 
+        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}.pdf', dpi=250)
+
+
+        # plot temporal evolution of SNR, PSNR and MSE
+        fig2a, axes = plt.subplots(1, 3, figsize=(27, 5))
+        iters_MAP = np.arange(niter_MAP)
+        axes[0].plot(iters_MAP, snr_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[0].plot(iters_MAP, snr_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[0].plot(iters_MAP, snr_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[0].plot(iters_MAP, snr_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[0].plot(iters_MAP, snr_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[0].plot(iters_MAP, snr_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[0].plot(iters_MAP, snr_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[1].plot(iters_MAP, psnr_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[1].plot(iters_MAP, psnr_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[1].plot(iters_MAP, psnr_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[1].plot(iters_MAP, psnr_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[1].plot(iters_MAP, psnr_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[1].plot(iters_MAP, psnr_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[1].plot(iters_MAP, psnr_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[2].plot(iters_MAP, mse_5_map, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[2].plot(iters_MAP, mse_5_mc_map, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_5_me_map, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[2].plot(iters_MAP, mse_6_map, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[2].plot(iters_MAP, mse_6_mc_map, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_6_me_map, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[2].plot(iters_MAP, mse_7_map, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[2].plot(iters_MAP, mse_7_mc_map, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[2].plot(iters_MAP, mse_7_me_map, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[0].set_xlabel('iteration')
+        axes[0].set_ylabel('SNR')
+        # axes[0].legend(fontsize="small")
+        axes[1].set_xlabel('iteration')
+        axes[1].set_ylabel('PSNR')
+        axes[2].set_xlabel('iteration')
+        axes[2].set_ylabel('MSE')
+    
+        plt.show(block=False)
+        plt.pause(10)
+        plt.close()
+        fig2a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}_snr_psnr_mse.pdf', dpi=250)
     
     else:
         # Generate samples using ULPDA or MYULA
         cost_5_samples = []
         err_5_samples = []
+        snr_5_samples = []
+        psnr_5_samples = []
+        mse_5_samples = []
         iml12_5_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_5, l1iso, Gop, 
                                                 tau=tau0, mu=mu0, theta=1., 
@@ -339,19 +446,28 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_5, l1iso, 
                                                                             Gop, cost_5_samples,
                                                                             img.ravel(), 
-                                                                            err_5_samples)) if alg == 'ULPDA' else \
+                                                                            err_5_samples,
+                                                                            snr_5_samples,
+                                                                            psnr_5_samples,
+                                                                            mse_5_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_5, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_5, tv,
                                                                             Iop, cost_5_samples,
                                                                             img.ravel(),
-                                                                            err_5_samples))
+                                                                            err_5_samples,
+                                                                            snr_5_samples,
+                                                                            psnr_5_samples,
+                                                                            mse_5_samples))
         iml12_5_samples_mean = iml12_5_samples.mean(axis=0)
         del iml12_5_samples # free memory
             
 
         cost_6_samples = []
         err_6_samples = []
+        snr_6_samples = []
+        psnr_6_samples = []
+        mse_6_samples = []
         iml12_6_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_6, l1iso, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -359,19 +475,28 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_6, l1iso,
                                                                             Gop, cost_6_samples,
                                                                             img.ravel(),
-                                                                            err_6_samples)) if alg == 'ULPDA' else \
+                                                                            err_6_samples,
+                                                                            snr_6_samples,
+                                                                            psnr_6_samples,
+                                                                            mse_6_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_6, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_6, tv,
                                                                             Iop, cost_6_samples,
                                                                             img.ravel(),
-                                                                            err_6_samples))
+                                                                            err_6_samples,
+                                                                            snr_6_samples,
+                                                                            psnr_6_samples,
+                                                                            mse_6_samples))
         iml12_6_samples_mean = iml12_6_samples.mean(axis=0)
         del iml12_6_samples
         
 
         cost_7_samples = []
         err_7_samples = []
+        snr_7_samples = []
+        psnr_7_samples = []
+        mse_7_samples = []
         iml12_7_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_7, l1iso, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -379,19 +504,28 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_7, l1iso,
                                                                             Gop, cost_7_samples,
                                                                             img.ravel(),
-                                                                            err_7_samples)) if alg == 'ULPDA' else \
+                                                                            err_7_samples,
+                                                                            snr_7_samples,
+                                                                            psnr_7_samples,
+                                                                            mse_7_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_7, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_7, tv,
                                                                             Iop, cost_7_samples,
                                                                             img.ravel(),
-                                                                            err_7_samples))
+                                                                            err_7_samples,
+                                                                            snr_7_samples,
+                                                                            psnr_7_samples,
+                                                                            mse_7_samples))
         iml12_7_samples_mean = iml12_7_samples.mean(axis=0)
         del iml12_7_samples
                                                                         
         
         cost_5_mc_samples = []
         err_5_mc_samples = []
+        snr_5_mc_samples = []
+        psnr_5_mc_samples = []
+        mse_5_mc_samples = []
         iml12_5_mc_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_5_mc, l1, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -399,18 +533,27 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_5_mc, l1,
                                                                             Gop, cost_5_mc_samples,
                                                                             img.ravel(),
-                                                                            err_5_mc_samples)) if alg == 'ULPDA' else \
+                                                                            err_5_mc_samples,
+                                                                            snr_5_mc_samples,
+                                                                            psnr_5_mc_samples,
+                                                                            mse_5_mc_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_5_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_5_mc, tv,
                                                                             Iop, cost_5_mc_samples,
                                                                             img.ravel(),
-                                                                            err_5_mc_samples))
+                                                                            err_5_mc_samples,
+                                                                            snr_5_mc_samples,
+                                                                            psnr_5_mc_samples,
+                                                                            mse_5_mc_samples))
         iml12_5_mc_samples_mean = iml12_5_mc_samples.mean(axis=0)
         del iml12_5_mc_samples
         
         cost_6_mc_samples = []
         err_6_mc_samples = []
+        snr_6_mc_samples = []
+        psnr_6_mc_samples = []
+        mse_6_mc_samples = []
         iml12_6_mc_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_6_mc, l1, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -418,18 +561,27 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_6_mc, l1,
                                                                             Gop, cost_6_mc_samples,
                                                                             img.ravel(),
-                                                                            err_6_mc_samples)) if alg == 'ULPDA' else \
+                                                                            err_6_mc_samples,
+                                                                            snr_6_mc_samples,
+                                                                            psnr_6_mc_samples,
+                                                                            mse_6_mc_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_6_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_6_mc, tv,
                                                                             Iop, cost_6_mc_samples,
                                                                             img.ravel(),
-                                                                            err_6_mc_samples))
+                                                                            err_6_mc_samples,
+                                                                            snr_6_mc_samples,
+                                                                            psnr_6_mc_samples,
+                                                                            mse_6_mc_samples))
         iml12_6_mc_samples_mean = iml12_6_mc_samples.mean(axis=0)
         del iml12_6_mc_samples
             
         cost_7_mc_samples = []
         err_7_mc_samples = []
+        snr_7_mc_samples = []
+        psnr_7_mc_samples = []
+        mse_7_mc_samples = []
         iml12_7_mc_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_7_mc, l1, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -437,19 +589,28 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_7_mc, l1,
                                                                             Gop, cost_7_mc_samples,
                                                                             img.ravel(),
-                                                                            err_7_mc_samples)) if alg == 'ULPDA' else \
+                                                                            err_7_mc_samples,
+                                                                            snr_7_mc_samples,
+                                                                            psnr_7_mc_samples,
+                                                                            mse_7_mc_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_7_mc, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_7_mc, tv,
                                                                             Iop, cost_7_mc_samples,
                                                                             img.ravel(),
-                                                                            err_7_mc_samples))
+                                                                            err_7_mc_samples,
+                                                                            snr_7_mc_samples,
+                                                                            psnr_7_mc_samples,
+                                                                            mse_7_mc_samples))
         iml12_7_mc_samples_mean = iml12_7_mc_samples.mean(axis=0)
         del iml12_7_mc_samples
 
 
         cost_5_me_samples = []
         err_5_me_samples = []
+        snr_5_me_samples = []
+        psnr_5_me_samples = []
+        mse_5_me_samples = []
         iml12_5_me_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_5_me, l1iso, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -457,18 +618,27 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_5_me, l1iso,
                                                                             Gop, cost_5_me_samples,
                                                                             img.ravel(),
-                                                                            err_5_me_samples)) if alg == 'ULPDA' else \
+                                                                            err_5_me_samples,
+                                                                            snr_5_me_samples,
+                                                                            psnr_5_me_samples,
+                                                                            mse_5_me_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_5_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_5_me, tv,
                                                                             Iop, cost_5_me_samples,
                                                                             img.ravel(),
-                                                                            err_5_me_samples))
+                                                                            err_5_me_samples,
+                                                                            snr_5_me_samples,
+                                                                            psnr_5_me_samples,
+                                                                            mse_5_me_samples))
         iml12_5_me_samples_mean = iml12_5_me_samples.mean(axis=0)
         del iml12_5_me_samples
         
         cost_6_me_samples = []
         err_6_me_samples = []
+        snr_6_me_samples = []
+        psnr_6_me_samples = []
+        mse_6_me_samples = []
         iml12_6_me_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_6_me, l1iso, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -476,18 +646,27 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_6_me, l1iso,
                                                                             Gop, cost_6_me_samples,
                                                                             img.ravel(),
-                                                                            err_6_me_samples)) if alg == 'ULPDA' else \
+                                                                            err_6_me_samples,
+                                                                            snr_6_me_samples,
+                                                                            psnr_6_me_samples,
+                                                                            mse_6_me_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_6_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True, seed=seed,
                                                 callback=lambda x: callback(x, l2_6_me, tv,
                                                                             Iop, cost_6_me_samples,
                                                                             img.ravel(),
-                                                                            err_6_me_samples))
+                                                                            err_6_me_samples,
+                                                                            snr_6_me_samples,
+                                                                            psnr_6_me_samples,
+                                                                            mse_6_me_samples))
         iml12_6_me_samples_mean = iml12_6_me_samples.mean(axis=0)
         del iml12_6_me_samples
             
         cost_7_me_samples = []
         err_7_me_samples = []
+        snr_7_me_samples = []
+        psnr_7_me_samples = []
+        mse_7_me_samples = []
         iml12_7_me_samples = \
             algs.UnadjustedLangevinPrimalDual(l2_7_me, l1iso, Gop,
                                                 tau=tau0, mu=mu0, theta=1.,
@@ -495,13 +674,19 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
                                                 callback=lambda x: callback(x, l2_7_me, l1iso,
                                                                             Gop, cost_7_me_samples,
                                                                             img.ravel(),
-                                                                            err_7_me_samples)) if alg == 'ULPDA' else \
+                                                                            err_7_me_samples,
+                                                                            snr_7_me_samples,
+                                                                            psnr_7_me_samples,
+                                                                            mse_7_me_samples)) if alg == 'ULPDA' else \
             algs.MoreauYosidaUnadjustedLangevin(l2_7_me, tv, tau=tau_myula, gamma=gamma_myula, 
                                                 x0=x0, niter=N, show=True,
                                                 callback=lambda x: callback(x, l2_7_me, tv,
                                                                             Iop, cost_7_me_samples,
                                                                             img.ravel(),
-                                                                            err_7_me_samples))
+                                                                            err_7_me_samples,
+                                                                            snr_7_me_samples,
+                                                                            psnr_7_me_samples,
+                                                                            mse_7_me_samples))
         iml12_7_me_samples_mean = iml12_7_me_samples.mean(axis=0)
         del iml12_7_me_samples
         
@@ -596,6 +781,53 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         # plt.pause(10)
         # plt.close()
         fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.pdf', dpi=250)
+
+
+        # plot temporal evolution of SNR, PSNR and MSE
+        fig3a, axes = plt.subplots(1, 3, figsize=(27, 5))
+        iters = np.arange(N)
+        axes[0].plot(iters, snr_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[0].plot(iters, snr_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[0].plot(iters, snr_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[0].plot(iters, snr_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[0].plot(iters, snr_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[0].plot(iters, snr_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[0].plot(iters, snr_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[0].plot(iters, snr_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[0].plot(iters, snr_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[1].plot(iters, psnr_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[1].plot(iters, psnr_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[1].plot(iters, psnr_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[1].plot(iters, psnr_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[1].plot(iters, psnr_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[1].plot(iters, psnr_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[1].plot(iters, psnr_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[1].plot(iters, psnr_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[1].plot(iters, psnr_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[2].plot(iters, mse_5_samples, label=r"$\mathcal{M}_1$ ($\mathbf{H}_1$, TV)")
+        axes[2].plot(iters, mse_5_mc_samples, label=r"$\mathcal{M}_2$ ($\mathbf{H}_1$, MC-TV)")
+        axes[2].plot(iters, mse_5_me_samples, label=r"$\mathcal{M}_3$ ($\mathbf{H}_1$, ME-TV)")
+        axes[2].plot(iters, mse_6_samples, label=r"$\mathcal{M}_4$ ($\mathbf{H}_2$, TV)")
+        axes[2].plot(iters, mse_6_mc_samples, label=r"$\mathcal{M}_5$ ($\mathbf{H}_2$, MC-TV)")
+        axes[2].plot(iters, mse_6_me_samples, label=r"$\mathcal{M}_6$ ($\mathbf{H}_2$, ME-TV)")
+        axes[2].plot(iters, mse_7_samples, label=r"$\mathcal{M}_7$ ($\mathbf{H}_3$, TV)")
+        axes[2].plot(iters, mse_7_mc_samples, label=r"$\mathcal{M}_8$ ($\mathbf{H}_3$, MC-TV)")
+        axes[2].plot(iters, mse_7_me_samples, label=r"$\mathcal{M}_9$ ($\mathbf{H}_3$, ME-TV)")
+
+        axes[0].set_xlabel('iteration')
+        axes[0].set_ylabel('SNR')
+        # axes[0].legend(fontsize="small")
+        axes[1].set_xlabel('iteration')
+        axes[1].set_ylabel('PSNR')
+        axes[2].set_xlabel('iteration')
+        axes[2].set_ylabel('MSE')
+    
+        plt.show(block=False)
+        plt.pause(10)
+        plt.close()
+        fig3a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_snr_psnr_mse.pdf', dpi=250)
 
 
 if __name__ == '__main__':
