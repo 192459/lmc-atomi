@@ -360,7 +360,7 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     # plt.pause(5)
     # plt.close()
     fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_2.pdf', dpi=500)
-    fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_2.eps', dpi=500)
+    fig2.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_2.eps', dpi=1200)
 
 
 if __name__ == '__main__':

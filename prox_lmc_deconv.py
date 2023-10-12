@@ -385,7 +385,7 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         # plt.pause(10)
         # plt.close()
         fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}.pdf', dpi=250)
-        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}.eps', dpi=250)
+        fig2.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}.eps', dpi=1200)
 
 
         # plot temporal evolution of SNR, PSNR and MSE
@@ -442,7 +442,7 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         plt.pause(10)
         plt.close()
         fig2a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}_snr_psnr_mse.pdf', dpi=250)
-        fig2a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}_snr_psnr_mse.eps', dpi=250)
+        fig2a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_MAP_{niter_MAP}_snr_psnr_mse.eps', dpi=1200)
     
     else:
         # Generate samples using ULPDA or MYULA
@@ -793,7 +793,7 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         # plt.pause(10)
         # plt.close()
         fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.pdf', dpi=250)
-        fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.eps', dpi=250)
+        fig3.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}.eps', dpi=1200)
 
 
         # plot temporal evolution of SNR, PSNR and MSE
@@ -850,7 +850,7 @@ def prox_lmc_deconv(gamma_mc=15., gamma_me=15., sigma=0.75, tau=0.3, N=1000,
         plt.pause(10)
         plt.close()
         fig3a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_snr_psnr_mse.pdf', dpi=250)
-        fig3a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_snr_psnr_mse.eps', dpi=250)
+        fig3a.savefig(f'./fig/fig_prox_lmc_deconv_{image}_{alg}_{N}_snr_psnr_mse.eps', dpi=1200)
 
 
 if __name__ == '__main__':
