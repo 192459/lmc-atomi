@@ -10,6 +10,7 @@ from numpy.random import default_rng
 from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
