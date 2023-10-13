@@ -8,6 +8,7 @@ import fire
 import numpy as np
 from numpy.random import default_rng
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
