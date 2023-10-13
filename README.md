@@ -8,7 +8,7 @@ pip install -U numpy matplotlib scipy seaborn fire fastprogress SciencePlots sci
 
 ## Mixtures of Gaussians
 ```bash
-python lmc.py --gamma_ula=1e-2 --gamma_mala=1e-2 --gamma_pula=1e-2 --gamma_ihpula=1e-2 --gamma_mla=1e-2 --K=10000 --n=5
+python lmc.py --gamma_ula=1e-1 --gamma_mala=1e-1 --gamma_pula=1e-1 --gamma_ihpula=1e-1 --gamma_mla=1e-1 --K=10000 --n=5
 ```
 
 
