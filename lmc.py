@@ -4,6 +4,7 @@
 import os
 from fastprogress import progress_bar
 import fire
+import time
 
 import numpy as np
 from numpy.random import default_rng
@@ -11,6 +12,7 @@ from scipy.linalg import sqrtm
 from scipy.stats import multivariate_normal, entropy
 import ot
 import ot.plot
+from ot.bregman import empirical_sinkhorn_divergence
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -347,7 +349,8 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     Z1 = lmc.true_samples()
 
     ### 2-Wasserstein distances; see https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
-    print("\nComputing 2-Wasserstein distance...")
+    print("\nComputing 2-Wasserstein distances...")
+    t0 = time.time()
     M_ula = ot.dist(Z1, Z2)
     M_mala = ot.dist(Z1, Z3)
     M_pula = ot.dist(Z1, Z4)
@@ -367,17 +370,19 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     # plt.close()
 
     b_mala = np.ones((len(Z3),)) / len(Z3)
-    nitermax = int(1e4)
-    wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax)
-    wass_mala = ot.emd2(a, b_mala, M_mala, numItermax=nitermax)
-    wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax)
-    wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax)
-    wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax)
+    nitermax = int(1e5)
+    wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax, numThreads=16)
+    wass_mala = ot.emd2(a, b_mala, M_mala, numItermax=nitermax, numThreads=16)
+    wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax, numThreads=16)
+    wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax, numThreads=16)
+    wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax, numThreads=16)
     print(f'2-Wasserstein distance between true samples and ULA samples: {wass_ula**.5}')
     print(f'2-Wasserstein distance between true samples and MALA samples: {wass_mala**.5}')
     print(f'2-Wasserstein distance between true samples and PULA samples: {wass_pula**.5}')
     print(f'2-Wasserstein distance between true samples and IHPULA samples: {wass_ihpula**.5}')
     print(f'2-Wasserstein distance between true samples and MLA samples: {wass_mla**.5}')
+    t1 = time.time()
+    print(f'Time elapsed for computing 2-Wasserstein distances: {t1 - t0} seconds')
     
     print("\nComputing 2-Wasserstein distances vs samples...")
     wass_ula_list = []
@@ -386,25 +391,27 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     wass_ihpula_list = []
     wass_mla_list = []
 
-    for k in progress_bar(range(1, K)):
+    # for k in progress_bar(range(1, K)):
+    for k in progress_bar(range(1, 500)):
         b = np.ones((k+1,)) / (k+1)
         M_ula = ot.dist(Z1, Z2[:k+1,:])
         M_pula = ot.dist(Z1, Z4[:k+1,:])
         M_ihpula = ot.dist(Z1, Z5[:k+1,:])
         M_mla = ot.dist(Z1, Z6[:k+1,:])        
-        wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax)        
-        wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax)
-        wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax)
-        wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax)
+        wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax, numThreads=16)        
+        wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax, numThreads=16)
+        wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax, numThreads=16)
+        wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax, numThreads=16)
         wass_ula_list.append(wass_ula**.5)        
         wass_pula_list.append(wass_pula**.5)
         wass_ihpula_list.append(wass_ihpula**.5)
         wass_mla_list.append(wass_mla**.5)
     
-    for k in progress_bar(range(1, len(Z3))):
+    # for k in progress_bar(range(1, len(Z3))):
+    for k in progress_bar(range(1, 500)):
         b = np.ones((k+1,)) / (k+1)
         M_mala = ot.dist(Z1, Z3[:k+1,:])
-        wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax)
+        wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax, numThreads=16)
         wass_mala_list.append(wass_mala**.5)
 
     ## Plot of 2-Wasserstein distances vs samples
@@ -433,7 +440,6 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.close()
     fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_wass_dist.pdf', dpi=500)
     fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_wass_dist.eps', dpi=1200)
-
 
 
 if __name__ == '__main__':
