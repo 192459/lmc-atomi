@@ -391,8 +391,10 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     wass_ihpula_list = []
     wass_mla_list = []
 
+    interval = 100
+
     for k in progress_bar(range(1, K)):
-        if k == 1 or k % 1000 == 0 or k == K-1:
+        if k == 1 or k % interval == 0 or k == K-1:
             b = np.ones((k+1,)) / (k+1)
             M_ula = ot.dist(Z1, Z2[:k+1,:])
             M_pula = ot.dist(Z1, Z4[:k+1,:])
@@ -408,7 +410,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
             wass_mla_list.append(wass_mla**.5)
     
     for k in progress_bar(range(1, len(Z3))) :
-        if k == 1 or k % 1000 == 0 or k == len(Z3)-1:
+        if k == 1 or k % interval == 0 or k == len(Z3)-1:
             b = np.ones((k+1,)) / (k+1)
             M_mala = ot.dist(Z1, Z3[:k+1,:])
             wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax, numThreads=16)
@@ -426,8 +428,8 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     )
 
     fig3 = plt.figure(figsize=(6, 4))
-    iters = [k for k in range(1, K) if k == 1 or k % 1000 == 0 or k == K-1]
-    iters_mala = [k for k in range(1, len(Z3)) if k == 1 or k % 1000 == 0 or k == len(Z3)-1]
+    iters = [k for k in range(1, K) if k == 1 or k % interval == 0 or k == K-1]
+    iters_mala = [k for k in range(1, len(Z3)) if k == 1 or k % interval == 0 or k == len(Z3)-1]
     plt.plot(iters, wass_ula_list, label='ULA')
     plt.plot(iters_mala, wass_mala_list, label='MALA')
     plt.plot(iters, wass_pula_list, label='PULA')
