@@ -350,7 +350,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
 
     ### 2-Wasserstein distances; see https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
     print("\nComputing 2-Wasserstein distances...")
-    t0 = time.time()
+    # t0 = time.time()
     M_ula = ot.dist(Z1, Z2)
     M_mala = ot.dist(Z1, Z3)
     M_pula = ot.dist(Z1, Z4)
@@ -369,20 +369,20 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     # plt.pause(20)
     # plt.close()
 
-    b_mala = np.ones((len(Z3),)) / len(Z3)
+    # b_mala = np.ones((len(Z3),)) / len(Z3)
     nitermax = int(1e5)
-    wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax, numThreads=16)
-    wass_mala = ot.emd2(a, b_mala, M_mala, numItermax=nitermax, numThreads=16)
-    wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax, numThreads=16)
-    wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax, numThreads=16)
-    wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax, numThreads=16)
-    print(f'2-Wasserstein distance between true samples and ULA samples: {wass_ula**.5}')
-    print(f'2-Wasserstein distance between true samples and MALA samples: {wass_mala**.5}')
-    print(f'2-Wasserstein distance between true samples and PULA samples: {wass_pula**.5}')
-    print(f'2-Wasserstein distance between true samples and IHPULA samples: {wass_ihpula**.5}')
-    print(f'2-Wasserstein distance between true samples and MLA samples: {wass_mla**.5}')
-    t1 = time.time()
-    print(f'Time elapsed for computing 2-Wasserstein distances: {t1 - t0} seconds')
+    # wass_ula = ot.emd2(a, b, M_ula, numItermax=nitermax, numThreads=16)
+    # wass_mala = ot.emd2(a, b_mala, M_mala, numItermax=nitermax, numThreads=16)
+    # wass_pula = ot.emd2(a, b, M_pula, numItermax=nitermax, numThreads=16)
+    # wass_ihpula = ot.emd2(a, b, M_ihpula, numItermax=nitermax, numThreads=16)
+    # wass_mla = ot.emd2(a, b, M_mla, numItermax=nitermax, numThreads=16)
+    # print(f'2-Wasserstein distance between true samples and ULA samples: {wass_ula**.5}')
+    # print(f'2-Wasserstein distance between true samples and MALA samples: {wass_mala**.5}')
+    # print(f'2-Wasserstein distance between true samples and PULA samples: {wass_pula**.5}')
+    # print(f'2-Wasserstein distance between true samples and IHPULA samples: {wass_ihpula**.5}')
+    # print(f'2-Wasserstein distance between true samples and MLA samples: {wass_mla**.5}')
+    # t1 = time.time()
+    # print(f'Time elapsed for computing 2-Wasserstein distances: {t1 - t0} seconds')
     
     print("\nComputing 2-Wasserstein distances vs samples...")
     wass_ula_list = []
@@ -395,6 +395,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
 
     for k in progress_bar(range(1, K)):
         if (k-1) % interval == 0:
+            t0 = time.time()
             b = np.ones((k+1,)) / (k+1)
             M_ula = ot.dist(Z1, Z2[:k+1,:])
             M_pula = ot.dist(Z1, Z4[:k+1,:])
@@ -412,6 +413,8 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
                 M_mala = ot.dist(Z1, Z3[:k+1,:])
                 wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax, numThreads=16)
                 wass_mala_list.append(wass_mala**.5)
+            t1 = time.time()
+            print(f'Time elapsed for computing 2-Wasserstein distances for {k + 1} samples: {t1 - t0} seconds')
 
     ## Plot of 2-Wasserstein distances vs samples
     mpl.rcParams.update(mpl.rcParamsDefault)
