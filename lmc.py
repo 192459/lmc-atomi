@@ -392,10 +392,10 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     wass_mla_list = []
 
     interval = 100
-
+    
+    t0 = time.time()
     for k in progress_bar(range(1, K)):
-        if (k-1) % interval == 0:
-            t0 = time.time()
+        if (k-1) % interval == 0:            
             b = np.ones((k+1,)) / (k+1)
             M_ula = ot.dist(Z1, Z2[:k+1,:])
             M_pula = ot.dist(Z1, Z4[:k+1,:])
@@ -413,8 +413,8 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
                 M_mala = ot.dist(Z1, Z3[:k+1,:])
                 wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax, numThreads=16)
                 wass_mala_list.append(wass_mala**.5)
-            t1 = time.time()
-            print(f'\nTime elapsed for computing 2-Wasserstein distances for {k + 1} samples: {t1 - t0} seconds')
+    t1 = time.time()
+    print(f'\nTime elapsed for computing 2-Wasserstein distances: {t1 - t0} seconds')
 
     ## Plot of 2-Wasserstein distances vs samples
     mpl.rcParams.update(mpl.rcParamsDefault)
