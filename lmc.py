@@ -414,7 +414,7 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
                 wass_mala = ot.emd2(a, b, M_mala, numItermax=nitermax, numThreads=16)
                 wass_mala_list.append(wass_mala**.5)
             t1 = time.time()
-            print(f'Time elapsed for computing 2-Wasserstein distances for {k + 1} samples: {t1 - t0} seconds')
+            print(f'\nTime elapsed for computing 2-Wasserstein distances for {k + 1} samples: {t1 - t0} seconds')
 
     ## Plot of 2-Wasserstein distances vs samples
     mpl.rcParams.update(mpl.rcParamsDefault)
