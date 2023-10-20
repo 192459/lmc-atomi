@@ -381,22 +381,22 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ## Generate samples from the true density
     Z1 = lmc_laplacian.true_samples()
 
-
     ### 2-Wasserstein distances; see https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
     print("\nComputing 2-Wasserstein distances...")    
     # t0 = time.time()
-    K1 = 25000
+    K1 = 10000
     Z1 = Z1[:K1]
     Z2 = Z2[:K1]
     Z3 = Z3[:K1]
     Z4 = Z4[:K1]
     Z5 = Z5[:K1]
-    M_ula = ot.dist(Z1, Z2)
-    M_mala = ot.dist(Z1, Z3)
-    M_pula = ot.dist(Z1, Z4)
-    M_mla = ot.dist(Z1, Z5)
+    # M_ula = ot.dist(Z1, Z2)
+    # M_mala = ot.dist(Z1, Z3)
+    # M_pula = ot.dist(Z1, Z4)
+    # M_mla = ot.dist(Z1, Z5)
 
-    a, b = np.ones((K1,)) / K1, np.ones((K1,)) / K1  # uniform distribution on samples
+    a = np.ones((K1,)) / K1
+    b = np.ones((K1,)) / K1  # uniform distribution on samples
     # G0 = ot.emd(a, b, M_ula)
     # fig4 = plt.figure(figsize=(8, 8))
     # ot.plot.plot2D_samples_mat(Z1[:K1], Z2[:K1], G0, c=[.5, .5, 1])
@@ -427,10 +427,9 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     wass_ula_list = []
     wass_mala_list = []
     wass_pula_list = []
-    wass_ihpula_list = []
     wass_mla_list = []
 
-    interval = 500
+    interval = 100
     
     t0 = time.time()
     for k in progress_bar(range(1, K1)):
@@ -467,7 +466,6 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.plot(iters, wass_ula_list, label='ULA')
     plt.plot(iters, wass_mala_list, label='MALA')
     plt.plot(iters, wass_pula_list, label='PULA')
-    plt.plot(iters, wass_ihpula_list, label='IHPULA')
     plt.plot(iters, wass_mla_list, label='MLA')
     plt.xlabel('sample')
     plt.ylabel(r'2-Wasserstein distance')
