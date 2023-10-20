@@ -78,7 +78,7 @@ class LangevinMonteCarlo:
         return theta - gamma * self.grad_potential_gaussian_mixture(theta)
     
 
-    ## True samples (to be completed)
+    ## True samples
     def true_samples(self):
         print("\nGenerating true samples:")
         rng = default_rng(self.seed)
