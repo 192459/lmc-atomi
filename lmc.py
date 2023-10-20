@@ -350,11 +350,11 @@ def lmc_gaussian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     ### 2-Wasserstein distances; see https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
     print("\nComputing 2-Wasserstein distances...")
     # t0 = time.time()
-    M_ula = ot.dist(Z1, Z2)
-    M_mala = ot.dist(Z1, Z3)
-    M_pula = ot.dist(Z1, Z4)
-    M_ihpula = ot.dist(Z1, Z5)
-    M_mla = ot.dist(Z1, Z6)
+    # M_ula = ot.dist(Z1, Z2)
+    # M_mala = ot.dist(Z1, Z3)
+    # M_pula = ot.dist(Z1, Z4)
+    # M_ihpula = ot.dist(Z1, Z5)
+    # M_mla = ot.dist(Z1, Z6)
 
     a, b = np.ones((K,)) / K, np.ones((K,)) / K  # uniform distribution on samples
     # G0 = ot.emd(a, b, M_ula)
