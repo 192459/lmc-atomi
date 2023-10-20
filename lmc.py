@@ -9,10 +9,9 @@ import time
 import numpy as np
 from numpy.random import default_rng
 from scipy.linalg import sqrtm
-from scipy.stats import multivariate_normal, entropy
+from scipy.stats import multivariate_normal
 import ot
 import ot.plot
-from ot.bregman import empirical_sinkhorn_divergence
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
