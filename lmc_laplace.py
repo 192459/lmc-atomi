@@ -473,8 +473,8 @@ def lmc_laplacian_mixture(gamma_ula=5e-2, gamma_mala=5e-2,
     plt.show(block=False)
     plt.pause(10)
     plt.close()
-    fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_wass_dist.pdf', dpi=500)
-    fig3.savefig(f'./fig/fig_n{n}_gamma{gamma_ula}_{K}_wass_dist.eps', dpi=1200)
+    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_wass_dist.pdf', dpi=500)
+    fig3.savefig(f'./fig/fig_laplace_n{n}_gamma{gamma_ula}_lambda{lamda}_{K}_wass_dist.eps', dpi=1200)
 
 
 if __name__ == '__main__':
