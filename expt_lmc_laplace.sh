@@ -1,7 +1,5 @@
-# gammas=(0.05 0.1 0.15)
-# lamdas=(0.1 0.5 1.0)
-gammas=(0.05)
-lamdas=(0.5)
+gammas=(0.05 0.1 0.15)
+lamdas=(0.1 0.5 1.0)
 
 for gamma in "${gammas[@]}"; do
     for lamda in "${lamdas[@]}"; do
